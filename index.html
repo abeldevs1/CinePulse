@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CinePulse | Elite Cinema Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: { 
+                        pulse: '#ff2d55',
+                        movie: '#ff2d55', 
+                        tv: '#3b82f6', 
+                        anime: '#a855f7', 
+                        kdrama: '#22c55e', 
+                        turkish: '#f97316',
+                        dark: '#020408' 
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #020408; color: #f3f4f6; overflow-x: hidden; font-family: 'Outfit', sans-serif; }
+        
+        /* Preloader */
+        #preloader {
+            position: fixed; inset: 0; z-index: 9999; background: #020408;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .loader-logo {
+            font-size: 8rem; font-weight: 900; color: #ff2d55;
+            animation: pulseC 1.5s infinite ease-in-out;
+        }
+        @keyframes pulseC { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.15); opacity: 0.5; } }
+
+        /* Liquid Glass Typography */
+        .liquid-glass {
+            background: none;
+            color: rgba(255, 255, 255, 0.85);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2), 
+                         0 0 20px rgba(255, 255, 255, 0.1),
+                         0 0 40px rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            line-height: 1;
+            letter-spacing: -0.04em;
+            pointer-events: none;
+            mix-blend-mode: hard-light;
+        }
+
+        /* Responsive Title Scaling Logic */
+        .slider-title {
+            font-size: var(--title-size, 5rem);
+            font-weight: 800;
+            text-transform: uppercase;
+            transition: font-size 0.3s ease;
+        }
+
+        /* Components */
+        .sidebar-link.active { color: #ff2d55; background: rgba(255, 45, 85, 0.05); border-right: 3px solid #ff2d55; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Rating Stars Animation */
+        .star-box i { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
+        .star-box i:hover { transform: scale(1.3); color: #fbbf24; }
+        .star-box i.active { color: #fbbf24; }
+
+        /* Search Bar Smart Visibility */
+        #searchBar { opacity: 0.3; transform: scale(0.98); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        #searchBar.active { opacity: 1; transform: scale(1); }
+
+        /* Global Loaders */
+        .page-loader { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 40px; height: 40px; border: 3px solid rgba(255,45,85,0.1); border-top-color: #ff2d55;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+        /* Hierarchy Status Colors */
+        .status-watching { border-left: 4px solid #3b82f6; }
+        .status-plan { border-left: 4px solid #94a3b8; }
+        .status-finished { border-left: 4px solid #22c55e; }
+
+        /* Android TV / Large Screen Support */
+        @media (min-width: 1920px) {
+            .slider-title { --title-size: 8rem; }
+        }
+    </style>
+</head>
+<body class="antialiased select-none">
+
+    <!-- PRELOADER -->
+    <div id="preloader">
+        <div class="loader-logo">C</div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <aside class="fixed left-0 top-0 h-full w-20 lg:w-64 bg-[#05070a] border-r border-white/5 z-[100] flex flex-col">
+        <div class="p-8">
+            <span class="text-pulse text-3xl font-black italic tracking-tighter">C<span class="text-white hidden lg:inline">PULSE</span></span>
+        </div>
+        
+        <nav class="flex-1 space-y-2 mt-10">
+            <button onclick="navigate('home')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all active">
+                <i class="fas fa-home text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Home</span>
+            </button>
+            <button onclick="navigate('search')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
+                <i class="fas fa-search text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Search</span>
+            </button>
+            <button onclick="navigate('mylist')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
+                <i class="fas fa-layer-group text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">My List</span>
+            </button>
+            <button onclick="navigate('rhythmlab')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
+                <i class="fas fa-flask text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Rhythm Lab</span>
+            </button>
+            <button onclick="navigate('sync')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
+                <i class="fas fa-sync text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Sync Engine</span>
+            </button>
+        </nav>
+
+        <div id="clock" class="p-8 text-[10px] font-black text-gray-600 tracking-[0.3em] hidden lg:block">00:00:00</div>
+    </aside>
+
+    <!-- TOP HEADER -->
+    <header class="fixed top-0 right-0 left-20 lg:left-64 z-[90] px-10 py-6 flex items-center justify-between">
+        <div id="searchBar" class="relative w-full max-w-xl">
+            <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+            <input type="text" id="mainSearch" placeholder="Find cinematic works..." 
+                   class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-xs focus:ring-2 ring-pulse/20 outline-none transition-all">
+            <div id="searchDrop" class="absolute top-full left-0 w-full mt-4 bg-[#0a0c12] border border-white/5 rounded-2xl hidden overflow-hidden shadow-2xl z-[110]"></div>
+        </div>
+        <div class="breadcrumb text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:block">
+            Path / <span id="pathLabel" class="text-pulse">HOME</span>
+        </div>
+    </header>
+
+    <main class="pl-20 lg:pl-64">
+        
+        <!-- HOME PAGE -->
+        <div id="view-home" class="page-view">
+            <div class="relative h-screen w-full overflow-hidden">
+                <div id="heroSlider" class="w-full h-full relative"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
+                
+                <div class="absolute inset-x-0 bottom-32 px-12 lg:px-24 flex flex-col items-start max-w-6xl">
+                    <h1 id="heroTitle" class="liquid-glass slider-title mb-10"></h1>
+                    <div class="flex items-center gap-6">
+                        <button id="heroInfoBtn" class="bg-pulse text-white px-10 py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-pulse/20">More Info</button>
+                        <button id="heroTrailerBtn" class="bg-white/10 backdrop-blur-md border border-white/10 text-white px-10 py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all">Watch Trailer</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Type Counters -->
+            <div id="homeCounters" class="grid grid-cols-2 md:grid-cols-5 gap-6 px-10 lg:px-20 -mt-16 relative z-20 mb-32"></div>
+
+            <div class="px-10 lg:px-20 space-y-32 pb-32">
+                <section>
+                    <h2 class="text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">Trending Movies <div class="h-px flex-1 bg-white/5"></div></h2>
+                    <div id="row-movies" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
+                </section>
+                <section>
+                    <h2 class="text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">Series & TV Shows <div class="h-px flex-1 bg-white/5"></div></h2>
+                    <div id="row-tv" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
+                </section>
+                <section>
+                    <h2 class="text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">Popular Anime <div class="h-px flex-1 bg-white/5"></div></h2>
+                    <div id="row-anime" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
+                </section>
+                <section>
+                    <h2 class="text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">K-Drama <div class="h-px flex-1 bg-white/5"></div></h2>
+                    <div id="row-kdrama" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
+                </section>
+                <section>
+                    <h2 class="text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">Turkish <div class="h-px flex-1 bg-white/5"></div></h2>
+                    <div id="row-turkish" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
+                </section>
+
+                <div id="homeGenres" class="flex flex-wrap gap-4 pt-10 border-t border-white/5 opacity-40"></div>
+            </div>
+        </div>
+
+        <!-- SEARCH PAGE -->
+        <div id="view-search" class="page-view hidden p-10 lg:p-24 pt-32">
+            <div class="flex flex-col md:flex-row justify-between items-end gap-10 mb-20">
+                <h2 class="text-7xl font-black italic uppercase tracking-tighter" id="searchHeader">Discover</h2>
+                <div class="flex flex-wrap gap-4">
+                    <select id="searchYear" onchange="applySearchFilters()" class="bg-white/5 border border-white/10 px-6 py-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse"></select>
+                    <select id="searchGenre" onchange="applySearchFilters()" class="bg-white/5 border border-white/10 px-6 py-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse"></select>
+                    <select id="searchSort" onchange="applySearchFilters()" class="bg-white/5 border border-white/10 px-6 py-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse">
+                        <option value="popularity.desc">Most Popular</option>
+                        <option value="vote_average.desc">Top Rated</option>
+                        <option value="primary_release_date.desc">Latest Release</option>
+                    </select>
+                </div>
+            </div>
+            <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 relative min-h-[400px]"></div>
+        </div>
+
+        <!-- MY LIST PAGE -->
+        <div id="view-mylist" class="page-view hidden p-10 lg:p-24 pt-32">
+            <div class="flex justify-between items-center mb-20">
+                <h2 class="text-7xl font-black italic uppercase tracking-tighter">My List</h2>
+                <div class="flex items-center gap-6">
+                    <button id="viewToggle" onclick="toggleListView()" class="w-12 h-12 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center hover:text-pulse transition-all">
+                        <i class="fas fa-list"></i>
+                    </button>
+                    <button onclick="openPicker()" class="bg-pulse px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-pulse/30">Random Picker</button>
+                </div>
+            </div>
+            <div id="listContainer" class="space-y-24"></div>
+        </div>
+
+        <!-- RHYTHM LAB PAGE -->
+        <div id="view-rhythmlab" class="page-view hidden p-10 lg:p-24 pt-32">
+            <div class="flex justify-between items-center mb-16">
+                <h2 class="text-7xl font-black italic uppercase tracking-tighter">Rhythm Lab</h2>
+            </div>
+            <div id="labCounters" class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-20"></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-20">
+                <select id="labStatus" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
+                    <option value="all">Any Status</option>
+                    <option value="Watching">Watching</option>
+                    <option value="Plan to Watch">Plan to Watch</option>
+                    <option value="Finished">Finished</option>
+                </select>
+                <select id="labYear" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
+                    <option value="all">Any Year</option>
+                </select>
+                <select id="labImdb" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
+                    <option value="all">IMDb Rating</option>
+                    <option value="8.5">Masterpiece (8.5+)</option>
+                    <option value="7">Good (7.0+)</option>
+                </select>
+                <select id="labPersonal" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
+                    <option value="all">My Rating</option>
+                    <option value="5">Perfect (5★)</option>
+                    <option value="3">Decent (3★+)</option>
+                </select>
+                <div id="labCount" class="bg-pulse flex items-center justify-center rounded-2xl font-black text-2xl italic">0</div>
+            </div>
+            <div id="labGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6"></div>
+        </div>
+
+        <!-- SYNC ENGINE PAGE -->
+        <div id="view-sync" class="page-view hidden p-10 lg:p-24 pt-32">
+            <h2 class="text-7xl font-black italic uppercase tracking-tighter mb-20">Sync Engine</h2>
+            <div id="syncContainer" class="space-y-32"></div>
+        </div>
+
+    </main>
+
+    <!-- INFO MODAL -->
+    <div id="modal" class="fixed inset-0 z-[150] hidden bg-dark overflow-y-auto">
+        <div class="relative h-[65vh]">
+            <img id="mBackdrop" class="w-full h-full object-cover">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
+            <button onclick="closeModal()" class="fixed top-10 right-10 z-[160] w-14 h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="absolute bottom-0 left-0 w-full p-10 lg:p-20">
+                <div id="mGenres" class="flex flex-wrap gap-3 mb-8"></div>
+                <h2 id="mTitle" class="text-4xl lg:text-7xl font-black italic uppercase mb-8"></h2>
+                <div class="flex items-center gap-10 text-[11px] font-black uppercase tracking-widest text-white/50">
+                    <span id="mYear"></span>
+                    <span id="mRating" class="text-pulse"></span>
+                    <button id="mTrailerBtn" class="border-b border-pulse pb-1 text-white">Watch Trailer</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-10 lg:px-20 py-24 grid grid-cols-1 lg:grid-cols-3 gap-24">
+            <div class="lg:col-span-2 space-y-24">
+                <div>
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-8 italic">Narrative Arc</h4>
+                    <p id="mOverview" class="text-xl lg:text-3xl font-light text-gray-400 leading-relaxed"></p>
+                </div>
+                <div>
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-10 italic">Cast & Credits</h4>
+                    <div id="mCast" class="flex gap-10 overflow-x-auto hide-scroll pb-6"></div>
+                </div>
+            </div>
+
+            <div class="space-y-12">
+                <div class="p-10 bg-white/5 border border-white/10 rounded-[40px]">
+                    <div class="space-y-10">
+                        <div>
+                            <label class="text-[10px] font-black text-gray-500 uppercase block mb-4 italic">Library Status</label>
+                            <select id="mStatus" onchange="updateStatus()" class="w-full bg-dark border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-pulse">
+                                <option value="">+ Add to List</option>
+                                <option value="Watching">Watching</option>
+                                <option value="Plan to Watch">Plan to Watch</option>
+                                <option value="Finished">Finished</option>
+                                <option value="On Hold">On Hold</option>
+                                <option value="Dropped">Dropped</option>
+                            </select>
+                        </div>
+
+                        <!-- Progress Bar (TV Only) -->
+                        <div id="mProgressBox" class="hidden space-y-6">
+                            <div class="flex justify-between text-[10px] font-black uppercase">
+                                <span class="text-gray-500">Progress</span>
+                                <span id="mEpLabel" class="text-pulse">0/0</span>
+                            </div>
+                            <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                <div id="mProgressBar" class="h-full bg-pulse transition-all"></div>
+                            </div>
+                            <input type="range" id="mEpRange" min="0" oninput="syncProgress(this.value)" class="w-full accent-pulse">
+                        </div>
+
+                        <!-- Personal Rating Pop-up Card -->
+                        <div id="mRatingCard" class="hidden p-8 bg-pulse/5 border border-pulse/20 rounded-3xl text-center">
+                            <h5 class="text-[10px] font-black uppercase text-pulse mb-6 tracking-widest">Rate this Title</h5>
+                            <div id="starRating" class="flex justify-center gap-4 text-3xl star-box">
+                                <i class="far fa-star" data-val="1"></i>
+                                <i class="far fa-star" data-val="2"></i>
+                                <i class="far fa-star" data-val="3"></i>
+                                <i class="far fa-star" data-val="4"></i>
+                                <i class="far fa-star" data-val="5"></i>
+                            </div>
+                            <p class="text-[8px] font-bold text-gray-600 uppercase mt-4">Personal Sentiment Score</p>
+                        </div>
+
+                        <button id="mRemoveBtn" onclick="removeItem()" class="hidden w-full text-[10px] font-black uppercase text-gray-700 hover:text-pulse transition-all pt-6">Eject from Library</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PICKER MODAL -->
+    <div id="pickerModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-dark/95 backdrop-blur-3xl p-6">
+        <div class="relative w-full max-w-lg bg-[#0a0c12] border border-white/5 p-12 rounded-[50px] text-center shadow-2xl">
+            <h3 class="text-3xl font-black mb-10 italic uppercase">Neural Picker</h3>
+            <div class="space-y-8 mb-12">
+                <div class="flex justify-center gap-10">
+                    <label class="flex items-center gap-3 text-[11px] font-black uppercase cursor-pointer"><input type="checkbox" id="pWatching" checked class="accent-pulse"> Watching</label>
+                    <label class="flex items-center gap-3 text-[11px] font-black uppercase cursor-pointer"><input type="checkbox" id="pPlan" checked class="accent-pulse"> Plan</label>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <select id="pType" class="bg-dark border border-white/10 rounded-2xl p-4 text-[11px] font-black uppercase outline-none">
+                        <option value="all">Any Type</option>
+                        <option value="movie">Movies</option>
+                        <option value="tv">Series</option>
+                        <option value="anime">Anime</option>
+                        <option value="kdrama">K-Drama</option>
+                        <option value="turkish">Turkish</option>
+                    </select>
+                    <select id="pGenre" class="bg-dark border border-white/10 rounded-2xl p-4 text-[11px] font-black uppercase outline-none"></select>
+                </div>
+            </div>
+            <div id="pickerResult" class="hidden mb-12 animate-in fade-in zoom-in duration-500">
+                <div class="w-48 h-72 mx-auto rounded-[30px] overflow-hidden mb-6 border-4 border-pulse shadow-2xl shadow-pulse/20">
+                    <img id="pResImg" class="w-full h-full object-cover">
+                </div>
+                <h4 id="pResTitle" class="text-2xl font-black uppercase italic text-white"></h4>
+            </div>
+            <button id="pRunBtn" onclick="runPulsePicker()" class="w-full bg-pulse py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:scale-105 transition-all">Begin Sync</button>
+            <button onclick="closePicker()" class="mt-8 text-[10px] font-black text-gray-700 uppercase hover:text-white transition-all">Close</button>
+        </div>
+    </div>
+
+    <script>
+        const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
+        const BASE = 'https://api.themoviedb.org/3';
+        const IMG = 'https://image.tmdb.org/t/p/w500';
+        const IMG_HD = 'https://image.tmdb.org/t/p/original';
+
+        let state = {
+            hero: [],
+            heroIdx: 0,
+            db: JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [],
+            genres: [],
+            isGrid: true,
+            active: null,
+            view: 'home',
+            searchParams: { q: '', y: '', g: '', s: 'popularity.desc' }
+        };
+
+        // Initialize App
+        async function init() {
+            try {
+                // Clear preloader
+                setTimeout(() => {
+                    document.getElementById('preloader').style.opacity = '0';
+                    setTimeout(() => document.getElementById('preloader').style.display = 'none', 800);
+                }, 2000);
+
+                const [trending, tv, anime, kdrama, turkish, genres] = await Promise.all([
+                    fetchAPI('/trending/all/week'),
+                    fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
+                    fetchAPI('/discover/tv?with_genres=16&sort_by=popularity.desc'),
+                    fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
+                    fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
+                    fetchAPI('/genre/movie/list')
+                ]);
+
+                state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
+                state.genres = genres.genres;
+                
+                renderHero();
+                renderRow('row-movies', trending.results.filter(i => i.media_type === 'movie'), 'movie');
+                renderRow('row-tv', tv.results, 'tv');
+                renderRow('row-anime', anime.results, 'tv');
+                renderRow('row-kdrama', kdrama.results, 'tv');
+                renderRow('row-turkish', turkish.results, 'tv');
+                
+                setupFilters();
+                updateCounters();
+                startClock();
+                setupSearchBehavior();
+                setupStarLogic();
+                
+                setInterval(nextHero, 10000);
+            } catch (e) { console.error("Neural init error", e); }
+        }
+
+        async function fetchAPI(path) {
+            const res = await fetch(`${BASE}${path}${path.includes('?')?'&':'?'}api_key=${API_KEY}`);
+            return res.json();
+        }
+
+        // Navigation
+        function navigate(view) {
+            state.view = view;
+            document.querySelectorAll('.page-view').forEach(v => v.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`view-${view}`).classList.remove('hidden');
+            document.getElementById('pathLabel').innerText = view.toUpperCase();
+            
+            const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.onclick.toString().includes(view));
+            if(btn) btn.classList.add('active');
+
+            if(view === 'mylist') renderList();
+            if(view === 'rhythmlab') runLab();
+            if(view === 'sync') renderSync();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Search Behavior
+        function setupSearchBehavior() {
+            const input = document.getElementById('mainSearch');
+            const bar = document.getElementById('searchBar');
+            const drop = document.getElementById('searchDrop');
+
+            input.onfocus = () => bar.classList.add('active');
+            input.onblur = () => {
+                setTimeout(() => {
+                    bar.classList.remove('active');
+                    drop.classList.add('hidden');
+                    input.value = '';
+                }, 200);
+            };
+
+            let timer;
+            input.oninput = (e) => {
+                clearTimeout(timer);
+                const q = e.target.value.trim();
+                if(!q) return drop.classList.add('hidden');
+                
+                timer = setTimeout(async () => {
+                    const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}`);
+                    renderDrop(data.results.slice(0, 6));
+                }, 300);
+            };
+
+            input.onkeydown = (e) => { if(e.key === 'Enter') deepSearch(input.value); };
+        }
+
+        function renderDrop(res) {
+            const drop = document.getElementById('searchDrop');
+            drop.innerHTML = res.map(i => `
+                <div class="flex items-center gap-4 p-5 hover:bg-white/5 cursor-pointer border-b border-white/5" onclick="openModal(${i.id}, '${i.media_type}')">
+                    <img src="${IMG+i.poster_path}" class="w-10 h-14 object-cover rounded-lg bg-dark">
+                    <div>
+                        <div class="text-[10px] font-black uppercase text-white">${i.title || i.name}</div>
+                        <div class="text-[8px] text-gray-600 font-bold uppercase tracking-widest">${i.media_type} • ${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
+                    </div>
+                </div>
+            `).join('') + `<div class="p-4 text-center cursor-pointer" onclick="deepSearch('${document.getElementById('mainSearch').value}')"><span class="text-[9px] font-black text-pulse uppercase">Show All Results</span></div>`;
+            drop.classList.remove('hidden');
+        }
+
+        async function deepSearch(q) {
+            navigate('search');
+            state.searchParams.q = q;
+            document.getElementById('searchGrid').innerHTML = '<div class="page-loader"></div>';
+            const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}`);
+            renderGrid('searchGrid', data.results.filter(i => i.media_type !== 'person'));
+        }
+
+        async function applySearchFilters() {
+            const year = document.getElementById('searchYear').value;
+            const genre = document.getElementById('searchGenre').value;
+            const sort = document.getElementById('searchSort').value;
+            
+            document.getElementById('searchGrid').innerHTML = '<div class="page-loader"></div>';
+            let path = `/discover/movie?sort_by=${sort}&page=1`;
+            if(year) path += `&primary_release_year=${year}`;
+            if(genre) path += `&with_genres=${genre}`;
+            
+            const data = await fetchAPI(path);
+            renderGrid('searchGrid', data.results, 'movie');
+        }
+
+        // Hero Slider
+        function renderHero() {
+            const slider = document.getElementById('heroSlider');
+            slider.innerHTML = state.hero.map((item, i) => `
+                <div class="hero-item absolute inset-0 transition-opacity duration-1000 ${i === 0 ? 'opacity-100' : 'opacity-0'}">
+                    <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover">
+                </div>
+            `).join('');
+            updateHeroContent();
+        }
+
+        function updateHeroContent() {
+            const item = state.hero[state.heroIdx];
+            const title = item.title || item.name;
+            const hTitle = document.getElementById('heroTitle');
+            
+            // Liquid Glass Resizing Logic
+            hTitle.innerText = title;
+            const length = title.length;
+            let size = 5; // Default 5rem
+            if (length > 25) size = 3;
+            else if (length > 15) size = 4;
+            else if (length < 8) size = 7;
+            
+            // Adjust for mobile viewports
+            if (window.innerWidth < 768) size = size * 0.6;
+            
+            hTitle.style.setProperty('--title-size', `${size}rem`);
+            
+            document.getElementById('heroInfoBtn').onclick = () => openModal(item.id, item.media_type);
+            
+            // Fetch trailer for hero
+            fetchAPI(`/${item.media_type}/${item.id}/videos`).then(v => {
+                const tr = v.results.find(x => x.type === 'Trailer');
+                document.getElementById('heroTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
+            });
+        }
+
+        function nextHero() {
+            const items = document.querySelectorAll('.hero-item');
+            items[state.heroIdx].classList.replace('opacity-100', 'opacity-0');
+            state.heroIdx = (state.heroIdx + 1) % state.hero.length;
+            items[state.heroIdx].classList.replace('opacity-0', 'opacity-100');
+            updateHeroContent();
+        }
+
+        // Modal Logic
+        async function openModal(id, type) {
+            const [details, credits, vids] = await Promise.all([
+                fetchAPI(`/${type}/${id}`),
+                fetchAPI(`/${type}/${id}/credits`),
+                fetchAPI(`/${type}/${id}/videos`)
+            ]);
+
+            state.active = { ...details, media_type: type };
+            const local = state.db.find(i => i.id === id);
+
+            document.getElementById('mBackdrop').src = IMG_HD + (details.backdrop_path || details.poster_path);
+            document.getElementById('mTitle').innerText = (details.title || details.name);
+            document.getElementById('mOverview').innerText = details.overview || "Narrative archive encrypted.";
+            document.getElementById('mYear').innerText = (details.release_date || details.first_air_date || '----').split('-')[0];
+            document.getElementById('mRating').innerHTML = `<i class="fas fa-star text-pulse"></i> ${details.vote_average?.toFixed(1) || '0.0'}`;
+            
+            document.getElementById('mGenres').innerHTML = (details.genres || []).map(g => `
+                <span class="text-[9px] font-black uppercase border border-white/10 px-4 py-2 rounded-full text-gray-400">${g.name}</span>
+            `).join('');
+
+            document.getElementById('mCast').innerHTML = (credits.cast || []).slice(0, 10).map(c => `
+                <div class="flex-none w-24 text-center group cursor-pointer" onclick="openActor(${c.id}, '${c.name}')">
+                    <img src="${c.profile_path ? IMG + c.profile_path : 'https://via.placeholder.com/150'}" class="w-24 h-24 rounded-full object-cover mb-4 border-2 border-transparent group-hover:border-pulse transition-all">
+                    <div class="text-[9px] font-black uppercase line-clamp-1">${c.name}</div>
+                    <div class="text-[7px] text-gray-500 font-bold mt-1 line-clamp-1">${c.character}</div>
+                </div>
+            `).join('');
+
+            const tr = vids.results.find(v => v.type === 'Trailer');
+            document.getElementById('mTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
+
+            document.getElementById('mStatus').value = local ? local.status : '';
+            document.getElementById('mProgressBox').classList.toggle('hidden', type !== 'tv' || !local);
+            
+            if(type === 'tv' && local) {
+                const total = details.number_of_episodes || 1;
+                document.getElementById('mEpRange').max = total;
+                document.getElementById('mEpRange').value = local.ep || 0;
+                updateEpUI(local.ep || 0, total);
+            }
+
+            // Rating logic: only show if Finished
+            updateRatingCard(local);
+
+            document.getElementById('mRemoveBtn').classList.toggle('hidden', !local);
+            document.getElementById('modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function updateRatingCard(local) {
+            const card = document.getElementById('mRatingCard');
+            if(local && local.status === 'Finished') {
+                card.classList.remove('hidden');
+                setStars(local.score || 0);
+            } else {
+                card.classList.add('hidden');
+            }
+        }
+
+        function setupStarLogic() {
+            const stars = document.querySelectorAll('#starRating i');
+            stars.forEach(s => {
+                s.onclick = () => {
+                    const val = parseInt(s.dataset.val);
+                    const idx = state.db.findIndex(i => i.id === state.active.id);
+                    if(idx !== -1) {
+                        state.db[idx].score = val;
+                        save();
+                        setStars(val);
+                    }
+                };
+            });
+        }
+
+        function setStars(n) {
+            document.querySelectorAll('#starRating i').forEach((s, i) => {
+                s.className = i < n ? 'fas fa-star active' : 'far fa-star';
+            });
+        }
+
+        function updateStatus() {
+            const status = document.getElementById('mStatus').value;
+            if(!status) return;
+            const item = state.active;
+            let existing = state.db.find(i => i.id === item.id);
+
+            if(existing) {
+                existing.status = status;
+            } else {
+                let cat = item.media_type;
+                if(cat === 'tv') {
+                    if(item.original_language === 'tr') cat = 'turkish';
+                    else if(item.original_language === 'ko') cat = 'kdrama';
+                    else if((item.genres || []).some(g => g.id === 16)) cat = 'anime';
+                    else cat = 'tv';
+                }
+                state.db.push({
+                    id: item.id,
+                    title: item.title || item.name,
+                    poster: item.poster_path,
+                    type: cat,
+                    status: status,
+                    ep: 0,
+                    score: 0,
+                    imdb: item.vote_average,
+                    year: (item.release_date || item.first_air_date || '').split('-')[0],
+                    genres: (item.genres || []).map(g => g.id),
+                    added: Date.now()
+                });
+            }
+            save();
+            openModal(item.id, item.media_type);
+        }
+
+        // List Rendering with Hierarchy
+        function toggleListView() {
+            state.isGrid = !state.isGrid;
+            document.getElementById('viewToggle').innerHTML = state.isGrid ? '<i class="fas fa-list"></i>' : '<i class="fas fa-th-large"></i>';
+            renderList();
+        }
+
+        function renderList() {
+            const container = document.getElementById('listContainer');
+            // Hierarchy: Watching > Plan > On Hold > Finished > Dropped
+            const order = ['Watching', 'Plan to Watch', 'On Hold', 'Finished', 'Dropped'];
+            
+            container.innerHTML = order.map(status => {
+                const items = state.db.filter(i => i.status === status);
+                if(!items.length) return '';
+
+                return `
+                    <section>
+                        <h3 class="text-[11px] font-black uppercase tracking-[0.5em] text-pulse mb-10 italic flex items-center gap-6">
+                            ${status} <span class="h-px flex-1 bg-white/5"></span> <span class="text-gray-600">${items.length}</span>
+                        </h3>
+                        <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8' : 'space-y-4'}">
+                            ${items.map(i => state.isGrid ? `
+                                <div class="group cursor-pointer" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+                                    <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl">
+                                        <img src="${IMG+i.poster}" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="text-[10px] font-black uppercase line-clamp-1">${i.title}</div>
+                                    <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase">${i.type} • ★ ${i.imdb.toFixed(1)}</div>
+                                </div>
+                            ` : `
+                                <div class="flex items-center gap-8 p-6 bg-white/5 rounded-3xl hover:bg-white/10 transition-all cursor-pointer status-${status.toLowerCase().split(' ')[0]}" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+                                    <img src="${IMG+i.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg">
+                                    <div class="flex-1">
+                                        <div class="text-[12px] font-black uppercase italic">${i.title}</div>
+                                        <div class="text-[8px] font-bold text-gray-500 mt-2 uppercase tracking-widest">${i.type} • ${i.year}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-[10px] font-black text-pulse">★ ${i.imdb.toFixed(1)}</div>
+                                        <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">UScore: ${i.score || '-'}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>
+                `;
+            }).join('');
+        }
+
+        // Lab Engine
+        function runLab() {
+            const status = document.getElementById('labStatus').value;
+            const year = document.getElementById('labYear').value;
+            const imdb = document.getElementById('labImdb').value;
+            const pers = document.getElementById('labPersonal').value;
+
+            let filtered = state.db.filter(i => {
+                let sMatch = status === 'all' || i.status === status;
+                let yMatch = year === 'all' || i.year === year;
+                let iMatch = imdb === 'all' || i.imdb >= parseFloat(imdb);
+                let pMatch = pers === 'all' || (i.score >= parseInt(pers));
+                return sMatch && yMatch && iMatch && pMatch;
+            });
+
+            document.getElementById('labCount').innerText = filtered.length;
+            document.getElementById('labGrid').innerHTML = filtered.map(item => `
+                <div class="group cursor-pointer" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
+                    <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl">
+                        <img src="${IMG+item.poster}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
+                </div>
+            `).join('');
+            
+            updateCounters();
+        }
+
+        // Sync Engine Logic
+        async function renderSync() {
+            const container = document.getElementById('syncContainer');
+            const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
+            
+            const sections = await Promise.all(types.map(async type => {
+                const anchors = state.db.filter(i => i.type === type);
+                if(!anchors.length) return '';
+                
+                const seed = anchors[Math.floor(Math.random() * anchors.length)];
+                const apiType = (type === 'movie' ? 'movie' : 'tv');
+                const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
+                
+                return `
+                    <section>
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-pulse mb-10 italic">
+                            Neural suggestions for <span class="text-white">${type}</span> based on "${seed.title}"
+                        </h3>
+                        <div class="flex gap-8 overflow-x-auto hide-scroll pb-6">
+                            ${data.results.slice(0, 10).map(i => `
+                                <div class="flex-none w-44 group cursor-pointer" onclick="openModal(${i.id}, '${apiType}')">
+                                    <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl">
+                                        <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
+                                    </div>
+                                    <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>
+                `;
+            }));
+            container.innerHTML = sections.join('') || `<div class="text-center py-20 text-gray-700 font-black uppercase tracking-widest italic">Insufficient data for sync</div>`;
+        }
+
+        // Global Helpers
+        function updateCounters() {
+            const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
+            const html = types.map(t => {
+                const count = state.db.filter(i => i.type === t).length;
+                return `
+                    <div class="bg-white/5 border border-white/10 p-6 rounded-3xl border-t-4 border-${t} shadow-xl">
+                        <div class="text-[9px] font-black text-gray-500 uppercase mb-2 tracking-widest">${t}</div>
+                        <div class="text-3xl font-black italic text-white">${count}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('homeCounters').innerHTML = html;
+            if(state.view === 'rhythmlab') document.getElementById('labCounters').innerHTML = html;
+        }
+
+        function renderRow(id, items, type) {
+            const container = document.getElementById(id);
+            container.innerHTML = items.map(item => `
+                <div class="flex-none w-[240px] group cursor-pointer" onclick="openModal(${item.id}, '${type}')">
+                    <div class="relative aspect-[2/3] rounded-[40px] overflow-hidden mb-5 border border-white/5 group-hover:scale-105 transition-all duration-700">
+                        <img src="${IMG+item.poster_path}" class="w-full h-full object-cover">
+                    </div>
+                    <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2">${item.title || item.name}</h3>
+                    <div class="text-[8px] font-bold text-gray-600 mt-2 uppercase px-2 tracking-widest">${(item.release_date || item.first_air_date || '').split('-')[0]} • ★ ${item.vote_average.toFixed(1)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderGrid(id, items, forced) {
+            const container = document.getElementById(id);
+            container.innerHTML = items.map(i => `
+                <div class="group cursor-pointer" onclick="openModal(${i.id}, '${forced || i.media_type || (i.title ? 'movie' : 'tv')}')">
+                    <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl">
+                        <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
+                    </div>
+                    <div class="text-[10px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
+                    <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
+                </div>
+            `).join('');
+        }
+
+        function setupFilters() {
+            const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')];
+            const years = Array.from({length: 50}, (_, i) => 2026 - i);
+            yearSels.forEach(sel => {
+                sel.innerHTML = `<option value="${sel.id.includes('lab') ? 'all' : ''}">Year</option>` + years.map(y => `<option value="${y}">${y}</option>`).join('');
+            });
+
+            const genreSels = [document.getElementById('searchGenre'), document.getElementById('pGenre')];
+            genreSels.forEach(sel => {
+                sel.innerHTML = `<option value="">Genre</option>` + state.genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+            });
+
+            document.getElementById('homeGenres').innerHTML = state.genres.slice(0, 15).map(g => `
+                <button onclick="deepSearch('${g.name}')" class="text-[9px] font-black uppercase tracking-widest text-gray-600 hover:text-pulse transition-all">#${g.name}</button>
+            `).join('');
+        }
+
+        function openPicker() {
+            document.getElementById('pickerModal').classList.remove('hidden');
+            document.getElementById('pickerResult').classList.add('hidden');
+        }
+        function closePicker() { document.getElementById('pickerModal').classList.add('hidden'); }
+
+        function runPulsePicker() {
+            const w = document.getElementById('pWatching').checked;
+            const p = document.getElementById('pPlan').checked;
+            const t = document.getElementById('pType').value;
+            const g = parseInt(document.getElementById('pGenre').value);
+
+            let pool = state.db.filter(i => {
+                let sMatch = (w && i.status === 'Watching') || (p && i.status === 'Plan to Watch');
+                let tMatch = t === 'all' || i.type === t;
+                let gMatch = !g || i.genres.includes(g);
+                return sMatch && tMatch && gMatch;
+            });
+
+            if(!pool.length) return alert("Database empty for selected criteria.");
+
+            const btn = document.getElementById('pRunBtn');
+            btn.innerText = "Processing...";
+            
+            setTimeout(() => {
+                const win = pool[Math.floor(Math.random() * pool.length)];
+                document.getElementById('pickerResult').classList.remove('hidden');
+                document.getElementById('pResImg').src = IMG + win.poster;
+                document.getElementById('pResTitle').innerText = win.title;
+                btn.innerText = "Synchronize Now";
+                btn.onclick = () => { closePicker(); openModal(win.id, win.type === 'movie' ? 'movie' : 'tv'); btn.onclick = runPulsePicker; btn.innerText = "Begin Sync"; };
+            }, 1000);
+        }
+
+        function updateEpUI(curr, tot) {
+            document.getElementById('mEpLabel').innerText = `${curr}/${tot}`;
+            document.getElementById('mProgressBar').style.width = `${(curr/tot)*100}%`;
+        }
+
+        function syncProgress(v) {
+            const idx = state.db.findIndex(i => i.id === state.active.id);
+            if(idx !== -1) {
+                state.db[idx].ep = parseInt(v);
+                updateEpUI(v, state.active.number_of_episodes || 1);
+                save();
+            }
+        }
+
+        async function openActor(id, name) {
+            closeModal();
+            navigate('search');
+            document.getElementById('searchHeader').innerText = `Works: ${name}`;
+            const data = await fetchAPI(`/person/${id}/combined_credits`);
+            const sorted = data.cast.sort((a,b) => (b.vote_average || 0) - (a.vote_average || 0));
+            renderGrid('searchGrid', sorted);
+        }
+
+        function startClock() { setInterval(() => { 
+            const d = new Date();
+            document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
+        }, 1000); }
+
+        function save() { localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); updateCounters(); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); document.body.style.overflow = 'auto'; }
+        function removeItem() { state.db = state.db.filter(i => i.id !== state.active.id); save(); closeModal(); }
+
+        init();
+    </script>
+</body>
+</html>
