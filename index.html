@@ -148,7 +148,7 @@
         
         <!-- HOME PAGE -->
         <div id="view-home" class="page-view">
-            <div class="relative h-screen w-full overflow-hidden">
+            <div class="relative h-screen w-full overflow-hidden ">
                 <div id="heroSlider" class="w-full h-full relative"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
                 
@@ -209,13 +209,30 @@
 
         <!-- MY LIST PAGE -->
         <div id="view-mylist" class="page-view hidden p-10 lg:p-24 pt-32">
-            <div class="flex justify-between items-center mb-20">
-                <h2 class="text-7xl font-black italic uppercase tracking-tighter">My List</h2>
-                <div class="flex items-center gap-6">
-                    <button id="viewToggle" onclick="toggleListView()" class="w-12 h-12 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center hover:text-pulse transition-all">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-20">
+               <h2 class="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black italic uppercase tracking-tight">My List</h2>
+                
+                <div class="flex items-center gap-4 flex-wrap">
+                    <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+                    
+                    <button onclick="document.getElementById('importFile').click()" class="bg-white/5 border border-white/10 px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse transition-all text-gray-400 hover:text-white" title="Import Library">
+                        <i class="fas fa-file-import md:mr-2"></i> <span class="hidden md:inline">Import</span>
+                    </button>
+                    
+                    <button onclick="exportData()" class="bg-white/5 border border-white/10 px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse transition-all text-gray-400 hover:text-white" title="Export Library">
+                        <i class="fas fa-file-export md:mr-2"></i> <span class="hidden md:inline">Export</span>
+                    </button>
+
+                    <button onclick="clearLibrary()" class="bg-white/5 border border-white/10 px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse hover:text-pulse transition-all text-gray-400" title="Purge Library">
+                        <i class="fas fa-trash-alt md:mr-2"></i> <span class="hidden md:inline">Purge</span>
+                    </button>
+
+                    <div class="w-px h-8 bg-white/10 mx-2"></div> <button id="viewToggle" onclick="toggleListView()" class="w-12 h-12 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center hover:text-pulse transition-all">
                         <i class="fas fa-list"></i>
                     </button>
-                    <button onclick="openPicker()" class="bg-pulse px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-pulse/30">Random Picker</button>
+                    <button onclick="openPicker()" class="bg-pulse px-6 md:px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-pulse/30">
+                        Random Picker
+                    </button>
                 </div>
             </div>
             <div id="listContainer" class="space-y-24"></div>
@@ -340,37 +357,117 @@
     </div>
 
     <!-- PICKER MODAL -->
-    <div id="pickerModal" class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-dark/95 backdrop-blur-3xl p-6">
-        <div class="relative w-full max-w-lg bg-[#0a0c12] border border-white/5 p-12 rounded-[50px] text-center shadow-2xl">
-            <h3 class="text-3xl font-black mb-10 italic uppercase">Neural Picker</h3>
-            <div class="space-y-8 mb-12">
-                <div class="flex justify-center gap-10">
-                    <label class="flex items-center gap-3 text-[11px] font-black uppercase cursor-pointer"><input type="checkbox" id="pWatching" checked class="accent-pulse"> Watching</label>
-                    <label class="flex items-center gap-3 text-[11px] font-black uppercase cursor-pointer"><input type="checkbox" id="pPlan" checked class="accent-pulse"> Plan</label>
+
+ <div id="pickerModal"
+     onclick="backdropClose(event)"
+     class="fixed inset-0 z-[150] hidden flex items-center justify-center
+            bg-black/70 backdrop-blur-xl p-4">
+
+    <!-- Modal Card -->
+    <div onclick="event.stopPropagation()"
+         class="relative w-full max-w-md sm:max-w-xl
+                max-h-[95vh]
+                bg-[#0a0c12] border border-white/10
+                rounded-2xl sm:rounded-[40px]
+                shadow-2xl
+                flex flex-col">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 pt-6">
+            <h3 class="text-xl sm:text-3xl font-black uppercase italic text-pulse">
+                Neural Picker
+            </h3>
+
+            <button onclick="closePicker()"
+                class="w-9 h-9 bg-white/10 rounded-full
+                       flex items-center justify-center
+                       text-white/70 hover:bg-pulse transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="px-6 pb-6 mt-6 overflow-y-auto">
+
+            <!-- Filters -->
+            <div class="space-y-6">
+
+                <!-- Status -->
+                <div class="flex justify-center gap-6">
+                    <label class="flex items-center gap-2 text-xs font-black uppercase cursor-pointer">
+                        <input type="checkbox" id="pWatching" checked class="accent-pulse w-4 h-4">
+                        Watching
+                    </label>
+
+                    <label class="flex items-center gap-2 text-xs font-black uppercase cursor-pointer">
+                        <input type="checkbox" id="pPlan" checked class="accent-pulse w-4 h-4">
+                        Plan
+                    </label>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <select id="pType" class="bg-dark border border-white/10 rounded-2xl p-4 text-[11px] font-black uppercase outline-none">
-                        <option value="all">Any Type</option>
-                        <option value="movie">Movies</option>
-                        <option value="tv">Series</option>
-                        <option value="anime">Anime</option>
-                        <option value="kdrama">K-Drama</option>
-                        <option value="turkish">Turkish</option>
-                    </select>
-                    <select id="pGenre" class="bg-dark border border-white/10 rounded-2xl p-4 text-[11px] font-black uppercase outline-none"></select>
+
+                <!-- Type + Genre -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[11px] font-black uppercase text-white/50">
+                            Type
+                        </label>
+                        <select id="pType"
+                            class="bg-dark border border-white/10
+                                   rounded-xl p-3 text-xs
+                                   font-black uppercase outline-none">
+                            <option value="all">Any Type</option>
+                            <option value="movie">Movies</option>
+                            <option value="tv">Series</option>
+                            <option value="anime">Anime</option>
+                            <option value="kdrama">K-Drama</option>
+                            <option value="turkish">Turkish</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label class="text-[11px] font-black uppercase text-white/50">
+                            Genre
+                        </label>
+                        <select id="pGenre"
+                            class="bg-dark border border-white/10
+                                   rounded-xl p-3 text-xs
+                                   font-black uppercase outline-none">
+                        </select>
+                    </div>
+
                 </div>
             </div>
-            <div id="pickerResult" class="hidden mb-12 animate-in fade-in zoom-in duration-500">
-                <div class="w-48 h-72 mx-auto rounded-[30px] overflow-hidden mb-6 border-4 border-pulse shadow-2xl shadow-pulse/20">
+
+            <!-- Result -->
+            <div id="pickerResult"
+                 class="hidden mt-8 animate-in fade-in zoom-in duration-300">
+
+                <div class="w-32 h-48 sm:w-44 sm:h-64
+                            mx-auto rounded-2xl overflow-hidden
+                            border-2 border-pulse shadow-xl">
                     <img id="pResImg" class="w-full h-full object-cover">
                 </div>
-                <h4 id="pResTitle" class="text-2xl font-black uppercase italic text-white"></h4>
+
+                <h4 id="pResTitle"
+                    class="mt-4 text-base sm:text-xl
+                           font-black uppercase italic
+                           text-white text-center line-clamp-2">
+                </h4>
             </div>
-            <button id="pRunBtn" onclick="runPulsePicker()" class="w-full bg-pulse py-5 rounded-2xl text-[11px] font-black uppercase tracking-widest hover:scale-105 transition-all">Begin Sync</button>
-            <button onclick="closePicker()" class="mt-8 text-[10px] font-black text-gray-700 uppercase hover:text-white transition-all">Close</button>
+
+            <button id="pRunBtn"
+                onclick="runPulsePicker()"
+                class="w-full mt-8 bg-pulse
+                       py-3 rounded-xl
+                       text-xs font-black uppercase tracking-widest
+                       hover:scale-105 active:scale-95 transition">
+                Begin Sync
+            </button>
+
         </div>
     </div>
-
+</div>
     <script>
         const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
         const BASE = 'https://api.themoviedb.org/3';
@@ -519,7 +616,7 @@
             const slider = document.getElementById('heroSlider');
             slider.innerHTML = state.hero.map((item, i) => `
                 <div class="hero-item absolute inset-0 transition-opacity duration-1000 ${i === 0 ? 'opacity-100' : 'opacity-0'}">
-                    <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover">
+                    <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover ">
                 </div>
             `).join('');
             updateHeroContent();
@@ -723,7 +820,11 @@
                 `;
             }).join('');
         }
-
+        function backdropClose(e) {
+            if (e.target.id === "pickerModal") {
+             closePicker();
+                }
+        }
         // Lab Engine
         function runLab() {
             const status = document.getElementById('labStatus').value;
@@ -911,7 +1012,91 @@
         function save() { localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); updateCounters(); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); document.body.style.overflow = 'auto'; }
         function removeItem() { state.db = state.db.filter(i => i.id !== state.active.id); save(); closeModal(); }
+// --- DATA SYNC: IMPORT & EXPORT ---
 
+        function exportData() {
+            if (state.db.length === 0) return alert("Your library is empty. Nothing to export.");
+            
+            const dataStr = JSON.stringify(state.db, null, 2);
+            const blob = new Blob([dataStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cinepulse_sync_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (!Array.isArray(importedData)) {
+                        alert("Sync Failed: Invalid Neural Backup format.");
+                        return;
+                    }
+
+                    let added = 0;
+                    let updated = 0;
+
+                    importedData.forEach(importedItem => {
+                        if (!importedItem.id) return; // Skip corrupted entries
+                        
+                        const existingIdx = state.db.findIndex(item => item.id === importedItem.id);
+                        
+                        if (existingIdx !== -1) {
+                            // Update existing entry (prevents duplicates)
+                            state.db[existingIdx] = { ...state.db[existingIdx], ...importedItem };
+                            updated++;
+                        } else {
+                            // Add new entry
+                            state.db.push(importedItem);
+                            added++;
+                        }
+                    });
+
+                    save(); // Save to localStorage & update counters
+                    if (state.view === 'mylist') renderList(); // Instantly update UI if currently viewing My List
+                    
+                    alert(`Sync Complete!\nAdded: ${added} records\nUpdated: ${updated} records`);
+                } catch (error) {
+                    console.error("Neural sync error:", error);
+                    alert("Sync Failed: The file could not be read.");
+                }
+                // Reset input so the same file can be triggered again if needed
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+        // --- DATA DESTRUCTION: CLEAR LIBRARY ---
+
+        function clearLibrary() {
+            if (state.db.length === 0) {
+                alert("Your neural library is already empty.");
+                return;
+            }
+
+            // Ask for confirmation to prevent accidental data loss
+            const confirmWipe = confirm("WARNING: This will permanently delete your entire CinePulse library. This action cannot be undone.\n\nAre you sure you want to proceed?");
+            
+            if (confirmWipe) {
+                state.db = []; // Empty the state array
+                save();        // Save the empty array to localStorage & update counters
+                
+                if (state.view === 'mylist') {
+                    renderList(); // Visually clear the list
+                }
+                
+                alert("Library successfully purged.");
+            }
+        }
         init();
     </script>
 </body>
