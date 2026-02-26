@@ -7,7 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-    
+   <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/50/ff2d55/clapperboard.png">
+
+
     <script>
         tailwind.config = {
             theme: {
@@ -73,11 +75,62 @@
         .star-box i { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
         .star-box i:hover { transform: scale(1.3); color: #fbbf24; }
         .star-box i.active { color: #fbbf24; }
+       /* Refined Transparent Frost */
+  /* Liquid Pill Search Bar */
+.glass-search {
+    background: rgba(255, 255, 255, 0.02) !important;
+    backdrop-filter: blur(25px) saturate(210%) contrast(110%) !important;
+    -webkit-backdrop-filter: blur(25px) saturate(210%) contrast(110%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 9999px !important; /* Full Pill Shape */
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.7);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
 
-        /* Search Bar Smart Visibility */
-        #searchBar { opacity: 0.3; transform: scale(0.98); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        #searchBar.active { opacity: 1; transform: scale(1); }
+#searchBar.active .glass-search {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 45, 85, 0.5) !important;
+    transform: scale(1.02);
+}
 
+/* Fix Search Icon & X Button Visibility */
+.search-icon-fixed {
+    color: white !important;
+    opacity: 0.8;
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.8));
+}
+
+#clearSearch {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    color: #666;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#clearSearch:hover {
+    background: #ff2d55;
+    color: white;
+    border-color: #ff2d55;
+    box-shadow: 0 0 15px rgba(255, 45, 85, 0.4);
+    transform: translateY(-50%) rotate(90deg) scale(1.1);
+}
+
+/* Person Modal Scrolling */
+#personModal {
+    scrollbar-width: thin;
+    scrollbar-color: #ff2d55 rgba(255,255,255,0.05);
+}
         /* Global Loaders */
         .page-loader { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -95,6 +148,464 @@
         @media (min-width: 1920px) {
             .slider-title { --title-size: 8rem; }
         }
+        /* Ensure search icon stands out on frosted background */
+.fa-search {
+    opacity: 0.8 !important;
+    color: white !important;
+    text-shadow: 0 0 10px rgba(0,0,0,0.5);
+    z-index: 10;
+}
+/* --- ELITE MOBILE OPTIMIZATION --- */
+@media (max-width: 1024px) {
+    /* 1. NAVIGATION (STAYS THE SAME) */
+    aside {
+        width: 100% !important;
+        height: 75px !important;
+        top: auto !important;
+        bottom: 0 !important;
+        flex-direction: row !important;
+        border-right: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(2, 4, 8, 0.95) !important;
+        backdrop-filter: blur(25px);
+        padding: 0 !important;
+        z-index: 100;
+    }
+    aside .p-8, #clock { display: none !important; }
+    nav {
+        flex-direction: row !important;
+        margin-top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        display: flex !important;
+    }
+    .nav-btn {
+        padding: 0 !important;
+        width: 20% !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+        color: #94a3b8 !important;
+        justify-content: center !important;
+    }
+    .nav-btn i { font-size: 1.2rem !important; }
+    .nav-btn span { display: block !important; font-size: 8px !important; font-weight: 800; }
+    .sidebar-link.active {
+        background: none !important;
+        border-right: none !important;
+        border-top: 3px solid #ff2d55;
+        color: #ff2d55 !important;
+    }
+
+    /* 2. HERO SLIDER (75% HEIGHT & TEXT FIX) */
+    #view-home > div:first-child { 
+        height: 60vh !important; /* Shorter vertical height */
+        min-height: 400px !important;
+        overflow: hidden;
+    }
+
+    #heroSlider {
+        width: 100% !important;
+        height: 100% !important;
+        position: absolute !important;
+        top: 0; left: 0;
+    }
+    
+    #heroSlider img {
+        object-fit: cover !important; 
+        height: 100% !important;
+        width: 100% !important;
+        opacity: 0.7; /* Dimmed slightly for text readability */
+    }
+
+    /* Slider Text Overlay */
+    #view-home .bottom-32 { 
+        position: absolute !important;
+        bottom: 80px !important; /* Sits above the hero bottom */
+        left: 0 !important;
+        padding: 0 20px !important;
+        background: none !important;
+        z-index: 20;
+    }
+
+    .slider-title { 
+        font-size: 2rem !important; 
+        text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+        margin-bottom: 10px !important;
+    }
+
+    /* 3. COLLAPSIBLE SEARCH BAR (CSS ONLY) */
+    header {
+        left: 0 !important;
+        padding: 10px 15px !important;
+        background: transparent !important;
+        z-index: 50;
+    }
+
+   /* 3. REFINED COLLAPSIBLE SEARCH BAR (NO OVERLAP) */
+    header {
+        left: 0 !important;
+        padding: 15px !important;
+        background: transparent !important;
+        z-index: 50;
+        display: flex !important;
+        justify-content: flex-start !important; /* Forces search to the left */
+        align-items: center !important;
+    }
+
+    /* Glass Search Container */
+    header .max-w-xl {
+        width: 48px !important; /* Perfect circle for icon */
+        height: 48px !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        background: rgba(255, 255, 255, 0.08) !important; /* Translucent Glass */
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        overflow: hidden;
+        margin-left: 0 !important;
+        position: relative;
+    }
+
+    /* Expand when clicked/focused */
+    header .max-w-xl:focus-within {
+        width: 90% !important;
+        background: rgba(30, 30, 30, 0.7) !important; /* Semi-transparent dark glass */
+        border-color: rgba(255, 45, 85, 0.5);
+    }
+
+    /* Search Icon Positioning (Prevents Overlap) */
+    header .fa-search {
+        position: absolute;
+        left: 16px !important;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    header input {
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        transition: opacity 0.3s;
+        padding-left: 50px !important; /* Massive padding to clear the icon */
+        background: transparent !important;
+        color: white !important;
+        font-size: 14px !important;
+    }
+
+    header .max-w-xl:focus-within input {
+        opacity: 1;
+    }
+
+    /* Fix for the 'X' button inside the search */
+    header button[onclick*="searchInput.value = ''"] {
+        position: absolute;
+        right: 12px !important;
+        top: 50%;
+        transform: translateY(-50%);
+        padding: 5px !important;
+    }
+
+    /* 4. RECOMMENDATIONS (STAYS THE SAME - SMOOTH SLIDE) */
+    .hide-scroll {
+        display: flex !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        scroll-behavior: smooth !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x mandatory !important;
+        gap: 12px !important;
+        padding: 0 20px 20px 20px !important;
+    }
+
+    .hide-scroll > div {
+        flex: 0 0 42% !important; 
+        scroll-snap-align: start !important;
+    }
+
+    /* 5. GLOBAL FIXES */
+    main { padding-left: 0 !important; padding-bottom: 90px !important; }
+    .breadcrumb { display: none !important; }
+    #homeCounters {
+        grid-template-columns: repeat(2, 1fr) !important;
+        padding: 0 20px !important;
+    }
+}
+/* --- ELITE MOBILE OPTIMIZATION (MOBILE ONLY) --- */
+@media (max-width: 1024px) {
+    /* 1. BOTTOM NAVIGATION BAR */
+    aside {
+        width: 100% !important;
+        height: 75px !important;
+        top: auto !important;
+        bottom: 0 !important;
+        flex-direction: row !important;
+        border-right: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(2, 4, 8, 0.95) !important;
+        backdrop-filter: blur(25px);
+        padding: 0 !important;
+        z-index: 100;
+    }
+    aside .p-8, #clock { display: none !important; }
+    nav {
+        flex-direction: row !important;
+        margin-top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        justify-content: space-around !important;
+        align-items: center !important;
+        display: flex !important;
+    }
+    .nav-btn {
+        padding: 0 !important;
+        width: 20% !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+        color: #94a3b8 !important;
+        justify-content: center !important;
+    }
+    .nav-btn i { font-size: 1.2rem !important; }
+    .nav-btn span { display: block !important; font-size: 8px !important; font-weight: 800; }
+    .sidebar-link.active {
+        background: none !important;
+        border-right: none !important;
+        border-top: 3px solid #ff2d55;
+        color: #ff2d55 !important;
+    }
+
+    /* 2. HERO SLIDER (70% HEIGHT & OVERLAY) */
+    #view-home > div:first-child { 
+        height: 70vh !important; /* Fixed proportional height */
+        min-height: 450px !important;
+        position: relative !important;
+        overflow: hidden;
+    }
+    #heroSlider {
+        width: 100% !important;
+        height: 100% !important;
+        position: absolute !important;
+        top: 0; left: 0;
+    }
+    #heroSlider img {
+        object-fit: cover !important; 
+        height: 100% !important;
+        width: 100% !important;
+    }
+    #view-home .bottom-32 { 
+        position: absolute !important;
+        bottom: 40px !important; 
+        left: 0 !important;
+        padding: 0 20px !important;
+        background: linear-gradient(to top, #020408 30%, transparent) !important;
+        width: 100%;
+        z-index: 20;
+    }
+    .slider-title { font-size: 2rem !important; margin-bottom: 10px !important; }
+    #heroInfoBtn, #heroTrailerBtn { flex: 1 !important; padding: 14px 0 !important; font-size: 10px !important; }
+
+    /* 3. STATIC BENTO GRID COUNTERS (NO SLIDING) */
+    #homeCounters {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 10px !important;
+        padding: 20px 15px !important;
+        margin-top: 0 !important;
+        overflow-x: hidden !important;
+    }
+    #homeCounters > div {
+        height: 80px !important;
+        background: rgba(255, 255, 255, 0.04) !important;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 18px !important;
+    }
+
+    /* 4. COLLAPSIBLE LEFT SEARCH BAR */
+    header {
+        left: 0 !important;
+        padding: 15px !important;
+        background: transparent !important;
+        z-index: 50;
+        justify-content: flex-start !important;
+    }
+    header .max-w-xl {
+        width: 48px !important;
+        height: 48px !important;
+        transition: all 0.4s ease;
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(15px);
+        border-radius: 24px;
+        margin-left: 0 !important;
+    }
+    header .max-w-xl:focus-within {
+        width: 90% !important;
+        background: rgba(10, 10, 10, 0.9) !important;
+    }
+    header input { opacity: 0; padding-left: 45px !important; }
+    header .max-w-xl:focus-within input { opacity: 1; }
+    header .fa-search { left: 16px !important; position: absolute; }
+
+    /* 5. SMOOTH SLIDING RECOMMENDATIONS */
+    .hide-scroll {
+        display: flex !important;
+        overflow-x: auto !important;
+        scroll-behavior: smooth !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x mandatory !important;
+        gap: 12px !important;
+        padding: 0 20px 20px 20px !important;
+    }
+    .hide-scroll > div { flex: 0 0 42% !important; scroll-snap-align: start !important; }
+
+    /* LAYOUT REPAIR */
+    main { padding-left: 0 !important; padding-bottom: 90px !important; }
+    .breadcrumb { display: none !important; }
+}
+
+/* --- PHENOMENAL DISCOVER PAGE (MOBILE) --- */
+   
+    #searchHeader {
+        font-size: 24px !important; /* Smaller, cleaner header on mobile */
+        letter-spacing: -1px !important;
+        margin-bottom: 0 !important;
+        display: block !important;
+        width: 100%;
+    }
+
+    /* Horizontal Filter Strip */
+    #view-search .flex.flex-wrap.gap-4 {
+        display: flex !important;
+        flex-wrap: nowrap !important; /* Force single row */
+        overflow-x: auto !important; /* Allow side-scrolling filters */
+        padding-bottom: 5px;
+        width: 100%;
+        gap: 8px !important;
+        scrollbar-width: none;
+    }
+    #view-search .flex.flex-wrap.gap-4::-webkit-scrollbar { display: none; }
+
+    /* Pill-Style Select Boxes */
+    #view-search select {
+        flex: 0 0 auto !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 50px !important; /* Rounder "Pill" look */
+        padding: 8px 15px !important;
+        font-size: 9px !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        min-width: 100px;
+    }
+
+    /* Optimized Grid for Mobile Discovery */
+    #searchGrid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important; /* 2 clean columns */
+        gap: 15px !important;
+        margin-top: 60px !important; /* Push grid below the fixed filters */
+    }
+
+    #searchGrid .group {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 20px;
+        overflow: hidden;
+        transition: transform 0.2s;
+    }
+
+    #searchGrid .group:active {
+        transform: scale(0.95); /* Haptic feedback on tap */
+    }
+
+    #searchGrid .aspect-\[2\/3\] {
+        border-radius: 18px !important;
+        margin-bottom: 8px !important;
+    }
+
+    /* Load More Button - Center & App Style */
+    #btnDiscoverLoadMore {
+        width: 90% !important;
+        background: #ff2d55 !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 15px !important;
+        padding: 18px !important;
+        font-size: 11px !important;
+        box-shadow: 0 10px 20px rgba(255, 45, 85, 0.2);
+    }
+    /* --- MY LIST PHENOMENAL MOBILE TOUCHES --- */
+    
+    /* 1. The Header (H2) */
+    #view-mylist h2 {
+        font-size: 2rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -1px !important;
+        background: linear-gradient(to right, #fff, #666);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 25px !important;
+        padding-left: 5px;
+    }
+
+    /* 2. Unified Action Buttons Above the List */
+    #view-mylist .flex.flex-wrap.gap-4 {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important; /* Perfect 3-column row */
+        gap: 10px !important;
+        width: 100% !important;
+        margin-bottom: 30px !important;
+    }
+
+    /* Styling Export, Import, and Purge buttons as "Action Tiles" */
+    #view-mylist button, 
+    #view-mylist label {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 70px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-filter: blur(10px) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 16px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        transition: all 0.2s ease !important;
+    }
+
+    /* Icons inside buttons */
+    #view-mylist button i, 
+    #view-mylist label i {
+        font-size: 1.2rem !important;
+        margin-bottom: 6px !important;
+        color: #ff2d55 !important; /* The Pulse Red */
+    }
+
+    /* Text inside buttons */
+    #view-mylist button span, 
+    #view-mylist label span,
+    #view-mylist button {
+        font-size: 9px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        color: rgba(255,255,255,0.7) !important;
+    }
+
+    /* Specific Red tint for the Purge (Trash) button */
+    #view-mylist button[onclick="clearLibrary()"] {
+        border-color: rgba(255, 45, 85, 0.3) !important;
+        background: rgba(255, 45, 85, 0.05) !important;
+    }
+
+    /* 3. The List Grid Scaling (Matches PC 10% Increase) */
+
+
+    #listContainer .group {
+        border-radius: 18px !important;
+        overflow: hidden;
+    }
     </style>
 </head>
 <body class="antialiased select-none">
@@ -132,20 +643,48 @@
     </aside>
 
     <!-- TOP HEADER -->
-    <header class="fixed top-0 right-0 left-20 lg:left-64 z-[90] px-10 py-6 flex items-center justify-between">
-        <div id="searchBar" class="relative w-full max-w-xl">
-            <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
-            <input type="text" id="mainSearch" placeholder="Find cinematic works..." 
-                   class="w-full bg-white/5 border border-white/10 rounded-2xl py-4 pl-14 pr-6 text-xs focus:ring-2 ring-pulse/20 outline-none transition-all">
-            <div id="searchDrop" class="absolute top-full left-0 w-full mt-4 bg-[#0a0c12] border border-white/5 rounded-2xl hidden overflow-hidden shadow-2xl z-[110]"></div>
-        </div>
-        <div class="breadcrumb text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:block">
-            Path / <span id="pathLabel" class="text-pulse">HOME</span>
-        </div>
-    </header>
-
-    <main class="pl-20 lg:pl-64">
+  <header class="fixed top-0 right-0 left-20 lg:left-64 z-[90] px-10 py-6 flex items-center justify-between">
+    <div id="searchBar" class="relative w-full max-w-xl group">
+        <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 search-icon-fixed pointer-events-none"></i>
         
+        <input type="text" id="mainSearch" placeholder="Search the Cinematics..." 
+               class="glass-search w-full py-4 pl-14 pr-12 text-xs outline-none transition-all text-white placeholder:text-gray-500">
+        
+        <button id="clearSearch" class="absolute right-4 top-1/2 -translate-y-1/2 hidden text-[10px]">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div id="searchDrop" class="absolute top-full left-0 w-full mt-4 bg-[#0a0c12]/95 backdrop-blur-3xl border border-white/10 rounded-[30px] hidden overflow-hidden shadow-2xl z-[110] border-t-pulse border-t-2"></div>
+    </div>
+
+    <div class="breadcrumb text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:block">
+        Path / <span id="pathLabel" class="text-pulse">HOME</span>
+    </div>
+</header>
+    <main class="pl-20 lg:pl-64">
+        <div id="view-category" class="page-view hidden p-10 lg:p-24 pt-32">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-20">
+                <div class="flex items-center gap-6">
+                    <button onclick="navigate('home')" class="w-12 h-12 bg-white/5 rounded-full border border-white/10 flex items-center justify-center hover:bg-pulse transition-all group">
+                        <i class="fas fa-arrow-left text-gray-500 group-hover:text-white transition-all"></i>
+                    </button>
+                    <h2 id="catTitle" class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white">Category</h2>
+                </div>
+                
+                <div class="flex bg-[#0a0c12] p-1.5 rounded-2xl border border-white/10 shadow-2xl">
+                    <button id="btnTrending" onclick="setCategorySort('trending')" class="px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20">Trending</button>
+                    <button id="btnTopRated" onclick="setCategorySort('top')" class="px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white">Top Rated</button>
+                </div>
+            </div>
+            
+            <div id="categoryGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 relative min-h-[400px]"></div>
+            
+            <div class="mt-24 flex justify-center">
+                <button id="catLoadMore" onclick="loadMoreCategory()" class="bg-white/5 border border-white/10 px-12 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse hover:text-white transition-all text-gray-400">
+                    Load More <i class="fas fa-chevron-down ml-3"></i>
+                </button>
+            </div>
+        </div>
         <!-- HOME PAGE -->
         <div id="view-home" class="page-view">
             <div class="relative h-screen w-full overflow-hidden ">
@@ -202,9 +741,15 @@
                         <option value="vote_average.desc">Top Rated</option>
                         <option value="primary_release_date.desc">Latest Release</option>
                     </select>
+
                 </div>
             </div>
             <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 relative min-h-[400px]"></div>
+            <div id="discoverLoadContainer" class="mt-24 flex justify-center hidden">
+        <button id="btnDiscoverLoadMore" onclick="loadMoreDiscover()" class="bg-white/5 border border-white/10 px-12 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse hover:text-white transition-all text-gray-400">
+            Load More Discovery
+        </button>
+    </div>
         </div>
 
         <!-- MY LIST PAGE -->
@@ -277,7 +822,42 @@
         </div>
 
     </main>
+    <!-- actor-modal -->
+    <div id="personModal" class="fixed inset-0 z-[200] hidden bg-dark overflow-y-auto">
+    <div class="relative min-h-screen flex flex-col lg:flex-row">
+        <button onclick="closePersonModal()" class="fixed top-6 right-6 z-[210] w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
+            <i class="fas fa-times"></i>
+        </button>
 
+        <div class="w-full lg:w-1/3 h-[50vh] lg:h-screen sticky top-0">
+            <img id="pProfileImg" class="w-full h-full object-cover">
+            <div class="absolute inset-0 person-gradient lg:bg-gradient-to-r lg:from-transparent lg:to-dark"></div>
+        </div>
+
+        <div class="w-full lg:w-2/3 p-10 lg:p-24 space-y-12">
+            <div>
+                <h2 id="pName" class="text-5xl lg:text-8xl font-black italic uppercase tracking-tighter text-white"></h2>
+                <p id="pRole" class="text-pulse font-black uppercase tracking-[0.3em] text-xs mt-4"></p>
+            </div>
+
+            <div class="space-y-6">
+                <h4 class="text-[10px] font-black uppercase text-gray-600 tracking-widest italic">Biography</h4>
+                <p id="pBio" class="text-lg lg:text-xl font-light text-gray-400 leading-relaxed max-w-2xl"></p>
+            </div>
+
+            <div class="space-y-8">
+    <h4 class="text-[10px] font-black uppercase text-gray-600 tracking-widest italic">Best Works</h4>
+    <div id="pWorks" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    
+    <div id="pWorksLoadContainer" class="flex justify-center mt-10 hidden">
+        <button id="btnPersonLoadMore" class="bg-white/5 border border-white/10 px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:text-pulse transition-all">
+            Load More Credits
+        </button>
+    </div>
+</div>
+        </div>
+    </div>
+</div>
     <!-- INFO MODAL -->
     <div id="modal" class="fixed inset-0 z-[150] hidden bg-dark overflow-y-auto">
         <div class="relative h-[65vh]">
@@ -355,6 +935,30 @@
             </div>
         </div>
     </div>
+<!-- close modal -->
+    <div id="purgeModal" onclick="backdropClosePurge(event)" class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 transition-all">
+        <div onclick="event.stopPropagation()" class="relative w-full max-w-md bg-[#0a0c12] border border-pulse/30 rounded-[30px] shadow-2xl shadow-pulse/10 flex flex-col p-8 text-center animate-in fade-in zoom-in duration-300">
+            
+            <div class="w-20 h-20 mx-auto bg-pulse/10 rounded-full flex items-center justify-center mb-6 border border-pulse/20 text-pulse text-3xl">
+                <i class="fas fa-exclamation-triangle animate-pulse"></i>
+            </div>
+            
+            <h3 class="text-2xl font-black uppercase italic text-white mb-4">Purge Library?</h3>
+            
+            <p class="text-xs text-gray-400 font-light mb-8 leading-relaxed">
+                WARNING: This will permanently delete your entire CinePulse sync library. This action cannot be undone. Are you sure you want to proceed?
+            </p>
+            
+            <div class="flex gap-4">
+                <button onclick="closePurgeModal()" class="flex-1 bg-white/5 border border-white/10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-gray-400">
+                    Cancel
+                </button>
+                <button onclick="executePurge()" class="flex-1 bg-pulse py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-pulse/20 text-white">
+                    Confirm Purge
+                </button>
+            </div>
+            
+        </div>
 
     <!-- PICKER MODAL -->
 
@@ -467,13 +1071,18 @@
 
         </div>
     </div>
+    
+    </div>
 </div>
     <script>
         const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
         const BASE = 'https://api.themoviedb.org/3';
         const IMG = 'https://image.tmdb.org/t/p/w500';
         const IMG_HD = 'https://image.tmdb.org/t/p/original';
-
+        
+        let discoverPage = 1;
+        let currentPersonCredits = [];
+        let personDisplayLimit = 8;
         let state = {
             hero: [],
             heroIdx: 0,
@@ -542,60 +1151,327 @@
             if(view === 'mylist') renderList();
             if(view === 'rhythmlab') runLab();
             if(view === 'sync') renderSync();
+            if(view === 'search') {
+        const input = document.getElementById('mainSearch');
+        const header = document.getElementById('searchHeader');
+        
+        // If the user didn't come from an actor click (input is empty), reset title
+        if (!input.value && !header.innerText.includes('• Works')) {
+            header.innerText = "Discover";
+            loadDiscoverContent();
+        }
+    
+    }
+          
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         // Search Behavior
-        function setupSearchBehavior() {
-            const input = document.getElementById('mainSearch');
-            const bar = document.getElementById('searchBar');
-            const drop = document.getElementById('searchDrop');
+// --- UPDATED SEARCH & MODAL LOGIC ---
+function setupSearchBehavior() {
+    const input = document.getElementById('mainSearch');
+    const bar = document.getElementById('searchBar');
+    const drop = document.getElementById('searchDrop');
+    const clearBtn = document.getElementById('clearSearch');
 
-            input.onfocus = () => bar.classList.add('active');
-            input.onblur = () => {
-                setTimeout(() => {
-                    bar.classList.remove('active');
-                    drop.classList.add('hidden');
-                    input.value = '';
-                }, 200);
-            };
+    input.onfocus = () => {
+        bar.classList.add('active');
+        if (state.view !== 'search' && input.value.trim()) drop.classList.remove('hidden');
+    };
 
-            let timer;
-            input.oninput = (e) => {
-                clearTimeout(timer);
-                const q = e.target.value.trim();
-                if(!q) return drop.classList.add('hidden');
-                
-                timer = setTimeout(async () => {
-                    const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}`);
-                    renderDrop(data.results.slice(0, 6));
-                }, 300);
-            };
+    // FIX: Clear Search Functionality
+    clearBtn.onclick = (e) => {
+        e.stopPropagation(); // Prevent focus triggers
+        input.value = '';
+        clearBtn.classList.add('hidden');
+        drop.classList.add('hidden');
+        
+        // If on search page, reset to default Discover view
+        if (state.view === 'search') {
+            document.getElementById('searchHeader').innerText = "Discover";
+            loadDiscoverContent();
+        }
+        input.focus();
+    };
 
-            input.onkeydown = (e) => { if(e.key === 'Enter') deepSearch(input.value); };
+    input.oninput = (e) => {
+        const q = e.target.value.trim();
+        clearBtn.classList.toggle('hidden', !q);
+        
+        if (state.view === 'search') {
+            drop.classList.add('hidden');
+            deepSearch(q); 
+        } else {
+            if(!q) { drop.classList.add('hidden'); return; }
+            clearTimeout(this.searchTimer);
+            this.searchTimer = setTimeout(async () => {
+                const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}`);
+                renderDrop(data.results.slice(0, 8));
+            }, 300);
+        }
+    };
+
+    // Smart Hover dismissal
+    bar.onmouseleave = () => {
+        this.leaveTimer = setTimeout(() => {
+            drop.classList.add('hidden');
+            bar.classList.remove('active');
+        }, 1000);
+    };
+    bar.onmouseenter = () => clearTimeout(this.leaveTimer);
+}
+
+setupSearchBehavior();
+
+async function openActor(id, name) {
+    closeModal(); // Exit Movie Info
+    navigate('search'); // Switch to Discover Page
+    
+    // Immediate Title Change
+    const header = document.getElementById('searchHeader');
+    header.innerText = `${name} • Works`;
+    header.classList.add('animate-pulse'); // Visual feedback it's loading
+
+    const grid = document.getElementById('searchGrid');
+    const loadBtn = document.getElementById('discoverLoadContainer');
+    grid.innerHTML = '<div class="page-loader"></div>';
+    loadBtn.classList.add('hidden'); // Hide Trending "Load More"
+
+    try {
+        const data = await fetchAPI(`/person/${id}/combined_credits`);
+        const sorted = data.cast
+            .filter(c => c.poster_path)
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        
+        header.classList.remove('animate-pulse');
+        renderGrid('searchGrid', sorted);
+        
+        // Update browser scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase italic">Connection Lost to Artist Records.</div>`;
+    }
+}
+
+async function loadDiscoverContent(append = false) {
+    const grid = document.getElementById('searchGrid');
+    const loadBtn = document.getElementById('discoverLoadContainer');
+    
+    if (!append) {
+        discoverPage = 1;
+        grid.innerHTML = '<div class="page-loader"></div>';
+    }
+
+    try {
+        const data = await fetchAPI(`/trending/all/day?page=${discoverPage}`);
+        
+        // Use your existing render logic
+        const html = data.results.map(i => `
+            <div class="group cursor-pointer" onclick="${i.media_type === 'person' ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${i.media_type}')`}">
+                <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse group-hover:-translate-y-2 transition-all shadow-xl relative">
+                    <img src="${i.poster_path || i.profile_path ? IMG + (i.poster_path || i.profile_path) : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
+                </div>
+                <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
+                <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${(i.release_date || i.first_air_date || 'N/A').split('-')[0]}</div>
+            </div>
+        `).join('');
+
+        if (append) {
+            // Remove loader before appending
+            const loader = grid.querySelector('.page-loader');
+            if (loader) loader.remove();
+            grid.insertAdjacentHTML('beforeend', html);
+        } else {
+            grid.innerHTML = html;
         }
 
-        function renderDrop(res) {
-            const drop = document.getElementById('searchDrop');
-            drop.innerHTML = res.map(i => `
-                <div class="flex items-center gap-4 p-5 hover:bg-white/5 cursor-pointer border-b border-white/5" onclick="openModal(${i.id}, '${i.media_type}')">
-                    <img src="${IMG+i.poster_path}" class="w-10 h-14 object-cover rounded-lg bg-dark">
-                    <div>
-                        <div class="text-[10px] font-black uppercase text-white">${i.title || i.name}</div>
-                        <div class="text-[8px] text-gray-600 font-bold uppercase tracking-widest">${i.media_type} • ${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
+        // Show button if more pages exist
+        loadBtn.classList.remove('hidden');
+        document.getElementById('searchHeader').innerText = "Discover";
+    } catch (err) {
+        console.error("Discovery error", err);
+    }
+}
+
+async function loadMoreDiscover() {
+    discoverPage++;
+    const btn = document.getElementById('btnDiscoverLoadMore');
+    btn.innerText = "Syncing...";
+    await loadDiscoverContent(true);
+    btn.innerText = "Load More Discovery";
+}
+
+async function openPersonModal(id) {
+    document.getElementById('searchDrop').classList.add('hidden');
+    const [person, credits] = await Promise.all([
+        fetchAPI(`/person/${id}`),
+        fetchAPI(`/person/${id}/combined_credits`)
+    ]);
+
+    // Reset and Filter Credits
+    personDisplayLimit = 8;
+    currentPersonCredits = credits.cast
+        .filter(c => c.poster_path)
+        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+    document.getElementById('pProfileImg').src = person.profile_path ? IMG_HD + person.profile_path : 'https://via.placeholder.com/500x800';
+    document.getElementById('pName').innerText = person.name;
+    document.getElementById('pRole').innerText = person.known_for_department || 'Artist';
+    document.getElementById('pBio').innerText = person.biography || "Neural records for this individual are currently encrypted.";
+    
+    renderPersonWorks();
+
+    document.getElementById('personModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Activate Load More Button
+    const lmBtn = document.getElementById('btnPersonLoadMore');
+    lmBtn.onclick = () => {
+        personDisplayLimit += 8;
+        renderPersonWorks();
+    };
+}
+
+function renderPersonWorks() {
+    const container = document.getElementById('pWorks');
+    const loadMoreBox = document.getElementById('pWorksLoadContainer');
+    
+    const items = currentPersonCredits.slice(0, personDisplayLimit);
+    
+    container.innerHTML = items.map(w => `
+        <div class="group cursor-pointer" onclick="closePersonModal(); openModal(${w.id}, '${w.media_type || 'movie'}')">
+            <div class="aspect-[2/3] rounded-2xl overflow-hidden mb-3 border border-white/5 group-hover:border-pulse transition-all">
+                <img src="${IMG + w.poster_path}" class="w-full h-full object-cover">
+            </div>
+            <div class="text-[9px] font-black uppercase line-clamp-1 group-hover:text-pulse">${w.title || w.name}</div>
+        </div>
+    `).join('');
+
+    // Show button only if there are more items to load
+    loadMoreBox.classList.toggle('hidden', personDisplayLimit >= currentPersonCredits.length);
+}
+
+function closePersonModal() {
+    document.getElementById('personModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+    
+
+
+function renderDrop(res) {
+    const drop = document.getElementById('searchDrop');
+    const input = document.getElementById('mainSearch');
+    const clearBtn = document.getElementById('clearSearch');
+
+    if(!res.length) {
+        drop.classList.add('hidden');
+        return;
+    }
+
+    drop.innerHTML = res.map(i => {
+        const isPerson = i.media_type === 'person';
+        const img = isPerson ? i.profile_path : i.poster_path;
+        
+        // AUTO-CLEAR LOGIC INJECTED HERE:
+        const clickAction = isPerson 
+            ? `openPersonModal(${i.id}); document.getElementById('mainSearch').value=''; document.getElementById('clearSearch').classList.add('hidden');` 
+            : `openModal(${i.id}, '${i.media_type}'); document.getElementById('mainSearch').value=''; document.getElementById('clearSearch').classList.add('hidden');`;
+        
+        return `
+            <div class="flex items-center gap-4 p-5 hover:bg-white/5 cursor-pointer border-b border-white/5 group transition-colors" onclick="${clickAction}">
+                <div class="w-10 h-14 flex-none bg-dark rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                    <img src="${img ? IMG+img : 'https://via.placeholder.com/100'}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1">
+                    <div class="text-[10px] font-black uppercase text-white group-hover:text-pulse transition-colors">${i.title || i.name}</div>
+                    <div class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mt-1">
+                        ${isPerson ? 'Artist Profile' : (i.media_type + ' • ' + (i.release_date || i.first_air_date || 'N/A').split('-')[0])}
                     </div>
                 </div>
-            `).join('') + `<div class="p-4 text-center cursor-pointer" onclick="deepSearch('${document.getElementById('mainSearch').value}')"><span class="text-[9px] font-black text-pulse uppercase">Show All Results</span></div>`;
-            drop.classList.remove('hidden');
-        }
+                <i class="fas fa-arrow-right text-[10px] text-gray-800 mr-2 group-hover:text-pulse group-hover:translate-x-1 transition-all"></i>
+            </div>
+        `;
+    }).join('') + `
+        <div class="p-4 text-center bg-white/5 cursor-pointer hover:bg-pulse/10 transition-colors" 
+             onclick="deepSearch(document.getElementById('mainSearch').value); document.getElementById('mainSearch').value=''; document.getElementById('clearSearch').classList.add('hidden');">
+            <span class="text-[9px] font-black text-pulse uppercase tracking-widest">Global Neural Search</span>
+        </div>`;
+    
+    drop.classList.remove('hidden');
+}
 
-        async function deepSearch(q) {
-            navigate('search');
-            state.searchParams.q = q;
-            document.getElementById('searchGrid').innerHTML = '<div class="page-loader"></div>';
-            const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}`);
-            renderGrid('searchGrid', data.results.filter(i => i.media_type !== 'person'));
-        }
+// Ensure Actor search also clears the bar
+async function openActor(id, name) {
+    const input = document.getElementById('mainSearch');
+    const clearBtn = document.getElementById('clearSearch');
+    
+    input.value = ''; // Auto-clear text
+    clearBtn.classList.add('hidden'); // Hide X button
+    
+    closeModal();
+    navigate('search');
+    
+    const header = document.getElementById('searchHeader');
+    header.innerText = `${name} • Works`;
+    
+    const grid = document.getElementById('searchGrid');
+    grid.innerHTML = '<div class="page-loader"></div>';
+
+    try {
+        const data = await fetchAPI(`/person/${id}/combined_credits`);
+        const sorted = data.cast
+            .filter(c => c.poster_path)
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        renderGrid('searchGrid', sorted);
+    } catch (err) {
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase italic">Neural link to ${name} failed.</div>`;
+    }
+}
+
+
+
+
+// Updated deepSearch to handle "all results" and spelling 
+async function deepSearch(q) {
+    if (state.view !== 'search') navigate('search');
+    
+    const grid = document.getElementById('searchGrid');
+    const header = document.getElementById('searchHeader');
+    
+    header.innerText = q ? `Results: ${q}` : "Discover";
+    
+    // TMDB Search Multi naturally handles "near" results/fuzzy spelling
+    const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
+    const loadBtn = document.getElementById('discoverLoadContainer');
+    
+    if (!q) {
+        loadDiscoverContent();
+        return;
+    }
+
+    loadBtn.classList.add('hidden');
+    if(!data.results || data.results.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-600 font-black uppercase italic tracking-[0.5em]">No Neural Matches Found</div>`;
+        return;
+    }
+
+    grid.innerHTML = data.results.map(i => {
+        const isPerson = i.media_type === 'person';
+        const img = isPerson ? i.profile_path : i.poster_path;
+        const clickAction = isPerson ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${i.media_type}')`;
+        
+        return `
+            <div class="group cursor-pointer" onclick="${clickAction}">
+                <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse group-hover:-translate-y-2 transition-all shadow-xl relative">
+                    <img src="${img ? IMG+img : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
+                    ${isPerson ? '<div class="absolute inset-0 bg-pulse/20 mix-blend-overlay"></div>' : ''}
+                </div>
+                <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
+                <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${isPerson ? 'Talent' : (i.release_date || i.first_air_date || '').split('-')[0]}</div>
+            </div>
+        `;
+    }).join('');
+}
 
         async function applySearchFilters() {
             const year = document.getElementById('searchYear').value;
@@ -888,20 +1764,153 @@
         }
 
         // Global Helpers
+        // --- COUNTER INTERACTIVITY & CATEGORY ENGINE ---
+
+        let clickTimer = null; // Used to distinguish single vs double clicks
+
         function updateCounters() {
-            const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
+            const types = ['all', 'movie', 'tv', 'anime', 'kdrama', 'turkish'];
             const html = types.map(t => {
-                const count = state.db.filter(i => i.type === t).length;
+                const count = t === 'all' ? state.db.length : state.db.filter(i => i.type === t).length;
+                const label = t === 'all' ? 'All Data' : t;
+                const border = t === 'all' ? 'pulse' : t;
+                
                 return `
-                    <div class="bg-white/5 border border-white/10 p-6 rounded-3xl border-t-4 border-${t} shadow-xl">
-                        <div class="text-[9px] font-black text-gray-500 uppercase mb-2 tracking-widest">${t}</div>
+                    <div class="bg-white/5 border border-white/10 p-6 rounded-3xl border-t-4 border-${border} shadow-xl cursor-pointer hover:bg-white/10 hover:-translate-y-1 transition-all select-none" 
+                         onclick="handleCounterClick(event, '${t}')">
+                        <div class="text-[9px] font-black text-gray-500 uppercase mb-2 tracking-widest">${label}</div>
                         <div class="text-3xl font-black italic text-white">${count}</div>
                     </div>
                 `;
             }).join('');
             
-            document.getElementById('homeCounters').innerHTML = html;
-            if(state.view === 'rhythmlab') document.getElementById('labCounters').innerHTML = html;
+            const hc = document.getElementById('homeCounters');
+            const lc = document.getElementById('labCounters');
+            if (hc) hc.innerHTML = html;
+            if (lc) lc.innerHTML = html;
+        }
+
+        function handleCounterClick(e, type) {
+            // e.detail tells us how many times it was clicked (1 = single, 2 = double)
+            if (e.detail === 1) {
+                clickTimer = setTimeout(() => {
+                    if (type === 'all') navigate('rhythmlab');
+                    else openCategoryPage(type);
+                }, 250); // Wait 250ms to ensure it's not a double-click
+            } else if (e.detail === 2) {
+                clearTimeout(clickTimer); // Cancel single click action
+                if (type === 'all') navigate('rhythmlab');
+                else openRandomSuggestion(type);
+            }
+        }
+
+        async function openCategoryPage(type) {
+            state.catType = type;
+            state.catSort = 'trending';
+            state.catPage = 1;
+            
+            // UI Setup
+            const titleMap = { 'movie': 'Movies', 'tv': 'TV Series', 'anime': 'Anime', 'kdrama': 'K-Drama', 'turkish': 'Turkish' };
+            document.getElementById('catTitle').innerText = titleMap[type] || type;
+            
+            document.getElementById('btnTrending').className = "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20";
+            document.getElementById('btnTopRated').className = "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white";
+            
+            document.getElementById('categoryGrid').innerHTML = '<div class="page-loader"></div>';
+            document.getElementById('catLoadMore').classList.remove('hidden');
+
+            navigate('category'); 
+            await fetchAndRenderCategory(true);
+        }
+
+        function setCategorySort(sort) {
+            if (state.catSort === sort) return;
+            state.catSort = sort;
+            state.catPage = 1;
+            
+            const isTr = sort === 'trending';
+            document.getElementById('btnTrending').className = isTr ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white";
+            document.getElementById('btnTopRated').className = !isTr ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white";
+            
+            document.getElementById('categoryGrid').innerHTML = '<div class="page-loader"></div>';
+            document.getElementById('catLoadMore').classList.remove('hidden');
+            fetchAndRenderCategory(true);
+        }
+
+        function getCategoryApiPath(type, sort, page) {
+            if (type === 'movie') {
+                return sort === 'trending' ? `/trending/movie/week?page=${page}` : `/movie/top_rated?page=${page}`;
+            } else {
+                let base = `/discover/tv?page=${page}`;
+                let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300'; // Added vote_count to ensure quality
+                
+                if (type === 'tv') return `${base}&sort_by=${sortParam}&with_original_language=en`;
+                if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16`;
+                if (type === 'kdrama') return `${base}&sort_by=${sortParam}&with_original_language=ko`;
+                if (type === 'turkish') return `${base}&sort_by=${sortParam}&with_original_language=tr`;
+            }
+        }
+
+        async function fetchAndRenderCategory(clear = false) {
+            const btn = document.getElementById('catLoadMore');
+            const grid = document.getElementById('categoryGrid');
+            if (!clear) btn.innerText = "Processing...";
+
+            try {
+                const path = getCategoryApiPath(state.catType, state.catSort, state.catPage);
+                const data = await fetchAPI(path);
+                const apiType = state.catType === 'movie' ? 'movie' : 'tv';
+                
+                const html = data.results.map(i => `
+                    <div class="group cursor-pointer" onclick="openModal(${i.id}, '${apiType}')">
+                        <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse group-hover:-translate-y-2 transition-all shadow-xl relative">
+                            <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
+                            <div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-pulse border border-white/10">
+                                ★ ${i.vote_average?.toFixed(1) || 'N/A'}
+                            </div>
+                        </div>
+                        <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
+                        <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
+                    </div>
+                `).join('');
+
+                if (clear) grid.innerHTML = html;
+                else grid.insertAdjacentHTML('beforeend', html);
+
+                if (data.page >= data.total_pages || state.catPage >= 10) btn.classList.add('hidden'); // Limit to 10 pages for sanity
+                else btn.innerHTML = `Load More <i class="fas fa-chevron-down ml-3"></i>`;
+
+            } catch (error) {
+                console.error("Neural fetch error", error);
+                if (clear) grid.innerHTML = '<div class="col-span-full text-white text-center w-full py-10 font-black italic uppercase tracking-widest text-gray-600">Neural link severed. Failed to load data.</div>';
+                btn.innerText = "Retry Link";
+            }
+        }
+
+        async function loadMoreCategory() {
+            state.catPage++;
+            await fetchAndRenderCategory(false);
+        }
+
+        async function openRandomSuggestion(type) {
+            // Fetch top-rated from a random page (1 to 3) to guarantee a "good" suggestion
+            const randomPage = Math.floor(Math.random() * 3) + 1; 
+            const path = getCategoryApiPath(type, 'top', randomPage);
+            
+            try {
+                const data = await fetchAPI(path);
+                if (data.results && data.results.length > 0) {
+                    // Filter for 7.5+ rating for high quality, fallback to raw list if none found
+                    const pool = data.results.filter(i => i.vote_average >= 7.5); 
+                    const targetPool = pool.length > 0 ? pool : data.results; 
+                    
+                    const randomItem = targetPool[Math.floor(Math.random() * targetPool.length)];
+                    const apiType = type === 'movie' ? 'movie' : 'tv';
+                    openModal(randomItem.id, apiType);
+                }
+            } catch (e) {
+                console.error("Failed to fetch random suggestion", e);
+            }
         }
 
         function renderRow(id, items, type) {
@@ -995,15 +2004,36 @@
             }
         }
 
-        async function openActor(id, name) {
-            closeModal();
-            navigate('search');
-            document.getElementById('searchHeader').innerText = `Works: ${name}`;
-            const data = await fetchAPI(`/person/${id}/combined_credits`);
-            const sorted = data.cast.sort((a,b) => (b.vote_average || 0) - (a.vote_average || 0));
-            renderGrid('searchGrid', sorted);
-        }
+      async function openActor(id, name) {
+    closeModal(); // Close the movie/show info modal
+    navigate('search'); // Go to search/discover page
+    
+    // Update the UI immediately
+    const header = document.getElementById('searchHeader');
+    const loadBtn = document.getElementById('discoverLoadContainer');
+    header.innerText = `Works: ${name}`;
+    loadBtn.classList.add('hidden'); // Hide the standard trending 'Load More'
+    
+    const grid = document.getElementById('searchGrid');
+    grid.innerHTML = '<div class="page-loader"></div>';
 
+    try {
+        const data = await fetchAPI(`/person/${id}/combined_credits`);
+        // Sort by popularity so their best stuff is at the top
+        const sorted = data.cast.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        
+        // Filter out items without posters for a clean look
+        const filtered = sorted.filter(item => item.poster_path);
+        
+        renderGrid('searchGrid', filtered);
+        
+        // Optional: If you want to allow loading more for actors too, 
+        // you would handle pagination here, but combined_credits usually returns the full list.
+    } catch (err) {
+        console.error("Neural fetch error for actor works:", err);
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase font-black italic">Failed to retrieve works for ${name}</div>`;
+    }
+}
         function startClock() { setInterval(() => { 
             const d = new Date();
             document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
@@ -1075,27 +2105,45 @@
             };
             reader.readAsText(file);
         }
-        // --- DATA DESTRUCTION: CLEAR LIBRARY ---
+       // --- DATA DESTRUCTION: CUSTOM PURGE UI ---
 
         function clearLibrary() {
             if (state.db.length === 0) {
                 alert("Your neural library is already empty.");
                 return;
             }
+            // Open the custom modal
+            document.getElementById('purgeModal').classList.remove('hidden');
+        }
 
-            // Ask for confirmation to prevent accidental data loss
-            const confirmWipe = confirm("WARNING: This will permanently delete your entire CinePulse library. This action cannot be undone.\n\nAre you sure you want to proceed?");
-            
-            if (confirmWipe) {
-                state.db = []; // Empty the state array
-                save();        // Save the empty array to localStorage & update counters
-                
-                if (state.view === 'mylist') {
-                    renderList(); // Visually clear the list
-                }
-                
-                alert("Library successfully purged.");
+        function closePurgeModal() {
+            document.getElementById('purgeModal').classList.add('hidden');
+        }
+
+        function backdropClosePurge(e) {
+            if (e.target.id === "purgeModal") {
+                closePurgeModal();
             }
+        }
+
+        function executePurge() {
+            // 1. Wipe the data
+            state.db = []; 
+            
+            // 2. Save the empty state
+            save();        
+            
+            // 3. Clear the UI if we are on the My List page
+            if (state.view === 'mylist') {
+                document.getElementById('listContainer').innerHTML = `
+                    <div class="text-center py-20 text-gray-600 font-black uppercase tracking-widest italic">
+                        Library Successfully Purged.
+                    </div>
+                `; 
+            }
+            
+            // 4. Close the modal
+            closePurgeModal();
         }
         init();
     </script>
