@@ -689,6 +689,33 @@
     .lib-card-row .stats { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
     .lib-card-row .stats .text-right { text-align: left !important; }
 }
+/* --- LOCAL SMART SEARCH UI --- */
+.local-search-wrapper {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.local-search-input {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.local-search-input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 45, 85, 0.5);
+    box-shadow: 0 0 20px rgba(255, 45, 85, 0.1);
+}
+
+@media (max-width: 768px) {
+    /* Mobile: Search bar takes full width on its own row */
+    .mobile-full-search {
+        width: 100% !important;
+        order: 99; /* Pushes to bottom of the flex container */
+        margin-top: 10px;
+    }
+}
     </style>
 </head>
 <body class="antialiased select-none">
@@ -859,14 +886,23 @@
             </div>
         </div>
         <!-- my-list  -->
-      <div id="view-mylist" class="page-view hidden p-6 lg:p-24 pt-24 lg:pt-32">
+    <div id="view-mylist" class="page-view hidden p-6 lg:p-24 pt-24 lg:pt-32">
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-16">
         <div>
             <h2 class="text-4xl md:text-6xl lg:text-7xl font-black italic uppercase tracking-tighter liquid-glass mb-2">My Library</h2>
             <p class="text-[10px] text-pulse uppercase tracking-[0.3em] font-bold">Synchronized Neural Records</p>
         </div>
         
-        <div class="library-action-bar flex items-center gap-2 w-full xl:w-auto overflow-x-auto hide-scroll">
+       <div class="library-action-bar flex flex-wrap items-center gap-2 w-full xl:w-auto overflow-visible">
+            
+            <div class="local-search-wrapper w-full md:w-48 xl:w-64 mobile-full-search shrink-0">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/40 text-[10px]"></i>
+                <input type="text" id="listSearchInput" oninput="handleLocalSearch('list', this.value)" placeholder="Search Library..." 
+                       class="local-search-input w-full py-3 pl-10 pr-4 rounded-xl text-[10px] font-black uppercase outline-none tracking-widest placeholder:text-white/30">
+            </div>
+
+            <div class="w-px h-6 bg-white/10 mx-2 hidden md:block"></div> 
+
             <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
             
             <button onclick="document.getElementById('importFile').click()" class="lib-btn shrink-0" title="Import Library">
@@ -891,9 +927,34 @@
                 <i class="fas fa-dice"></i> <span>Random Picker</span>
             </button>
         </div>
+        
+    </div>
+     <div class="mb-10 space-y-4">
+        <div class="flex gap-3 overflow-x-auto hide-scroll items-center" id="listTypeFilters">
+            <button onclick="toggleListFilter('type', 'all')" id="lType-all" class="l-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all">All Types</button>
+            <button onclick="toggleListFilter('type', 'movie')" id="lType-movie" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Movies</button>
+            <button onclick="toggleListFilter('type', 'tv')" id="lType-tv" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Series</button>
+            <button onclick="toggleListFilter('type', 'anime')" id="lType-anime" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Anime</button>
+            <button onclick="toggleListFilter('type', 'kdrama')" id="lType-kdrama" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">K-Drama</button>
+            <button onclick="toggleListFilter('type', 'turkish')" id="lType-turkish" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Turkish</button>
+            
+            <div class="w-px h-6 bg-white/10 mx-1 shrink-0"></div>
+            
+            <button onclick="toggleGenreVisibility('listGenreContainer', this)" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all flex items-center gap-2">
+                <i class="fas fa-tags"></i> Genres
+            </button>
+        </div>
+       <div id="listGenreContainer" class="hidden flex flex-wrap gap-2 md:gap-3 mt-4 w-full animate-in fade-in duration-300"></div>
+
+
     </div>
     <div id="listContainer" class="space-y-16"></div>
 </div>
+
+
+  
+
+
 
         <!-- RHYTHM LAB PAGE -->
         <div id="view-rhythmlab" class="page-view hidden p-10 lg:p-24 pt-32">
@@ -902,35 +963,74 @@
             </div>
           
             <div id="labCounters" class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-20"></div>
+        <div class="mb-10 space-y-4">
+        <div class="flex gap-3 overflow-x-auto hide-scroll items-center">
+            <button onclick="toggleLabFilter('type', 'all')" id="labType-all" class="lab-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all">All Types</button>
+            <button onclick="toggleLabFilter('type', 'movie')" id="labType-movie" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Movies</button>
+            <button onclick="toggleLabFilter('type', 'tv')" id="labType-tv" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Series</button>
+            <button onclick="toggleLabFilter('type', 'anime')" id="labType-anime" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Anime</button>
+            <button onclick="toggleLabFilter('type', 'kdrama')" id="labType-kdrama" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">K-Drama</button>
+            <button onclick="toggleLabFilter('type', 'turkish')" id="labType-turkish" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Turkish</button>
             
-            <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-20">
-                  <button id="labViewToggle" onclick="toggleLabView()" class="lib-btn shrink-0 bg-white/5 p-4 rounded-xl hover:bg-pulse transition-all border border-white/10">
-        <i class="fas fa-list text-white"></i>
-    </button>
-                <select id="labStatus" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
-                    <option value="all">Any Status</option>
-                    <option value="Watching">Watching</option>
-                    <option value="Plan to Watch">Plan to Watch</option>
-                    <option value="Finished">Finished</option>
-                </select>
-                <select id="labYear" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
-                    <option value="all">Any Year</option>
-                </select>
-                <select id="labImdb" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
-                    <option value="all">IMDb Rating</option>
-                    <option value="8.5">Masterpiece (8.5+)</option>
-                    <option value="7">Good (7.0+)</option>
-                </select>
-                <select id="labPersonal" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
-                    <option value="all">My Rating</option>
-                    <option value="5">Perfect (5★)</option>
-                    <option value="3">Decent (3★+)</option>
-                </select>
-                <div id="labCount" class="bg-pulse flex items-center justify-center rounded-2xl font-black text-2xl italic">0</div>
-            </div>
+            <div class="w-px h-6 bg-white/10 mx-1 shrink-0"></div>
+            
+            <button onclick="toggleGenreVisibility('labGenreContainer', this)" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all flex items-center gap-2">
+                <i class="fas fa-tags"></i> Genres
+            </button>
+        </div>
+        <div id="labGenreContainer" class="hidden flex flex-wrap gap-2 md:gap-3 mt-4 w-full animate-in fade-in duration-300"></div>
+    </div>
+
+
+<div class="flex flex-col lg:flex-row gap-4 mb-6">
+    <div class="local-search-wrapper w-full lg:flex-1">
+        <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-white/40"></i>
+        <input type="text" id="labSearchInput" oninput="handleLocalSearch('lab', this.value)" placeholder="Search Neural Records..." 
+               class="local-search-input w-full h-full p-5 pl-12 rounded-2xl text-[10px] font-black uppercase outline-none tracking-widest placeholder:text-white/30">
+    </div>
+
+    <div class="flex gap-4">
+        <button onclick="toggleAdvancedLabFilters()" class="lib-btn flex-1 lg:flex-none shrink-0 bg-white/5 p-5 rounded-2xl hover:bg-pulse transition-all border border-white/10 flex items-center justify-center group">
+            <i class="fas fa-sliders-h text-gray-400 group-hover:text-white transition-colors"></i> 
+            <span class="ml-2 text-white text-[10px] uppercase font-black tracking-widest">Filters</span>
+        </button>
+        
+        <button id="labViewToggle" onclick="toggleLabView()" class="lib-btn shrink-0 bg-white/5 p-5 rounded-2xl hover:bg-pulse transition-all border border-white/10 flex items-center justify-center">
+            <i class="fas fa-list text-white"></i>
+        </button>
+        <div id="labCount" class="bg-pulse flex items-center justify-center p-5 min-w-[60px] rounded-2xl font-black text-xl italic shadow-lg shadow-pulse/20">0</div>
+    </div>
+</div>
+
+<div id="labAdvancedFilters" class="hidden grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 mb-10 bg-[#0a0c12]/50 border border-white/10 rounded-3xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
+    <select id="labStatus" onchange="runLab()" class="bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse w-full">
+        <option value="all">Any Status</option>
+        <option value="Watching">Watching</option>
+        <option value="Ongoing">Ongoing</option> 
+        <option value="Plan to Watch">Plan to Watch</option>
+        <option value="Finished">Finished</option>
+    </select>
+    <select id="labYear" onchange="runLab()" class="bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse w-full">
+        <option value="all">Any Year</option>
+    </select>
+    <select id="labImdb" onchange="runLab()" class="bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse w-full">
+        <option value="all">IMDb</option>
+        <option value="8.5">Masterpiece (8.5+)</option>
+        <option value="7">Good (7.0+)</option>
+    </select>
+    <select id="labPersonal" onchange="runLab()" class="bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse w-full">
+        <option value="all">My Score</option>
+        <option value="5">Perfect (5★)</option>
+        <option value="3">Decent (3★+)</option>
+    </select>
+</div>
+
+           
             <div id="labGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6"></div>
         </div>
 
+
+        
         <!-- SYNC ENGINE PAGE -->
         <div id="view-sync" class="page-view hidden p-10 lg:p-24 pt-32">
             <h2 class="text-7xl font-black italic uppercase tracking-tighter mb-20">Sync Engine</h2>
@@ -1003,17 +1103,27 @@
                     <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-10 italic">Cast & Credits</h4>
                     <div id="mCast" class="flex gap-10 overflow-x-auto hide-scroll pb-6"></div>
                 </div>
-            </div>
+                
+                <div>
+                    <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-10 italic">Neural Recommendations</h4>
+                    <div id="mRecGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
+                    <div id="mRecLoadBtnBox" class="flex justify-center mt-10 hidden">
+                        <button id="mRecLoadBtn" class="bg-white/5 border border-white/10 px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:border-pulse hover:text-white transition-all text-gray-400">
+                            Load More Data
+                        </button>
+                    </div>
+                </div>
+                </div>
 
             <div class="space-y-12">
                 <div class="p-10 bg-white/5 border border-white/10 rounded-[40px]">
                     <div class="space-y-10">
                         <div>
                             <label class="text-[10px] font-black text-gray-500 uppercase block mb-4 italic">Library Status</label>
-                            <select id="mStatus" onchange="updateStatus()" class="w-full bg-dark border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-pulse">
+                           <select id="mStatus" onchange="updateStatus()" class="w-full bg-dark border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-pulse">
                                 <option value="">+ Add to List</option>
                                 <option value="Watching">Watching</option>
-                                <option value="Plan to Watch">Plan to Watch</option>
+                                <option value="Ongoing">Ongoing</option> <option value="Plan to Watch">Plan to Watch</option>
                                 <option value="Finished">Finished</option>
                                 <option value="On Hold">On Hold</option>
                                 <option value="Dropped">Dropped</option>
@@ -1176,15 +1286,18 @@
                 </h4>
             </div>
 
-            <button id="pRunBtn"
-                onclick="runPulsePicker()"
-                class="w-full mt-8 bg-pulse
-                       py-3 rounded-xl
-                       text-xs font-black uppercase tracking-widest
-                       hover:scale-105 active:scale-95 transition">
-                Begin Sync
-            </button>
-
+           <div class="flex gap-4 mt-8">
+                <button id="pRunBtn"
+                    onclick="runPulsePicker()"
+                    class="flex-1 bg-pulse py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition">
+                    Begin Sync
+                </button>
+                <button id="pPickAgainBtn"
+                    onclick="runPulsePicker()"
+                    class="hidden flex-1 bg-white/5 border border-white/10 py-3 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 text-white transition">
+                    Pick Again
+                </button>
+            </div>
         </div>
     </div>
     
@@ -1195,7 +1308,17 @@
         const BASE = 'https://api.themoviedb.org/3';
         const IMG = 'https://image.tmdb.org/t/p/w500';
         const IMG_HD = 'https://image.tmdb.org/t/p/original';
-        
+        const GENRE_MAP = {
+            28: [28, 10759],       // Action <-> Action & Adventure
+            12: [12, 10759],       // Adventure <-> Action & Adventure
+            10759: [10759, 28, 12],
+            878: [878, 10765],     // Science Fiction <-> Sci-Fi & Fantasy
+            14: [14, 10765],       // Fantasy <-> Sci-Fi & Fantasy
+            10765: [10765, 878, 14],
+            10752: [10752, 10768], // War <-> War & Politics
+            10768: [10768, 10752]
+        };
+       
         let discoverPage = 1;
         let currentPersonCredits = [];
         let personDisplayLimit = 8;
@@ -1212,29 +1335,39 @@
             searchMode: 'trending', // 'trending', 'actor', 'filter', 'search'
             actorCredits: [],
             actorPage: 1,
-            filterPage: 1
+            filterPage: 1,
+            recPage: 1,
+            listFilters: { type: 'all', genres: [] },
+            labFilters: { type: 'all', genres: [] },
+            listExpanded: {},
+            listSearchQuery: '', 
+            labSearchQuery: '',  
             
         };
         // Initialize App
-        async function init() {
-            try {
-                // Clear preloader
-                setTimeout(() => {
-                    document.getElementById('preloader').style.opacity = '0';
-                    setTimeout(() => document.getElementById('preloader').style.display = 'none', 800);
-                }, 2000);
+async function init() {
+    try {
+        // Clear preloader
+        setTimeout(() => {
+            document.getElementById('preloader').style.opacity = '0';
+            setTimeout(() => document.getElementById('preloader').style.display = 'none', 800);
+        }, 2000);
 
-                const [trending, tv, anime, kdrama, turkish, genres] = await Promise.all([
-                    fetchAPI('/trending/all/week'),
-                    fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
-                    fetchAPI('/discover/tv?with_genres=16&sort_by=popularity.desc'),
-                    fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
-                    fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
-                    fetchAPI('/genre/movie/list')
-                ]);
+        const [trending, tv, anime, kdrama, turkish, mGenres, tGenres] = await Promise.all([
+            fetchAPI('/trending/all/week'),
+            fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
+            fetchAPI('/discover/tv?with_genres=16&sort_by=popularity.desc'),
+            fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
+            fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
+            fetchAPI('/genre/movie/list'), // Movie Genres
+            fetchAPI('/genre/tv/list')     // TV Genres
+        ]);
 
-                state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
-                state.genres = genres.genres;
+        state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
+        
+        // Merge and remove duplicate genres seamlessly
+        const allGenres = [...mGenres.genres, ...tGenres.genres];
+        state.genres = Array.from(new Map(allGenres.map(g => [g.id, g])).values());
                 
                 renderHero();
                 renderRow('row-movies', trending.results.filter(i => i.media_type === 'movie'), 'movie');
@@ -1250,7 +1383,10 @@
                 setupStarLogic();
                 
                 setInterval(nextHero, 10000);
-            } catch (e) { console.error("Neural init error", e); }
+            } catch (e) { console.error("Neural init error", e); 
+                
+       
+            }
         }
 
         async function fetchAPI(path) {
@@ -1710,6 +1846,9 @@ async function applySearchFilters(append = false) {
             document.getElementById('mRemoveBtn').classList.toggle('hidden', !local);
             document.getElementById('modal').classList.remove('hidden');
             document.body.style.overflow = 'hidden';
+           //Trigger Recommendation Engine
+            state.recPage = 1;
+            loadModalRecommendations(id, type, state.recPage, false);
         }
 
         function updateRatingCard(local) {
@@ -1783,23 +1922,48 @@ async function applySearchFilters(append = false) {
             document.getElementById('viewToggle').innerHTML = state.isGrid ? '<i class="fas fa-list"></i>' : '<i class="fas fa-th-large"></i>';
             renderList();
         }
+function toggleSectionExpand(status) {
+    state.listExpanded[status] = !state.listExpanded[status];
+    renderList();
+}
 
-        function renderList() {
+function renderList() {
     const container = document.getElementById('listContainer');
-    // Hierarchy: Watching > Plan > On Hold > Finished > Dropped
-    const order = ['Watching', 'Plan to Watch', 'On Hold', 'Finished', 'Dropped'];
+    const order = ['Watching', 'Ongoing', 'Plan to Watch', 'On Hold', 'Finished', 'Dropped'];
     
+    // Dynamic Limit calculation based on screen size
+    const limit = window.innerWidth < 768 ? 4 : (window.innerWidth < 1280 ? 5 : 6); 
+
     const html = order.map(status => {
-        const items = state.db.filter(i => i.status === status);
+        // Apply Filters
+        // Apply Filters
+        let items = state.db.filter(i => i.status === status);
+        if (state.listSearchQuery) {
+            items = items.filter(i => isSmartMatch(i.title, state.listSearchQuery));
+        }
+        if (state.listFilters.type !== 'all') {
+            items = items.filter(i => i.type === state.listFilters.type);
+        }
+        if (state.listFilters.genres.length > 0) {
+            items = items.filter(i => state.listFilters.genres.every(g => {
+                // Check map for TMDB cross-compatibility
+                const equivalents = GENRE_MAP[g] || [g]; 
+                return i.genres.some(id => equivalents.includes(id));
+            }));
+        }
+
         if(!items.length) return '';
 
+        const isExpanded = state.listExpanded[status];
+        const displayItems = isExpanded ? items : items.slice(0, limit);
+
         return `
-            <section class="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div class="lib-section-title">
-                    ${status} <span class="text-gray-600 bg-white/5 px-3 py-1 rounded-full text-[9px]">${items.length}</span>
+            <section class="animate-in fade-in duration-500">
+              <div class="lib-section-title">
+                    ${status} <span class="text-white bg-pulse px-4 py-1.5 rounded-full text-[11px] shadow-lg shadow-pulse/40 ml-2">${items.length}</span>
                 </div>
                 <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-4'}">
-                    ${items.map(i => state.isGrid ? `
+                    ${displayItems.map(i => state.isGrid ? `
                         <div class="group cursor-pointer" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
                             <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
                                 <img src="${IMG+i.poster}" class="w-full h-full object-cover">
@@ -1825,50 +1989,100 @@ async function applySearchFilters(append = false) {
                         </div>
                     `).join('')}
                 </div>
+                
+                  ${items.length > limit ? `
+                    <div class="mt-10 flex justify-center">
+                        <button onclick="toggleSectionExpand('${status}')" class="px-10 py-4 bg-pulse/10 border border-pulse/30 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-pulse hover:bg-pulse hover:text-white transition-all shadow-xl hover:shadow-pulse/40">
+                           ${isExpanded ? 'Collapse Neural Data <i class="fas fa-chevron-up ml-2"></i>' : `Show All Records (${items.length}) <i class="fas fa-chevron-down ml-2"></i>`}
+                      </button>
+                    </div>
+                    ` : ''}
             </section>
         `;
     }).join('');
 
     container.innerHTML = html || `
         <div class="flex flex-col items-center justify-center py-32 text-center opacity-50">
-            <i class="fas fa-box-open text-6xl mb-6 text-pulse"></i>
-            <h3 class="text-xl font-black uppercase tracking-widest text-white mb-2 italic">Library Empty</h3>
-            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Your neural records have not been synced yet.</p>
+            <i class="fas fa-filter text-6xl mb-6 text-gray-700"></i>
+            <h3 class="text-xl font-black uppercase tracking-widest text-white mb-2 italic">No Records Found</h3>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Adjust your neural filters.</p>
         </div>
     `;
 }
+
+// Make sure the limits recalculate beautifully when users rotate their phone or resize the browser
+window.addEventListener('resize', () => {
+    if (state.view === 'mylist') renderList();
+});
         function backdropClose(e) {
             if (e.target.id === "pickerModal") {
              closePicker();
                 }
         }
         // Lab Engine
-        function runLab() {
-            const status = document.getElementById('labStatus').value;
-            const year = document.getElementById('labYear').value;
-            const imdb = document.getElementById('labImdb').value;
-            const pers = document.getElementById('labPersonal').value;
+// Lab Engine
+function runLab() {
+    const status = document.getElementById('labStatus').value;
+    const year = document.getElementById('labYear').value;
+    const imdb = document.getElementById('labImdb').value;
+    const pers = document.getElementById('labPersonal').value;
 
-            let filtered = state.db.filter(i => {
-                let sMatch = status === 'all' || i.status === status;
-                let yMatch = year === 'all' || i.year === year;
-                let iMatch = imdb === 'all' || i.imdb >= parseFloat(imdb);
-                let pMatch = pers === 'all' || (i.score >= parseInt(pers));
-                return sMatch && yMatch && iMatch && pMatch;
-            });
+    let filtered = state.db.filter(i => {
+        let sMatch = status === 'all' || i.status === status;
+        let yMatch = year === 'all' || i.year === year;
+        let iMatch = imdb === 'all' || i.imdb >= parseFloat(imdb);
+        let pMatch = pers === 'all' || (i.score >= parseInt(pers));
+        
+        // Type filter check
+        let typeMatch = state.labFilters.type === 'all' || i.type === state.labFilters.type;
+        
+        // Genre filter with TMDB Cross-mapping
+        let genreMatch = state.labFilters.genres.length === 0 || state.labFilters.genres.every(g => {
+            const equivalents = GENRE_MAP[g] || [g];
+            return i.genres.some(id => equivalents.includes(id));
+        });
 
-            document.getElementById('labCount').innerText = filtered.length;
-            document.getElementById('labGrid').innerHTML = filtered.map(item => `
-                <div class="group cursor-pointer" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
-                    <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl">
-                        <img src="${IMG+item.poster}" class="w-full h-full object-cover">
-                    </div>
-                    <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
+        let qMatch = !state.labSearchQuery || isSmartMatch(i.title, state.labSearchQuery);
+
+    // Return all conditions together (now including qMatch)
+    return sMatch && yMatch && iMatch && pMatch && typeMatch && genreMatch && qMatch;
+    });
+
+    document.getElementById('labCount').innerText = filtered.length;
+    
+    const labGrid = document.getElementById('labGrid');
+    
+    // Switch CSS classes based on view state
+    labGrid.className = state.labIsGrid 
+        ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' 
+        : 'flex flex-col gap-4';
+
+    labGrid.innerHTML = filtered.map(item => state.labIsGrid ? `
+        <div class="group cursor-pointer" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
+            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl">
+                <img src="${IMG+item.poster}" class="w-full h-full object-cover">
+            </div>
+            <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
+        </div>
+    ` : `
+        <div class="lib-card-row cursor-pointer group" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
+            <img src="${IMG+item.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg border border-white/5 group-hover:border-pulse/50 transition-colors">
+            <div class="flex-1">
+                <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${item.title}</div>
+                <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
+                    <span class="bg-white/5 px-2 py-1 rounded-md">${item.type}</span> 
+                    <span>${item.year}</span>
                 </div>
-            `).join('');
-            
-            updateCounters();
-        }
+            </div>
+            <div class="stats text-right shrink-0">
+                <div class="text-[12px] font-black text-pulse">★ ${parseFloat(item.imdb).toFixed(1)}</div>
+                <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${item.score ? item.score + '/5' : '-'}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    updateCounters();
+}
 
         // Sync Engine Logic
         async function renderSync() {
@@ -2130,8 +2344,18 @@ async function applySearchFilters(append = false) {
                 document.getElementById('pickerResult').classList.remove('hidden');
                 document.getElementById('pResImg').src = IMG + win.poster;
                 document.getElementById('pResTitle').innerText = win.title;
+                
+                // Expose the Pick Again button
+                document.getElementById('pPickAgainBtn').classList.remove('hidden');
+                
                 btn.innerText = "Synchronize Now";
-                btn.onclick = () => { closePicker(); openModal(win.id, win.type === 'movie' ? 'movie' : 'tv'); btn.onclick = runPulsePicker; btn.innerText = "Begin Sync"; };
+                btn.onclick = () => { 
+                    closePicker(); 
+                    openModal(win.id, win.type === 'movie' ? 'movie' : 'tv'); 
+                    btn.onclick = runPulsePicker; 
+                    btn.innerText = "Begin Sync"; 
+                    document.getElementById('pPickAgainBtn').classList.add('hidden'); // Reset for next time
+                };
             }, 1000);
         }
 
@@ -2216,7 +2440,14 @@ async function applySearchFilters(append = false) {
             document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
         }, 1000); }
 
-        function save() { localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); updateCounters(); }
+        function save() { 
+            localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); 
+                 updateCounters(); 
+    
+        // Instantly re-render the active view if data changes
+              if (state.view === 'mylist') renderList();
+              if (state.view === 'rhythmlab') runLab();
+}
         function closeModal() { document.getElementById('modal').classList.add('hidden'); document.body.style.overflow = 'auto'; }
         function removeItem() { state.db = state.db.filter(i => i.id !== state.active.id); save(); closeModal(); }
 // --- DATA SYNC: IMPORT & EXPORT ---
@@ -2322,56 +2553,192 @@ function toggleLabView() {
     runLab();
 }
 
-function runLab() {
-    const status = document.getElementById('labStatus').value;
-    const year = document.getElementById('labYear').value;
-    const imdb = document.getElementById('labImdb').value;
-    const pers = document.getElementById('labPersonal').value;
 
-    let filtered = state.db.filter(i => {
-        let sMatch = status === 'all' || i.status === status;
-        let yMatch = year === 'all' || i.year === year;
-        let iMatch = imdb === 'all' || i.imdb >= parseFloat(imdb);
-        let pMatch = pers === 'all' || (i.score >= parseInt(pers));
-        return sMatch && yMatch && iMatch && pMatch;
-    });
+// recomendation logic for the info modal 
+async function loadModalRecommendations(id, type, page, append = false) {
+    const container = document.getElementById('mRecGrid');
+    const btnBox = document.getElementById('mRecLoadBtnBox');
+    const btn = document.getElementById('mRecLoadBtn');
 
-    document.getElementById('labCount').innerText = filtered.length;
-    
-    const labGrid = document.getElementById('labGrid');
-    
-    // Switch CSS classes based on view state
-    labGrid.className = state.labIsGrid 
-        ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' 
-        : 'flex flex-col gap-4';
+    if (!append) container.innerHTML = '<div class="col-span-full text-center text-gray-500 text-[10px] uppercase font-black tracking-widest py-10">Syncing Recommendations...</div>';
 
-    labGrid.innerHTML = filtered.map(item => state.labIsGrid ? `
-        <div class="group cursor-pointer" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
-            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl">
-                <img src="${IMG+item.poster}" class="w-full h-full object-cover">
-            </div>
-            <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
-        </div>
-    ` : `
-        <div class="lib-card-row cursor-pointer group" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
-            <img src="${IMG+item.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg border border-white/5 group-hover:border-pulse/50 transition-colors">
-            <div class="flex-1">
-                <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${item.title}</div>
-                <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
-                    <span class="bg-white/5 px-2 py-1 rounded-md">${item.type}</span> 
-                    <span>${item.year}</span>
+    try {
+        const data = await fetchAPI(`/${type}/${id}/recommendations?page=${page}`);
+        const results = data.results || [];
+
+
+        // NEW: Fallback to Similar if Recommendations are empty
+        if (results.length === 0) {
+            const fallbackData = await fetchAPI(`/${type}/${id}/similar?page=${page}`);
+            results = fallbackData.results || [];
+        }
+
+        if (!append && results.length === 0) {
+            container.innerHTML = '<div class="col-span-full text-center text-gray-600 font-black uppercase tracking-widest text-[10px] italic py-10">No Neural Matches Found.</div>';
+            btnBox.classList.add('hidden');
+            return;
+        }
+
+        if (!append && results.length === 0) {
+            container.innerHTML = '<div class="col-span-full text-center text-gray-600 font-black uppercase tracking-widest text-[10px] italic py-10">No Neural Matches Found.</div>';
+            btnBox.classList.add('hidden');
+            return;
+        }
+
+        const html = results.map(i => `
+            <div class="group cursor-pointer" onclick="openModal(${i.id}, '${type}')">
+                <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border border-white/5 group-hover:border-pulse transition-all shadow-xl">
+                    <img src="${i.poster_path ? IMG + i.poster_path : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover">
                 </div>
+                <div class="text-[9px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
             </div>
-            <div class="stats text-right shrink-0">
-                <div class="text-[12px] font-black text-pulse">★ ${parseFloat(item.imdb).toFixed(1)}</div>
-                <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${item.score ? item.score + '/5' : '-'}</div>
-            </div>
-        </div>
-    `).join('');
-    
-    updateCounters();
+        `).join('');
+
+        if (append) {
+            container.insertAdjacentHTML('beforeend', html);
+        } else {
+            container.innerHTML = html;
+        }
+
+        // Handle Load More visibility (limit to 5 pages maximum to prevent infinite scrolling)
+        if (page < data.total_pages && page < 5) {
+            btnBox.classList.remove('hidden');
+            btn.onclick = () => {
+                btn.innerText = "Syncing...";
+                state.recPage++;
+                loadModalRecommendations(id, type, state.recPage, true).then(() => {
+                    btn.innerText = "Load More Data";
+                });
+            };
+        } else {
+            btnBox.classList.add('hidden');
+        }
+
+    } catch (e) {
+        console.error("Failed to load recommendations", e);
+        if (!append) container.innerHTML = '<div class="col-span-full text-center text-pulse text-[10px] uppercase font-black py-10">Link Severed.</div>';
+    }
 }
 
+// --- SMART SEARCH & UI TOGGLES LOGIC ---
+
+// 1. Toggle Genre Containers
+function toggleGenreVisibility(containerId, btnElement) {
+    const container = document.getElementById(containerId);
+    container.classList.toggle('hidden');
+    
+    if (container.classList.contains('hidden')) {
+        btnElement.classList.remove('bg-pulse', 'text-white', 'border-pulse');
+        btnElement.classList.add('border-white/10', 'text-gray-500');
+    } else {
+        btnElement.classList.add('bg-pulse', 'text-white', 'border-pulse');
+        btnElement.classList.remove('border-white/10', 'text-gray-500');
+    }
+}
+
+// 2. Handle Search Input
+function handleLocalSearch(view, value) {
+    if (view === 'list') {
+        state.listSearchQuery = value;
+        renderList();
+    } else if (view === 'lab') {
+        state.labSearchQuery = value;
+        runLab();
+    }
+}
+
+// 3. Forgiving Fuzzy Match Algorithm (Handles spelling errors)
+function calculateLevenshteinDistance(a, b) {
+    const matrix = Array(a.length + 1).fill(null).map(() => Array(b.length + 1).fill(null));
+    for (let i = 0; i <= a.length; i += 1) matrix[i][0] = i;
+    for (let j = 0; j <= b.length; j += 1) matrix[0][j] = j;
+    for (let i = 1; i <= a.length; i += 1) {
+        for (let j = 1; j <= b.length; j += 1) {
+            const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+                matrix[i][j - 1] + 1, // deletion
+                matrix[i - 1][j] + 1, // insertion
+                matrix[i - 1][j - 1] + indicator // substitution
+            );
+        }
+    }
+    return matrix[a.length][b.length];
+}
+
+function isSmartMatch(text, query) {
+    if (!query) return true;
+    
+    text = text.toLowerCase();
+    query = query.toLowerCase().trim();
+    
+    // Exact substring match (fastest)
+    if (text.includes(query)) return true;
+
+    // Check individual words for typos (max 2 typos allowed for longer words)
+    const titleWords = text.split(/[\s\-:]+/);
+    const queryWords = query.split(/[\s\-:]+/);
+
+    return queryWords.every(qw => 
+        titleWords.some(tw => {
+            if (tw.includes(qw)) return true;
+            // Allow 1 typo for 4 letter words, 2 typos for 5+ letter words
+            const maxTypos = qw.length > 4 ? 2 : (qw.length > 3 ? 1 : 0);
+            return qw.length > 3 && calculateLevenshteinDistance(tw, qw) <= maxTypos;
+        })
+    );
+}
+
+// --- DYNAMIC FILTERS ---
+function renderGenrePills() {
+    const buildPills = (targetId, currentList) => {
+        document.getElementById(targetId).innerHTML = state.genres.map(g => {
+            const isActive = currentList.includes(g.id);
+            // Updated styling: Active states now glow with the pulse color
+            const baseClass = isActive 
+                ? "bg-pulse text-white border-pulse shadow-lg shadow-pulse/30" 
+                : "bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white";
+            return `<button onclick="toggleFilterGenre('${targetId}', ${g.id})" class="px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest shrink-0 transition-all snap-start ${baseClass}">${g.name}</button>`;
+        }).join('');
+    };
+    if (document.getElementById('listGenreContainer')) buildPills('listGenreContainer', state.listFilters.genres);
+    if (document.getElementById('labGenreContainer')) buildPills('labGenreContainer', state.labFilters.genres);
+}
+
+function toggleFilterGenre(target, genreId) {
+    const filterObj = target === 'listGenreContainer' ? state.listFilters : state.labFilters;
+    const idx = filterObj.genres.indexOf(genreId);
+    if (idx > -1) filterObj.genres.splice(idx, 1);
+    else filterObj.genres.push(genreId);
+    
+    renderGenrePills();
+    target === 'listGenreContainer' ? renderList() : runLab();
+}
+
+function toggleListFilter(type, val) {
+    state.listFilters[type] = val;
+    document.querySelectorAll('.l-type-btn').forEach(b => b.className = "l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all");
+    document.getElementById(`lType-${val}`).className = "l-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all";
+    state.listExpanded = {}; // Reset expansion
+    renderList();
+}
+
+function toggleLabFilter(type, val) {
+    state.labFilters[type] = val;
+    document.querySelectorAll('.lab-type-btn').forEach(b => b.className = "lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all");
+    document.getElementById(`labType-${val}`).className = "lab-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all";
+    runLab();
+}
+
+// Ensure genres render on initial load
+const originalSetupFilters = setupFilters;
+setupFilters = function() {
+    originalSetupFilters();
+    renderGenrePills();
+};
+function toggleAdvancedLabFilters() {
+    const filterBox = document.getElementById('labAdvancedFilters');
+    filterBox.classList.toggle('hidden');
+}
        // --- DATA DESTRUCTION: CUSTOM PURGE UI ---
 
         function clearLibrary() {
@@ -2416,3 +2783,4 @@ function runLab() {
     </script>
 </body>
 </html>
+
