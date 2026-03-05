@@ -268,11 +268,12 @@
         position: relative;
     }
 
-    /* Expand when clicked/focused */
+  /* Expand when clicked/focused */
     header .max-w-xl:focus-within {
         width: 90% !important;
         background: rgba(30, 30, 30, 0.7) !important; /* Semi-transparent dark glass */
         border-color: rgba(255, 45, 85, 0.5);
+        overflow: visible !important; /* <--- ADD THIS LINE */
     }
 
     /* Search Icon Positioning (Prevents Overlap) */
@@ -499,12 +500,73 @@
         min-width: 100px;
     }
 
+   /* --- SEARCH LAYOUT UTILITIES (DESKTOP LIST VIEW) --- */
+#searchGrid.list-view {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+}
+#searchGrid.list-view .group {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 24px !important;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+#searchGrid.list-view .group .aspect-\[2\/3\] {
+    width: 70px !important;
+    min-width: 70px !important;
+    height: 105px !important;
+    margin-bottom: 0 !important;
+    border-radius: 16px !important;
+}
+#searchGrid.list-view .group > div:nth-child(2) { font-size: 16px !important; flex: 1; }
+
+/* --- PHENOMENAL DISCOVER PAGE (MOBILE ONLY) --- */
+@media (max-width: 1024px) {
+    #searchHeader {
+        font-size: 32px !important;
+        letter-spacing: -1px !important;
+        margin-bottom: 0 !important;
+        display: block !important;
+        width: 100%;
+    }
+
+    /* Hide the complex layout selector on mobile to save space */
+    #layoutSelector { display: none !important; }
+
+    /* Horizontal Filter Strip */
+    #view-search .flex.flex-wrap.gap-4 {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        padding-bottom: 5px;
+        width: 100%;
+        gap: 8px !important;
+        scrollbar-width: none;
+    }
+    #view-search .flex.flex-wrap.gap-4::-webkit-scrollbar { display: none; }
+
+    /* Pill-Style Select Boxes */
+    #view-search select {
+        flex: 0 0 auto !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-radius: 50px !important;
+        padding: 10px 18px !important;
+        font-size: 10px !important;
+        border-color: rgba(255, 255, 255, 0.1) !important;
+        min-width: 110px;
+    }
+
     /* Optimized Grid for Mobile Discovery */
     #searchGrid {
         display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important; /* 2 clean columns */
+        grid-template-columns: repeat(2, 1fr) !important; 
         gap: 15px !important;
-        margin-top: 60px !important; /* Push grid below the fixed filters */
+        margin-top: 30px !important;
     }
 
     #searchGrid .group {
@@ -513,15 +575,21 @@
         overflow: hidden;
         transition: transform 0.2s;
     }
+    #searchGrid .group:active { transform: scale(0.95); }
+    #searchGrid .aspect-\[2\/3\] { border-radius: 18px !important; margin-bottom: 8px !important; }
 
-    #searchGrid .group:active {
-        transform: scale(0.95); /* Haptic feedback on tap */
-    }
-
-    #searchGrid .aspect-\[2\/3\] {
+    /* Load More Button Mobile */
+    #btnDiscoverLoadMore {
+        width: 100% !important;
+        background: #ff2d55 !important;
+        color: white !important;
+        border: none !important;
         border-radius: 18px !important;
-        margin-bottom: 8px !important;
+        padding: 18px !important;
+        font-size: 11px !important;
+        box-shadow: 0 10px 30px rgba(255, 45, 85, 0.2);
     }
+}
 
     /* Load More Button - Center & App Style */
     #btnDiscoverLoadMore {
@@ -534,78 +602,93 @@
         font-size: 11px !important;
         box-shadow: 0 10px 20px rgba(255, 45, 85, 0.2);
     }
-    /* --- MY LIST PHENOMENAL MOBILE TOUCHES --- */
     
-    /* 1. The Header (H2) */
-    #view-mylist h2 {
-        font-size: 2rem !important;
-        font-weight: 800 !important;
-        letter-spacing: -1px !important;
-        background: linear-gradient(to right, #fff, #666);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 25px !important;
-        padding-left: 5px;
-    }
+    /* --- MY LIST ELITE REDESIGN --- */
+.library-action-bar {
+    background: rgba(10, 12, 18, 0.7);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
 
-    /* 2. Unified Action Buttons Above the List */
-    #view-mylist .flex.flex-wrap.gap-4 {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important; /* Perfect 3-column row */
-        gap: 10px !important;
-        width: 100% !important;
-        margin-bottom: 30px !important;
-    }
+.lib-btn {
+    padding: 12px 20px;
+    border-radius: 14px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #9ca3af;
+    background: transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 
-    /* Styling Export, Import, and Purge buttons as "Action Tiles" */
-    #view-mylist button, 
-    #view-mylist label {
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
-        height: 70px !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(10px) !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        border-radius: 16px !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        transition: all 0.2s ease !important;
-    }
+.lib-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+.lib-btn i { font-size: 14px; }
+.lib-btn.danger:hover { background: rgba(255, 45, 85, 0.1); color: #ff2d55; }
+.lib-btn.primary { background: #ff2d55; color: white; box-shadow: 0 4px 15px rgba(255,45,85,0.3); }
+.lib-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,45,85,0.4); }
 
-    /* Icons inside buttons */
-    #view-mylist button i, 
-    #view-mylist label i {
-        font-size: 1.2rem !important;
-        margin-bottom: 6px !important;
-        color: #ff2d55 !important; /* The Pulse Red */
-    }
+.lib-section-title {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.4em;
+    color: white;
+    margin-bottom: 24px;
+}
 
-    /* Text inside buttons */
-    #view-mylist button span, 
-    #view-mylist label span,
-    #view-mylist button {
-        font-size: 9px !important;
-        font-weight: 800 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 1px !important;
-        color: rgba(255,255,255,0.7) !important;
-    }
+.lib-section-title::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ff2d55;
+    box-shadow: 0 0 10px #ff2d55;
+}
 
-    /* Specific Red tint for the Purge (Trash) button */
-    #view-mylist button[onclick="clearLibrary()"] {
-        border-color: rgba(255, 45, 85, 0.3) !important;
-        background: rgba(255, 45, 85, 0.05) !important;
-    }
+.lib-section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
+}
 
-    /* 3. The List Grid Scaling (Matches PC 10% Increase) */
+.lib-card-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
+.lib-card-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 45, 85, 0.3);
+    transform: translateX(8px);
+}
 
-    #listContainer .group {
-        border-radius: 18px !important;
-        overflow: hidden;
-    }
+@media (max-width: 768px) {
+    .library-action-bar { flex-wrap: wrap; justify-content: center; }
+    .lib-btn span { display: none; } /* Show only icons on mobile for secondary buttons */
+    .lib-btn.primary span { display: inline; } /* Keep text for Random Picker */
+    .lib-card-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .lib-card-row img { width: 100%; height: 180px; object-fit: cover; }
+    .lib-card-row .stats { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+    .lib-card-row .stats .text-right { text-align: left !important; }
+}
     </style>
 </head>
 <body class="antialiased select-none">
@@ -730,67 +813,100 @@
         </div>
 
         <!-- SEARCH PAGE -->
-        <div id="view-search" class="page-view hidden p-10 lg:p-24 pt-32">
-            <div class="flex flex-col md:flex-row justify-between items-end gap-10 mb-20">
-                <h2 class="text-7xl font-black italic uppercase tracking-tighter" id="searchHeader">Discover</h2>
-                <div class="flex flex-wrap gap-4">
-                    <select id="searchYear" onchange="applySearchFilters()" class="bg-white/5 border border-white/10 px-6 py-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse"></select>
-                    <select id="searchGenre" onchange="applySearchFilters()" class="bg-white/5 border border-white/10 px-6 py-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse"></select>
-                    <select id="searchSort" onchange="applySearchFilters()" class="bg-white/5 border border-white/10 px-6 py-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse">
-                        <option value="popularity.desc">Most Popular</option>
-                        <option value="vote_average.desc">Top Rated</option>
-                        <option value="primary_release_date.desc">Latest Release</option>
-                    </select>
-
-                </div>
-            </div>
-            <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8 relative min-h-[400px]"></div>
-            <div id="discoverLoadContainer" class="mt-24 flex justify-center hidden">
-        <button id="btnDiscoverLoadMore" onclick="loadMoreDiscover()" class="bg-white/5 border border-white/10 px-12 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse hover:text-white transition-all text-gray-400">
-            Load More Discovery
-        </button>
+       <div id="view-search" class="page-view hidden p-10 lg:p-24 pt-32">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-12">
+                <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter" id="searchHeader">Discover</h2>
+                <div class="flex flex-wrap gap-4 items-center">
+                    
+                <div class="flex overflow-x-auto no-scrollbar gap-3 pb-8 -mx-10 px-10 md:mx-0 md:px-0 md:flex-wrap md:overflow-visible">
+    <div class="flex-shrink-0">
+        <select id="searchYear" onchange="applySearchFilters()" class="appearance-none bg-white/5 border border-white/10 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 focus:border-pulse focus:text-white outline-none transition-all">
+            <option value="">Year</option>
+        </select>
     </div>
-        </div>
+    <div class="flex-shrink-0">
+        <select id="searchGenre" onchange="applySearchFilters()" class="appearance-none bg-white/5 border border-white/10 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 focus:border-pulse focus:text-white outline-none transition-all">
+            <option value="">Genre</option>
+        </select>
+    </div>
+    <div class="flex-shrink-0">
+        <select id="searchSort" onchange="applySearchFilters()" class="appearance-none bg-white/5 border border-white/10 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-gray-400 focus:border-pulse focus:text-white outline-none transition-all">
+            <option value="popularity.desc">Popular</option>
+            <option value="vote_average.desc">Top Rated</option>
+            <option value="primary_release_date.desc">Latest</option>
+        </select>
+    </div>
+</div>
 
-        <!-- MY LIST PAGE -->
-        <div id="view-mylist" class="page-view hidden p-10 lg:p-24 pt-32">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-20">
-               <h2 class="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black italic uppercase tracking-tight">My List</h2>
-                
-                <div class="flex items-center gap-4 flex-wrap">
-                    <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
-                    
-                    <button onclick="document.getElementById('importFile').click()" class="bg-white/5 border border-white/10 px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse transition-all text-gray-400 hover:text-white" title="Import Library">
-                        <i class="fas fa-file-import md:mr-2"></i> <span class="hidden md:inline">Import</span>
-                    </button>
-                    
-                    <button onclick="exportData()" class="bg-white/5 border border-white/10 px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse transition-all text-gray-400 hover:text-white" title="Export Library">
-                        <i class="fas fa-file-export md:mr-2"></i> <span class="hidden md:inline">Export</span>
-                    </button>
+                    <div id="layoutSelector" class="flex bg-white/5 rounded-xl p-1 border border-white/10 ml-2">
+                        <button onclick="setSearchLayout('grid-cols-3')" class="layout-btn px-4 py-2 rounded-lg text-gray-500 hover:text-white transition-all"><i class="fas fa-th-large"></i></button>
+                        <button onclick="setSearchLayout('grid-cols-4')" class="layout-btn active px-4 py-2 bg-pulse text-white rounded-lg transition-all shadow-lg shadow-pulse/20"><i class="fas fa-th"></i></button>
+                        <button onclick="setSearchLayout('grid-cols-5')" class="layout-btn px-4 py-2 rounded-lg text-gray-500 hover:text-white transition-all"><i class="fas fa-border-all"></i></button>
+                        <button onclick="setSearchLayout('list')" class="layout-btn px-4 py-2 rounded-lg text-gray-500 hover:text-white transition-all"><i class="fas fa-list"></i></button>
+                    </div>
 
-                    <button onclick="clearLibrary()" class="bg-white/5 border border-white/10 px-6 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse hover:text-pulse transition-all text-gray-400" title="Purge Library">
-                        <i class="fas fa-trash-alt md:mr-2"></i> <span class="hidden md:inline">Purge</span>
-                    </button>
-
-                    <div class="w-px h-8 bg-white/10 mx-2"></div> <button id="viewToggle" onclick="toggleListView()" class="w-12 h-12 bg-white/5 rounded-xl border border-white/10 flex items-center justify-center hover:text-pulse transition-all">
-                        <i class="fas fa-list"></i>
-                    </button>
-                    <button onclick="openPicker()" class="bg-pulse px-6 md:px-10 py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-pulse/30">
-                        Random Picker
-                    </button>
                 </div>
             </div>
-            <div id="listContainer" class="space-y-24"></div>
+
+            <div id="actorProfileBanner" class="hidden mb-12 animate-in fade-in zoom-in duration-300"></div>
+
+            <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 gap-8 relative min-h-[400px]"></div>
+            
+            <div id="discoverLoadContainer" class="mt-24 flex justify-center hidden">
+                <button id="btnDiscoverLoadMore" onclick="loadMoreDiscover()" class="bg-white/5 border border-white/10 px-12 py-5 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-pulse hover:text-white transition-all text-gray-400">
+                    Load More Discovery
+                </button>
+            </div>
         </div>
+        <!-- my-list  -->
+      <div id="view-mylist" class="page-view hidden p-6 lg:p-24 pt-24 lg:pt-32">
+    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-16">
+        <div>
+            <h2 class="text-4xl md:text-6xl lg:text-7xl font-black italic uppercase tracking-tighter liquid-glass mb-2">My Library</h2>
+            <p class="text-[10px] text-pulse uppercase tracking-[0.3em] font-bold">Synchronized Neural Records</p>
+        </div>
+        
+        <div class="library-action-bar flex items-center gap-2 w-full xl:w-auto overflow-x-auto hide-scroll">
+            <input type="file" id="importFile" accept=".json" class="hidden" onchange="importData(event)">
+            
+            <button onclick="document.getElementById('importFile').click()" class="lib-btn shrink-0" title="Import Library">
+                <i class="fas fa-file-import"></i> <span>Import</span>
+            </button>
+            
+            <button onclick="exportData()" class="lib-btn shrink-0" title="Export Library">
+                <i class="fas fa-file-export"></i> <span>Export</span>
+            </button>
+
+            <button onclick="clearLibrary()" class="lib-btn danger shrink-0" title="Purge Library">
+                <i class="fas fa-trash-alt"></i> <span>Purge</span>
+            </button>
+
+            <div class="w-px h-6 bg-white/10 mx-2 hidden md:block"></div> 
+
+            <button id="viewToggle" onclick="toggleListView()" class="lib-btn shrink-0">
+                <i class="fas fa-list"></i>
+            </button>
+
+            <button onclick="openPicker()" class="lib-btn primary shrink-0 ml-auto xl:ml-2">
+                <i class="fas fa-dice"></i> <span>Random Picker</span>
+            </button>
+        </div>
+    </div>
+    <div id="listContainer" class="space-y-16"></div>
+</div>
 
         <!-- RHYTHM LAB PAGE -->
         <div id="view-rhythmlab" class="page-view hidden p-10 lg:p-24 pt-32">
             <div class="flex justify-between items-center mb-16">
                 <h2 class="text-7xl font-black italic uppercase tracking-tighter">Rhythm Lab</h2>
             </div>
+          
             <div id="labCounters" class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-20"></div>
             
             <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-20">
+                  <button id="labViewToggle" onclick="toggleLabView()" class="lib-btn shrink-0 bg-white/5 p-4 rounded-xl hover:bg-pulse transition-all border border-white/10">
+        <i class="fas fa-list text-white"></i>
+    </button>
                 <select id="labStatus" onchange="runLab()" class="bg-white/5 border border-white/10 p-5 rounded-2xl text-[10px] font-black uppercase outline-none focus:border-pulse">
                     <option value="all">Any Status</option>
                     <option value="Watching">Watching</option>
@@ -957,7 +1073,7 @@
                     Confirm Purge
                 </button>
             </div>
-            
+           </div> 
         </div>
 
     <!-- PICKER MODAL -->
@@ -1083,17 +1199,22 @@
         let discoverPage = 1;
         let currentPersonCredits = [];
         let personDisplayLimit = 8;
-        let state = {
+       let state = {
             hero: [],
             heroIdx: 0,
             db: JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [],
             genres: [],
             isGrid: true,
+            labIsGrid: true,
             active: null,
             view: 'home',
-            searchParams: { q: '', y: '', g: '', s: 'popularity.desc' }
+            searchParams: { q: '', y: '', g: '', s: 'popularity.desc' },
+            searchMode: 'trending', // 'trending', 'actor', 'filter', 'search'
+            actorCredits: [],
+            actorPage: 1,
+            filterPage: 1
+            
         };
-
         // Initialize App
         async function init() {
             try {
@@ -1179,14 +1300,31 @@ function setupSearchBehavior() {
         if (state.view !== 'search' && input.value.trim()) drop.classList.remove('hidden');
     };
 
-    // FIX: Clear Search Functionality
+    // Handle Enter Key
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const q = input.value.trim();
+            if (q) {
+                drop.classList.add('hidden');
+                bar.classList.remove('active');
+                input.blur(); 
+                navigate('search');
+                deepSearch(q);
+                
+                // AUTO-CLEAR after successful search
+                input.value = '';
+                clearBtn.classList.add('hidden');
+            }
+        }
+    };
+
     clearBtn.onclick = (e) => {
-        e.stopPropagation(); // Prevent focus triggers
+        e.stopPropagation();
         input.value = '';
         clearBtn.classList.add('hidden');
         drop.classList.add('hidden');
         
-        // If on search page, reset to default Discover view
         if (state.view === 'search') {
             document.getElementById('searchHeader').innerText = "Discover";
             loadDiscoverContent();
@@ -1205,57 +1343,49 @@ function setupSearchBehavior() {
             if(!q) { drop.classList.add('hidden'); return; }
             clearTimeout(this.searchTimer);
             this.searchTimer = setTimeout(async () => {
-                const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}`);
-                renderDrop(data.results.slice(0, 8));
+                const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
+                renderDrop(data.results.slice(0, 8), q); 
             }, 300);
         }
     };
+    
+    document.addEventListener('click', (e) => {
+        if (!bar.contains(e.target)) {
+            drop.classList.add('hidden');
+            bar.classList.remove('active');
+        }
+    });
 
-    // Smart Hover dismissal
+    let clearTimer; // Timer for auto-clearing
+
     bar.onmouseleave = () => {
         this.leaveTimer = setTimeout(() => {
             drop.classList.add('hidden');
             bar.classList.remove('active');
         }, 1000);
+
+        // AUTO-CLEAR if mouse leaves the search area for 5 seconds
+        clearTimer = setTimeout(() => {
+            input.value = '';
+            clearBtn.classList.add('hidden');
+            input.blur();
+        }, 5000);
     };
-    bar.onmouseenter = () => clearTimeout(this.leaveTimer);
-}
-
-setupSearchBehavior();
-
-async function openActor(id, name) {
-    closeModal(); // Exit Movie Info
-    navigate('search'); // Switch to Discover Page
     
-    // Immediate Title Change
-    const header = document.getElementById('searchHeader');
-    header.innerText = `${name} • Works`;
-    header.classList.add('animate-pulse'); // Visual feedback it's loading
-
-    const grid = document.getElementById('searchGrid');
-    const loadBtn = document.getElementById('discoverLoadContainer');
-    grid.innerHTML = '<div class="page-loader"></div>';
-    loadBtn.classList.add('hidden'); // Hide Trending "Load More"
-
-    try {
-        const data = await fetchAPI(`/person/${id}/combined_credits`);
-        const sorted = data.cast
-            .filter(c => c.poster_path)
-            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-        
-        header.classList.remove('animate-pulse');
-        renderGrid('searchGrid', sorted);
-        
-        // Update browser scroll to top
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (err) {
-        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase italic">Connection Lost to Artist Records.</div>`;
-    }
+    bar.onmouseenter = () => {
+        clearTimeout(this.leaveTimer);
+        clearTimeout(clearTimer); // Cancel clear if user returns
+    };
 }
 
 async function loadDiscoverContent(append = false) {
-    const grid = document.getElementById('searchGrid');
+    
     const loadBtn = document.getElementById('discoverLoadContainer');
+// PREVENT OVERWRITE: If we are in actor mode, don't load trending
+    if (state.searchMode === 'actor') return;
+
+    state.searchMode = 'trending'; 
+    const grid = document.getElementById('searchGrid');
     
     if (!append) {
         discoverPage = 1;
@@ -1293,11 +1423,35 @@ async function loadDiscoverContent(append = false) {
     }
 }
 
+
+function resetSearchMode() {
+    state.searchMode = 'trending';
+    document.getElementById('discoverLoadContainer').classList.remove('hidden');
+}
+
 async function loadMoreDiscover() {
-    discoverPage++;
     const btn = document.getElementById('btnDiscoverLoadMore');
     btn.innerText = "Syncing...";
-    await loadDiscoverContent(true);
+    
+    if (state.searchMode === 'actor') {
+        state.actorPage++;
+        const start = (state.actorPage - 1) * 20;
+        const slice = state.actorCredits.slice(start, start + 20);
+        
+        renderGrid('searchGrid', slice, false, false); // append = false clear
+        applyLayoutToGrid();
+        
+        if (start + 20 >= state.actorCredits.length) {
+            document.getElementById('discoverLoadContainer').classList.add('hidden');
+        }
+    } else if (state.searchMode === 'filter') {
+        state.filterPage++;
+        await applySearchFilters(true); // true = append
+    } else if (state.searchMode === 'trending') {
+        discoverPage++;
+        await loadDiscoverContent(true); // true = append
+    }
+    
     btn.innerText = "Load More Discovery";
 }
 
@@ -1316,7 +1470,13 @@ async function openPersonModal(id) {
 
     document.getElementById('pProfileImg').src = person.profile_path ? IMG_HD + person.profile_path : 'https://via.placeholder.com/500x800';
     document.getElementById('pName').innerText = person.name;
-    document.getElementById('pRole').innerText = person.known_for_department || 'Artist';
+   document.getElementById('pRole').innerHTML = `
+        ${person.known_for_department || 'Artist'} 
+        <a href="https://www.google.com/search?q=${encodeURIComponent(person.name)}" target="_blank" onclick="event.stopPropagation()"
+           class="inline-flex items-center justify-center gap-2 ml-4 px-4 py-2 bg-white/5 hover:bg-pulse border border-white/10 rounded-full text-[9px] text-white transition-all shadow-lg">
+            <i class="fab fa-google"></i> Search Web
+        </a>
+    `;  
     document.getElementById('pBio').innerText = person.biography || "Neural records for this individual are currently encrypted.";
     
     renderPersonWorks();
@@ -1356,78 +1516,42 @@ function closePersonModal() {
     document.body.style.overflow = 'auto';
 }
     
-
-
-function renderDrop(res) {
+// Add 'query' as the second parameter
+function renderDrop(res, query) { 
     const drop = document.getElementById('searchDrop');
-    const input = document.getElementById('mainSearch');
-    const clearBtn = document.getElementById('clearSearch');
-
-    if(!res.length) {
-        drop.classList.add('hidden');
-        return;
-    }
-
-    drop.innerHTML = res.map(i => {
+    if(!res.length) { drop.classList.add('hidden'); return; }
+    drop.classList.remove('hidden');
+    
+    let html = res.slice(0, 5).map(i => {
         const isPerson = i.media_type === 'person';
         const img = isPerson ? i.profile_path : i.poster_path;
-        
-        // AUTO-CLEAR LOGIC INJECTED HERE:
-        const clickAction = isPerson 
-            ? `openPersonModal(${i.id}); document.getElementById('mainSearch').value=''; document.getElementById('clearSearch').classList.add('hidden');` 
-            : `openModal(${i.id}, '${i.media_type}'); document.getElementById('mainSearch').value=''; document.getElementById('clearSearch').classList.add('hidden');`;
+        const call = isPerson ? `openActor(${i.id}, '${i.name.replace(/'/g, "\\'")}')` : `openModal(${i.id}, '${i.media_type}')`;
         
         return `
-            <div class="flex items-center gap-4 p-5 hover:bg-white/5 cursor-pointer border-b border-white/5 group transition-colors" onclick="${clickAction}">
-                <div class="w-10 h-14 flex-none bg-dark rounded-xl overflow-hidden border border-white/10 shadow-lg">
-                    <img src="${img ? IMG+img : 'https://via.placeholder.com/100'}" class="w-full h-full object-cover">
-                </div>
-                <div class="flex-1">
-                    <div class="text-[10px] font-black uppercase text-white group-hover:text-pulse transition-colors">${i.title || i.name}</div>
-                    <div class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                        ${isPerson ? 'Artist Profile' : (i.media_type + ' • ' + (i.release_date || i.first_air_date || 'N/A').split('-')[0])}
+            <div onmousedown="${call}" 
+                 class="flex items-center gap-4 p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 transition-all active:bg-pulse/20">
+                <img src="${img ? IMG+img : 'https://via.placeholder.com/50'}" class="w-10 h-14 rounded-xl object-cover shadow-lg">
+                <div>
+                    <div class="text-[10px] font-black uppercase text-white">${i.title || i.name}</div>
+                    <div class="text-[8px] text-gray-500 font-bold uppercase mt-1">
+                        ${isPerson ? 'Artist' : (i.media_type + ' • ' + (i.release_date || i.first_air_date || '').split('-')[0])}
                     </div>
                 </div>
-                <i class="fas fa-arrow-right text-[10px] text-gray-800 mr-2 group-hover:text-pulse group-hover:translate-x-1 transition-all"></i>
             </div>
         `;
-    }).join('') + `
-        <div class="p-4 text-center bg-white/5 cursor-pointer hover:bg-pulse/10 transition-colors" 
-             onclick="deepSearch(document.getElementById('mainSearch').value); document.getElementById('mainSearch').value=''; document.getElementById('clearSearch').classList.add('hidden');">
-            <span class="text-[9px] font-black text-pulse uppercase tracking-widest">Global Neural Search</span>
-        </div>`;
+    }).join('');
+
+    // Append the Show More button at the bottom
+    html += `
+        <div onmousedown="navigate('search'); deepSearch('${query.replace(/'/g, "\\'")}')" 
+             class="p-4 text-center bg-pulse/10 hover:bg-pulse text-pulse hover:text-white cursor-pointer transition-all border-t border-white/5 flex items-center justify-center gap-2 group">
+            <span class="text-[10px] font-black uppercase tracking-widest">Show all results for "${query}"</span>
+            <i class="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
+        </div>
+    `;
     
-    drop.classList.remove('hidden');
+    drop.innerHTML = html;
 }
-
-// Ensure Actor search also clears the bar
-async function openActor(id, name) {
-    const input = document.getElementById('mainSearch');
-    const clearBtn = document.getElementById('clearSearch');
-    
-    input.value = ''; // Auto-clear text
-    clearBtn.classList.add('hidden'); // Hide X button
-    
-    closeModal();
-    navigate('search');
-    
-    const header = document.getElementById('searchHeader');
-    header.innerText = `${name} • Works`;
-    
-    const grid = document.getElementById('searchGrid');
-    grid.innerHTML = '<div class="page-loader"></div>';
-
-    try {
-        const data = await fetchAPI(`/person/${id}/combined_credits`);
-        const sorted = data.cast
-            .filter(c => c.poster_path)
-            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-        renderGrid('searchGrid', sorted);
-    } catch (err) {
-        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase italic">Neural link to ${name} failed.</div>`;
-    }
-}
-
 
 
 
@@ -1437,55 +1561,60 @@ async function deepSearch(q) {
     
     const grid = document.getElementById('searchGrid');
     const header = document.getElementById('searchHeader');
-    
-    header.innerText = q ? `Results: ${q}` : "Discover";
-    
-    // TMDB Search Multi naturally handles "near" results/fuzzy spelling
-    const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
     const loadBtn = document.getElementById('discoverLoadContainer');
+    const actorBanner = document.getElementById('actorProfileBanner');
+    
+    // Instantly hide actor banner on new search
+    actorBanner.classList.add('hidden');
     
     if (!q) {
         loadDiscoverContent();
         return;
     }
 
-    loadBtn.classList.add('hidden');
+    state.searchMode = 'search';
+    header.innerText = `Results: ${q}`;
+    loadBtn.classList.add('hidden'); // Hide load more for raw search results
+    grid.innerHTML = '<div class="page-loader"></div>';
+    
+    const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
+    
     if(!data.results || data.results.length === 0) {
         grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-600 font-black uppercase italic tracking-[0.5em]">No Neural Matches Found</div>`;
         return;
     }
 
-    grid.innerHTML = data.results.map(i => {
-        const isPerson = i.media_type === 'person';
-        const img = isPerson ? i.profile_path : i.poster_path;
-        const clickAction = isPerson ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${i.media_type}')`;
-        
-        return `
-            <div class="group cursor-pointer" onclick="${clickAction}">
-                <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse group-hover:-translate-y-2 transition-all shadow-xl relative">
-                    <img src="${img ? IMG+img : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
-                    ${isPerson ? '<div class="absolute inset-0 bg-pulse/20 mix-blend-overlay"></div>' : ''}
-                </div>
-                <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
-                <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${isPerson ? 'Talent' : (i.release_date || i.first_air_date || '').split('-')[0]}</div>
-            </div>
-        `;
-    }).join('');
+    renderGrid('searchGrid', data.results, false, true);
+    applyLayoutToGrid();
 }
 
-        async function applySearchFilters() {
-            const year = document.getElementById('searchYear').value;
-            const genre = document.getElementById('searchGenre').value;
-            const sort = document.getElementById('searchSort').value;
-            
-            document.getElementById('searchGrid').innerHTML = '<div class="page-loader"></div>';
-            let path = `/discover/movie?sort_by=${sort}&page=1`;
-            if(year) path += `&primary_release_year=${year}`;
-            if(genre) path += `&with_genres=${genre}`;
-            
-            const data = await fetchAPI(path);
-            renderGrid('searchGrid', data.results, 'movie');
-        }
+async function applySearchFilters(append = false) {
+    const actorBanner = document.getElementById('actorProfileBanner');
+    const loadBtn = document.getElementById('discoverLoadContainer');
+    
+    if (!append) {
+        state.searchMode = 'filter';
+        state.filterPage = 1;
+        actorBanner.classList.add('hidden'); // Hide banner
+        document.getElementById('searchGrid').innerHTML = '<div class="page-loader"></div>';
+        document.getElementById('searchHeader').innerText = "Filtered Results";
+    }
+    
+    const year = document.getElementById('searchYear').value;
+    const genre = document.getElementById('searchGenre').value;
+    const sort = document.getElementById('searchSort').value;
+    
+    let path = `/discover/movie?sort_by=${sort}&page=${state.filterPage}`;
+    if(year) path += `&primary_release_year=${year}`;
+    if(genre) path += `&with_genres=${genre}`;
+    
+    const data = await fetchAPI(path);
+    renderGrid('searchGrid', data.results, 'movie', !append);
+    applyLayoutToGrid();
+    
+    if (data.page < data.total_pages) loadBtn.classList.remove('hidden');
+    else loadBtn.classList.add('hidden');
+}
 
         // Hero Slider
         function renderHero() {
@@ -1656,46 +1785,58 @@ async function deepSearch(q) {
         }
 
         function renderList() {
-            const container = document.getElementById('listContainer');
-            // Hierarchy: Watching > Plan > On Hold > Finished > Dropped
-            const order = ['Watching', 'Plan to Watch', 'On Hold', 'Finished', 'Dropped'];
-            
-            container.innerHTML = order.map(status => {
-                const items = state.db.filter(i => i.status === status);
-                if(!items.length) return '';
+    const container = document.getElementById('listContainer');
+    // Hierarchy: Watching > Plan > On Hold > Finished > Dropped
+    const order = ['Watching', 'Plan to Watch', 'On Hold', 'Finished', 'Dropped'];
+    
+    const html = order.map(status => {
+        const items = state.db.filter(i => i.status === status);
+        if(!items.length) return '';
 
-                return `
-                    <section>
-                        <h3 class="text-[11px] font-black uppercase tracking-[0.5em] text-pulse mb-10 italic flex items-center gap-6">
-                            ${status} <span class="h-px flex-1 bg-white/5"></span> <span class="text-gray-600">${items.length}</span>
-                        </h3>
-                        <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8' : 'space-y-4'}">
-                            ${items.map(i => state.isGrid ? `
-                                <div class="group cursor-pointer" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
-                                    <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl">
-                                        <img src="${IMG+i.poster}" class="w-full h-full object-cover">
-                                    </div>
-                                    <div class="text-[10px] font-black uppercase line-clamp-1">${i.title}</div>
-                                    <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase">${i.type} • ★ ${i.imdb.toFixed(1)}</div>
-                                </div>
-                            ` : `
-                                <div class="flex items-center gap-8 p-6 bg-white/5 rounded-3xl hover:bg-white/10 transition-all cursor-pointer status-${status.toLowerCase().split(' ')[0]}" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
-                                    <img src="${IMG+i.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg">
-                                    <div class="flex-1">
-                                        <div class="text-[12px] font-black uppercase italic">${i.title}</div>
-                                        <div class="text-[8px] font-bold text-gray-500 mt-2 uppercase tracking-widest">${i.type} • ${i.year}</div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-[10px] font-black text-pulse">★ ${i.imdb.toFixed(1)}</div>
-                                        <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">UScore: ${i.score || '-'}</div>
-                                    </div>
-                                </div>
-                            `).join('')}
+        return `
+            <section class="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="lib-section-title">
+                    ${status} <span class="text-gray-600 bg-white/5 px-3 py-1 rounded-full text-[9px]">${items.length}</span>
+                </div>
+                <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-4'}">
+                    ${items.map(i => state.isGrid ? `
+                        <div class="group cursor-pointer" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+                            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
+                                <img src="${IMG+i.poster}" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                            </div>
+                            <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
+                            <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">${i.type} • ★ ${i.imdb.toFixed(1)}</div>
                         </div>
-                    </section>
-                `;
-            }).join('');
-        }
+                    ` : `
+                        <div class="lib-card-row cursor-pointer group" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+                            <img src="${IMG+i.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg border border-white/5 group-hover:border-pulse/50 transition-colors">
+                            <div class="flex-1">
+                                <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${i.title}</div>
+                                <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
+                                    <span class="bg-white/5 px-2 py-1 rounded-md">${i.type}</span> 
+                                    <span>${i.year}</span>
+                                </div>
+                            </div>
+                            <div class="stats text-right shrink-0">
+                                <div class="text-[12px] font-black text-pulse">★ ${i.imdb.toFixed(1)}</div>
+                                <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${i.score ? i.score + '/5' : '-'}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </section>
+        `;
+    }).join('');
+
+    container.innerHTML = html || `
+        <div class="flex flex-col items-center justify-center py-32 text-center opacity-50">
+            <i class="fas fa-box-open text-6xl mb-6 text-pulse"></i>
+            <h3 class="text-xl font-black uppercase tracking-widest text-white mb-2 italic">Library Empty</h3>
+            <p class="text-xs text-gray-400 font-bold uppercase tracking-widest">Your neural records have not been synced yet.</p>
+        </div>
+    `;
+}
         function backdropClose(e) {
             if (e.target.id === "pickerModal") {
              closePicker();
@@ -1926,18 +2067,22 @@ async function deepSearch(q) {
             `).join('');
         }
 
-        function renderGrid(id, items, forced) {
-            const container = document.getElementById(id);
-            container.innerHTML = items.map(i => `
-                <div class="group cursor-pointer" onclick="openModal(${i.id}, '${forced || i.media_type || (i.title ? 'movie' : 'tv')}')">
-                    <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl">
-                        <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
-                    </div>
-                    <div class="text-[10px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
-                    <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
-                </div>
-            `).join('');
-        }
+   function renderGrid(id, items, forced, clear = true) {
+    const container = document.getElementById(id);
+    const html = items.map(i => `
+        <div class="group cursor-pointer" onclick="${i.media_type === 'person' ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${forced || i.media_type || (i.title ? 'movie' : 'tv')}')`}">
+            <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
+                <img src="${i.poster_path || i.profile_path ? IMG + (i.poster_path || i.profile_path) : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
+                ${i.vote_average ? `<div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-pulse border border-white/10">★ ${i.vote_average.toFixed(1)}</div>` : ''}
+            </div>
+            <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
+            <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${(i.release_date || i.first_air_date || '').split('-')[0] || 'N/A'}</div>
+        </div>
+    `).join('');
+    
+    if (clear) container.innerHTML = html;
+    else container.insertAdjacentHTML('beforeend', html);
+}
 
         function setupFilters() {
             const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')];
@@ -2004,34 +2149,66 @@ async function deepSearch(q) {
             }
         }
 
-      async function openActor(id, name) {
-    closeModal(); // Close the movie/show info modal
-    navigate('search'); // Go to search/discover page
+ async function openActor(id, name) {
+    closeModal();
+    navigate('search');
+    state.searchMode = 'actor'; 
     
-    // Update the UI immediately
     const header = document.getElementById('searchHeader');
     const loadBtn = document.getElementById('discoverLoadContainer');
+    const actorBanner = document.getElementById('actorProfileBanner');
+    
     header.innerText = `Works: ${name}`;
-    loadBtn.classList.add('hidden'); // Hide the standard trending 'Load More'
+    actorBanner.classList.remove('hidden');
     
     const grid = document.getElementById('searchGrid');
     grid.innerHTML = '<div class="page-loader"></div>';
 
     try {
-        const data = await fetchAPI(`/person/${id}/combined_credits`);
-        // Sort by popularity so their best stuff is at the top
-        const sorted = data.cast.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        const [person, data] = await Promise.all([
+            fetchAPI(`/person/${id}`),
+            fetchAPI(`/person/${id}/combined_credits`)
+        ]);
         
-        // Filter out items without posters for a clean look
-        const filtered = sorted.filter(item => item.poster_path);
+        // Mobile-friendly clickable wrapper
+        actorBanner.innerHTML = `
+            <div onclick="openPersonModal(${id})" class="cursor-pointer flex flex-col md:flex-row items-center gap-6 p-6 bg-[#0a0c12] border border-white/10 rounded-[30px] shadow-2xl relative overflow-hidden group hover:border-pulse/50 transition-all">
+                <div class="absolute inset-0 bg-gradient-to-r from-pulse/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <img src="${person.profile_path ? IMG + person.profile_path : 'https://via.placeholder.com/150'}" class="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border border-pulse/30 shadow-lg relative z-10">
+                <div class="flex-1 relative z-10 text-center md:text-left">
+                    <h3 class="text-3xl md:text-4xl font-black italic uppercase text-white tracking-tight">${person.name}</h3>
+                    <p class="text-[10px] font-bold text-pulse uppercase tracking-widest mt-1 mb-2">${person.known_for_department || 'Artist'}</p>
+                    <p class="text-xs text-gray-400 line-clamp-2 md:line-clamp-3 max-w-3xl leading-relaxed hidden md:block">${person.biography || 'Neural records for this individual are currently encrypted.'}</p>
+                </div>
+                <button class="relative z-10 bg-white/5 border border-white/10 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest group-hover:bg-pulse transition-all shrink-0">
+                    View Profile
+                </button>
+            </div>
+        `;
+
+        // Sort by highest rating (penalize items with < 10 votes so obscure 10/10s don't dominate)
+        const getScore = (item) => item.vote_count > 10 ? item.vote_average : (item.vote_average || 0) - 5;
         
-        renderGrid('searchGrid', filtered);
+        state.actorCredits = data.cast
+            .filter(item => item.poster_path)
+            .sort((a, b) => getScore(b) - getScore(a));
         
-        // Optional: If you want to allow loading more for actors too, 
-        // you would handle pagination here, but combined_credits usually returns the full list.
+        state.actorPage = 1;
+        const slice = state.actorCredits.slice(0, 20); // Show top 20 first
+        
+        renderGrid('searchGrid', slice, false, true);
+        applyLayoutToGrid();
+        
+        // Show Load More if there are more than 20 works
+        if (state.actorCredits.length > 20) {
+            loadBtn.classList.remove('hidden');
+        } else {
+            loadBtn.classList.add('hidden');
+        }
+        
     } catch (err) {
-        console.error("Neural fetch error for actor works:", err);
-        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase font-black italic">Failed to retrieve works for ${name}</div>`;
+        actorBanner.classList.add('hidden');
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase font-black italic">Neural link to ${name} failed.</div>`;
     }
 }
         function startClock() { setInterval(() => { 
@@ -2105,6 +2282,96 @@ async function deepSearch(q) {
             };
             reader.readAsText(file);
         }
+        // --- NEW: Grid Layout Engine ---
+let currentSearchLayout = 'grid-cols-4';
+
+function setSearchLayout(layout) {
+    currentSearchLayout = layout;
+    
+    // Update active button UI
+    document.querySelectorAll('.layout-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-pulse', 'text-white', 'shadow-lg', 'shadow-pulse/20');
+        btn.classList.add('text-gray-500');
+        if (btn.getAttribute('onclick').includes(layout)) {
+            btn.classList.add('active', 'bg-pulse', 'text-white', 'shadow-lg', 'shadow-pulse/20');
+            btn.classList.remove('text-gray-500');
+        }
+    });
+    
+    applyLayoutToGrid();
+}
+
+function applyLayoutToGrid() {
+    const grid = document.getElementById('searchGrid');
+    
+    // Reset classes
+    grid.className = 'gap-8 relative min-h-[400px]';
+    
+    if (currentSearchLayout === 'list') {
+        grid.classList.add('list-view'); // Applies custom CSS list logic
+    } else {
+        grid.classList.add('grid', 'grid-cols-2', 'md:' + currentSearchLayout);
+    }
+}
+
+function toggleLabView() {
+    state.labIsGrid = !state.labIsGrid;
+    document.getElementById('labViewToggle').innerHTML = state.labIsGrid 
+        ? '<i class="fas fa-list text-white"></i>' 
+        : '<i class="fas fa-th-large text-white"></i>';
+    runLab();
+}
+
+function runLab() {
+    const status = document.getElementById('labStatus').value;
+    const year = document.getElementById('labYear').value;
+    const imdb = document.getElementById('labImdb').value;
+    const pers = document.getElementById('labPersonal').value;
+
+    let filtered = state.db.filter(i => {
+        let sMatch = status === 'all' || i.status === status;
+        let yMatch = year === 'all' || i.year === year;
+        let iMatch = imdb === 'all' || i.imdb >= parseFloat(imdb);
+        let pMatch = pers === 'all' || (i.score >= parseInt(pers));
+        return sMatch && yMatch && iMatch && pMatch;
+    });
+
+    document.getElementById('labCount').innerText = filtered.length;
+    
+    const labGrid = document.getElementById('labGrid');
+    
+    // Switch CSS classes based on view state
+    labGrid.className = state.labIsGrid 
+        ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' 
+        : 'flex flex-col gap-4';
+
+    labGrid.innerHTML = filtered.map(item => state.labIsGrid ? `
+        <div class="group cursor-pointer" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
+            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl">
+                <img src="${IMG+item.poster}" class="w-full h-full object-cover">
+            </div>
+            <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
+        </div>
+    ` : `
+        <div class="lib-card-row cursor-pointer group" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
+            <img src="${IMG+item.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg border border-white/5 group-hover:border-pulse/50 transition-colors">
+            <div class="flex-1">
+                <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${item.title}</div>
+                <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
+                    <span class="bg-white/5 px-2 py-1 rounded-md">${item.type}</span> 
+                    <span>${item.year}</span>
+                </div>
+            </div>
+            <div class="stats text-right shrink-0">
+                <div class="text-[12px] font-black text-pulse">★ ${parseFloat(item.imdb).toFixed(1)}</div>
+                <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${item.score ? item.score + '/5' : '-'}</div>
+            </div>
+        </div>
+    `).join('');
+    
+    updateCounters();
+}
+
        // --- DATA DESTRUCTION: CUSTOM PURGE UI ---
 
         function clearLibrary() {
