@@ -747,30 +747,59 @@
             <button onclick="navigate('sync')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
                 <i class="fas fa-sync text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Sync Engine</span>
             </button>
+            <button onclick="navigate('sources')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
+                <i class="fas fa-satellite-dish text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Sources</span>
+            </button>
         </nav>
 
         <div id="clock" class="p-8 text-[10px] font-black text-gray-600 tracking-[0.3em] hidden lg:block">00:00:00</div>
     </aside>
 
     <!-- TOP HEADER -->
-  <header class="fixed top-0 right-0 left-20 lg:left-64 z-[90] px-10 py-6 flex items-center justify-between">
-    <div id="searchBar" class="relative w-full max-w-xl group">
-        <i class="fas fa-search absolute left-6 top-1/2 -translate-y-1/2 search-icon-fixed pointer-events-none"></i>
-        
-        <input type="text" id="mainSearch" placeholder="Search the Cinematics..." 
-               class="glass-search w-full py-4 pl-14 pr-12 text-xs outline-none transition-all text-white placeholder:text-gray-500">
-        
-        <button id="clearSearch" class="absolute right-4 top-1/2 -translate-y-1/2 hidden text-[10px]">
+  <header class="fixed top-0 right-0 left-16 lg:left-64 z-[90] px-4 sm:px-6 lg:px-10 py-4 flex items-center gap-4">
+
+
+    <!-- Search -->
+    <div id="searchBar" class="relative flex-1 max-w-xl min-w-0">
+        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
+
+        <input
+            type="text"
+            id="mainSearch"
+            placeholder="Search the Cinematics..."
+            class="glass-search w-full py-3 sm:py-4 pl-10 sm:pl-12 pr-10 text-xs outline-none text-white placeholder:text-gray-500 rounded-full"
+        />
+
+        <button
+            id="clearSearch"
+            class="absolute right-3 top-1/2 -translate-y-1/2 hidden text-xs text-gray-400 hover:text-white">
             <i class="fas fa-times"></i>
         </button>
 
-        <div id="searchDrop" class="absolute top-full left-0 w-full mt-4 bg-[#0a0c12]/95 backdrop-blur-3xl border border-white/10 rounded-[30px] hidden overflow-hidden shadow-2xl z-[110] border-t-pulse border-t-2"></div>
+        <div id="searchDrop"
+            class="absolute top-full left-0 w-full mt-3 bg-[#0a0c12]/95 backdrop-blur-3xl border border-white/10 rounded-2xl hidden overflow-hidden shadow-2xl z-[110]">
+        </div>
     </div>
 
-    <div class="breadcrumb text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:block">
-        Path / <span id="pathLabel" class="text-pulse">HOME</span>
+    <!-- Notifications -->
+    <button onclick="toggleNotifHub()"
+        class="relative w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-pulse transition-all text-gray-400 hover:text-white shrink-0 lg:ml-auto lg:mr-24">
+        <i class="fas fa-bell"></i>
+
+        <span id="notifBadge"
+            class="absolute top-1 right-1 w-2.5 h-2.5 bg-pulse rounded-full border-2 border-[#0a0c12] hidden">
+        </span>
+    </button>
+
+     <!-- Breadcrumb (Pinned Top Right) -->
+    <div
+        class="breadcrumb absolute top-3 right-4 lg:right-10 text-[10px] font-black uppercase tracking-widest text-gray-500 hidden md:block">
+        Path /
+        <span id="pathLabel" class="text-pulse">HOME</span>
     </div>
+
 </header>
+
     <main class="pl-20 lg:pl-64">
         <div id="view-category" class="page-view hidden p-10 lg:p-24 pt-32">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-20">
@@ -874,7 +903,23 @@
 
                 </div>
             </div>
-
+<div class="mb-8 space-y-4 w-full">
+    <div class="flex flex-wrap md:flex-nowrap gap-2 md:gap-3 items-center w-full" id="discoverTypeFilters">
+        <button onclick="toggleDiscoverFilter('type', 'all')" id="dType-all" class="d-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all">All</button>
+        <button onclick="toggleDiscoverFilter('type', 'movie')" id="dType-movie" class="d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Movies</button>
+        <button onclick="toggleDiscoverFilter('type', 'tv')" id="dType-tv" class="d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Series</button>
+        <button onclick="toggleDiscoverFilter('type', 'anime')" id="dType-anime" class="d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Anime</button>
+        <button onclick="toggleDiscoverFilter('type', 'kdrama')" id="dType-kdrama" class="d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">K-Drama</button>
+        <button onclick="toggleDiscoverFilter('type', 'turkish')" id="dType-turkish" class="d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Turkish</button>
+        
+        <div class="w-px h-6 bg-white/10 mx-1 shrink-0 hidden md:block"></div>
+        
+        <button onclick="toggleGenreVisibility('discoverGenreContainer', this)" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all flex items-center gap-2">
+            <i class="fas fa-tags"></i> Genres
+        </button>
+    </div>
+    <div id="discoverGenreContainer" class="hidden flex flex-wrap gap-2 md:gap-3 mt-4 w-full animate-in fade-in duration-300"></div>
+</div>
             <div id="actorProfileBanner" class="hidden mb-12 animate-in fade-in zoom-in duration-300"></div>
 
             <div id="searchGrid" class="grid grid-cols-2 md:grid-cols-4 gap-8 relative min-h-[400px]"></div>
@@ -926,23 +971,28 @@
             <button onclick="openPicker()" class="lib-btn primary shrink-0 ml-auto xl:ml-2">
                 <i class="fas fa-dice"></i> <span>Random Picker</span>
             </button>
+
+            <select id="listSortDrop" onchange="state.listSort = this.value; renderList()" class="bg-dark border border-white/10 p-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse text-gray-400 shrink-0">
+              <option value="newest">Added: Newest</option>
+             <option value="oldest">Added: Oldest</option>
+           </select>
         </div>
         
     </div>
      <div class="mb-10 space-y-4">
-        <div class="flex gap-3 overflow-x-auto hide-scroll items-center" id="listTypeFilters">
-            <button onclick="toggleListFilter('type', 'all')" id="lType-all" class="l-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all">All Types</button>
-            <button onclick="toggleListFilter('type', 'movie')" id="lType-movie" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Movies</button>
-            <button onclick="toggleListFilter('type', 'tv')" id="lType-tv" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Series</button>
-            <button onclick="toggleListFilter('type', 'anime')" id="lType-anime" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Anime</button>
-            <button onclick="toggleListFilter('type', 'kdrama')" id="lType-kdrama" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">K-Drama</button>
-            <button onclick="toggleListFilter('type', 'turkish')" id="lType-turkish" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Turkish</button>
-            
-            <div class="w-px h-6 bg-white/10 mx-1 shrink-0"></div>
-            
-            <button onclick="toggleGenreVisibility('listGenreContainer', this)" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all flex items-center gap-2">
-                <i class="fas fa-tags"></i> Genres
-            </button>
+          <div class="flex flex-wrap md:flex-nowrap gap-2 md:gap-3 items-center w-full" id="listTypeFilters">
+            <button onclick="toggleListFilter('type', 'all')" id="lType-all" class="l-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all">All</button>
+    <button onclick="toggleListFilter('type', 'movie')" id="lType-movie" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Movies</button>
+    <button onclick="toggleListFilter('type', 'tv')" id="lType-tv" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Series</button>
+    <button onclick="toggleListFilter('type', 'anime')" id="lType-anime" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Anime</button>
+    <button onclick="toggleListFilter('type', 'kdrama')" id="lType-kdrama" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">K-Drama</button>
+    <button onclick="toggleListFilter('type', 'turkish')" id="lType-turkish" class="l-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Turkish</button>
+    
+    <div class="w-px h-6 bg-white/10 mx-1 shrink-0 hidden md:block"></div>
+    
+    <button onclick="toggleGenreVisibility('listGenreContainer', this)" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all flex items-center gap-2">
+        <i class="fas fa-tags"></i> Genres
+    </button>
         </div>
        <div id="listGenreContainer" class="hidden flex flex-wrap gap-2 md:gap-3 mt-4 w-full animate-in fade-in duration-300"></div>
 
@@ -964,21 +1014,21 @@
           
             <div id="labCounters" class="grid grid-cols-2 md:grid-cols-5 gap-6 mb-20"></div>
         <div class="mb-10 space-y-4">
-        <div class="flex gap-3 overflow-x-auto hide-scroll items-center">
-            <button onclick="toggleLabFilter('type', 'all')" id="labType-all" class="lab-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all">All Types</button>
-            <button onclick="toggleLabFilter('type', 'movie')" id="labType-movie" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Movies</button>
-            <button onclick="toggleLabFilter('type', 'tv')" id="labType-tv" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Series</button>
-            <button onclick="toggleLabFilter('type', 'anime')" id="labType-anime" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Anime</button>
-            <button onclick="toggleLabFilter('type', 'kdrama')" id="labType-kdrama" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">K-Drama</button>
-            <button onclick="toggleLabFilter('type', 'turkish')" id="labType-turkish" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Turkish</button>
-            
-            <div class="w-px h-6 bg-white/10 mx-1 shrink-0"></div>
-            
-            <button onclick="toggleGenreVisibility('labGenreContainer', this)" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all flex items-center gap-2">
-                <i class="fas fa-tags"></i> Genres
-            </button>
-        </div>
-        <div id="labGenreContainer" class="hidden flex flex-wrap gap-2 md:gap-3 mt-4 w-full animate-in fade-in duration-300"></div>
+        <div class="flex flex-wrap md:flex-nowrap gap-2 md:gap-3 items-center w-full" id="labTypeFilters">
+    <button onclick="toggleLabFilter('type', 'all')" id="labType-all" class="lab-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all">All</button>
+    <button onclick="toggleLabFilter('type', 'movie')" id="labType-movie" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Movies</button>
+    <button onclick="toggleLabFilter('type', 'tv')" id="labType-tv" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Series</button>
+    <button onclick="toggleLabFilter('type', 'anime')" id="labType-anime" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Anime</button>
+    <button onclick="toggleLabFilter('type', 'kdrama')" id="labType-kdrama" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">K-Drama</button>
+    <button onclick="toggleLabFilter('type', 'turkish')" id="labType-turkish" class="lab-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all">Turkish</button>
+
+    <div class="w-px h-6 bg-white/10 mx-1 shrink-0 hidden md:block"></div>
+
+    <button onclick="toggleGenreVisibility('labGenreContainer', this)" class="px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all flex items-center gap-2">
+        <i class="fas fa-tags"></i> Genres
+    </button>
+</div>
+<div id="labGenreContainer" class="hidden flex flex-wrap gap-2 md:gap-3 mt-4 w-full animate-in fade-in duration-300"></div>
     </div>
 
 
@@ -999,10 +1049,17 @@
             <i class="fas fa-list text-white"></i>
         </button>
         <div id="labCount" class="bg-pulse flex items-center justify-center p-5 min-w-[60px] rounded-2xl font-black text-xl italic shadow-lg shadow-pulse/20">0</div>
+         <select id="labSortDrop" onchange="state.labSort = this.value; runLab()" class="bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse w-full">
+      <option value="newest">Added: Newest</option>
+      <option value="oldest">Added: Oldest</option>
+    </select>
     </div>
+    
 </div>
 
 <div id="labAdvancedFilters" class="hidden grid grid-cols-2 lg:grid-cols-4 gap-4 p-6 mb-10 bg-[#0a0c12]/50 border border-white/10 rounded-3xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
+    
+    
     <select id="labStatus" onchange="runLab()" class="bg-white/5 border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-pulse w-full">
         <option value="all">Any Status</option>
         <option value="Watching">Watching</option>
@@ -1023,6 +1080,7 @@
         <option value="5">Perfect (5★)</option>
         <option value="3">Decent (3★+)</option>
     </select>
+   
 </div>
 
            
@@ -1033,10 +1091,79 @@
         
         <!-- SYNC ENGINE PAGE -->
         <div id="view-sync" class="page-view hidden p-10 lg:p-24 pt-32">
-            <h2 class="text-7xl font-black italic uppercase tracking-tighter mb-20">Sync Engine</h2>
-            <div id="syncContainer" class="space-y-32"></div>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-20">
+        <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter">Sync Engine</h2>
+        <button onclick="renderSync()" class="bg-white/5 border border-white/10 px-8 py-4 rounded-xl hover:bg-pulse transition-all flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white group shadow-lg">
+            <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i> Refresh Neural Data
+        </button>
+    </div>
+    <div id="syncContainer" class="space-y-32"></div>
+</div>
+<!-- sources -->
+<div id="view-sources" class="page-view hidden p-10 lg:p-24 pt-32">
+    <div class="mb-16">
+        <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white">Source Engine</h2>
+        <div class="flex items-center gap-4 mt-2">
+            <p class="text-[10px] text-[#22c55e] uppercase tracking-[0.3em] font-bold">Neural Watch Links</p>
+            <div class="h-[1px] flex-1 bg-white/5"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div class="lg:col-span-4 space-y-8">
+            <div class="bg-white/5 border border-white/10 p-8 rounded-[30px] relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform">
+                    <i class="fas fa-plus-circle text-6xl"></i>
+                </div>
+                
+                <h3 class="text-sm font-black uppercase text-white mb-6 tracking-widest italic flex items-center gap-3">
+                    <span class="w-2 h-2 bg-[#22c55e] rounded-full"></span> Add Source
+                </h3>
+                
+                <div class="space-y-4 relative z-10">
+                    <select id="srcCategory" class="w-full bg-dark border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-[#22c55e] text-gray-400">
+                        <option value="movie">Movies</option>
+                        <option value="tv">Series & TV</option>
+                        <option value="anime">Anime</option>
+                        <option value="kdrama">K-Drama</option>
+                        <option value="turkish">Turkish</option>
+                    </select>
+                    <input type="text" id="srcName" placeholder="Site Name (e.g., MyFlixer, HiAnime)" class="w-full bg-dark border border-white/10 p-4 rounded-xl text-[10px] font-black uppercase outline-none focus:border-[#22c55e] text-white placeholder:text-gray-600">
+                    <div class="relative">
+                        <input type="text" id="srcUrl" placeholder="Search URL Template..." class="w-full bg-dark border border-white/10 p-4 rounded-xl text-[10px] font-bold outline-none focus:border-[#22c55e] text-white placeholder:text-gray-600">
+                        <p class="text-[8px] text-gray-500 mt-2 font-bold uppercase tracking-widest">
+                            Variable: <span class="text-[#22c55e]">{title}</span> <span class="mx-2">|</span> <span class="text-[#22c55e]">{tmdb_id}</span>
+                        </p>
+                    </div>
+                    <button onclick="addSource()" class="w-full bg-[#22c55e] text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-transform shadow-lg shadow-[#22c55e]/20">Save to Engine</button>
+                </div>
+            </div>
+
+            <div class="bg-pulse/5 border border-pulse/20 p-8 rounded-[30px]">
+                <h3 class="text-[10px] font-black uppercase text-pulse mb-4 tracking-[0.2em]">How it works</h3>
+                <div class="space-y-4">
+                    <div class="flex gap-4">
+                        <div class="w-6 h-6 rounded-full bg-pulse flex items-center justify-center text-[10px] text-white font-bold shrink-0">1</div>
+                        <p class="text-[10px] text-gray-400 leading-relaxed uppercase font-bold">Search for any movie on your favorite site.</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <div class="w-6 h-6 rounded-full bg-pulse flex items-center justify-center text-[10px] text-white font-bold shrink-0">2</div>
+                        <p class="text-[10px] text-gray-400 leading-relaxed uppercase font-bold">Copy the URL, but replace the name of the movie with <span class="text-white bg-white/10 px-1 rounded">{title}</span>.</p>
+                    </div>
+                    <div class="p-4 bg-black/40 rounded-xl border border-white/5 space-y-3">
+                        <p class="text-[8px] text-gray-500 uppercase font-black">Templates for your sites:</p>
+                        <div class="text-[9px] font-mono text-gray-300 break-all bg-dark p-2 rounded">myflixerz.to/search/<span class="text-pulse">{title}</span></div>
+                        <div class="text-[9px] font-mono text-gray-300 break-all bg-dark p-2 rounded">kisskh.co/Search?q=<span class="text-pulse">{title}</span></div>
+                        <div class="text-[9px] font-mono text-gray-300 break-all bg-dark p-2 rounded">hianime.to/search?keyword=<span class="text-pulse">{title}</span></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
+        <div class="lg:col-span-8 space-y-8" id="sourceListContainer">
+            </div>
+    </div>
+</div>
     </main>
     <!-- actor-modal -->
     <div id="personModal" class="fixed inset-0 z-[200] hidden bg-dark overflow-y-auto">
@@ -1075,25 +1202,36 @@
     </div>
 </div>
     <!-- INFO MODAL -->
-    <div id="modal" class="fixed inset-0 z-[150] hidden bg-dark overflow-y-auto">
-        <div class="relative h-[65vh]">
-            <img id="mBackdrop" class="w-full h-full object-cover">
+   <div id="modal" class="fixed inset-0 z-[150] hidden bg-dark overflow-y-auto">
+        <div class="relative h-[40vh] md:h-[50vh] lg:h-[60vh]">
+            
+            <img id="mBackdrop" class="w-full h-full object-cover object-top">
             <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
-            <button onclick="closeModal()" class="fixed top-10 right-10 z-[160] w-14 h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
+            
+            <button onclick="closeModal()" class="fixed top-6 right-6 lg:top-10 lg:right-10 z-[160] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
                 <i class="fas fa-times"></i>
             </button>
-            <div class="absolute bottom-0 left-0 w-full p-10 lg:p-20">
-                <div id="mGenres" class="flex flex-wrap gap-3 mb-8"></div>
-                <h2 id="mTitle" class="text-4xl lg:text-7xl font-black italic uppercase mb-8"></h2>
-                <div class="flex items-center gap-10 text-[11px] font-black uppercase tracking-widest text-white/50">
+            
+            <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 lg:p-20">
+                <div id="mGenres" class="flex flex-wrap gap-2 lg:gap-3 mb-4 lg:mb-8"></div>
+                
+                <h2 id="mTitle" class="text-3xl md:text-4xl lg:text-7xl font-black italic uppercase mb-4 lg:mb-8 leading-tight line-clamp-2"></h2>
+                
+                <div class="flex flex-wrap items-center gap-4 lg:gap-10 text-[9px] lg:text-[11px] font-black uppercase tracking-widest text-white/50">
                     <span id="mYear"></span>
                     <span id="mRating" class="text-pulse"></span>
                     <button id="mTrailerBtn" class="border-b border-pulse pb-1 text-white">Watch Trailer</button>
+                   
+                    <button onclick="openWatchMenu()" class="border-b border-[#22c55e] pb-1 text-[#22c55e] flex items-center gap-2">
+                        <i class="fas fa-play"></i> Watch
+                    </button>
                 </div>
             </div>
         </div>
 
-        <div class="px-10 lg:px-20 py-24 grid grid-cols-1 lg:grid-cols-3 gap-24">
+        <div class="px-10 lg:px-20 py-12 lg:py-24 flex flex-col-reverse lg:grid lg:grid-cols-3 gap-10 lg:gap-24">
+
+        
             <div class="lg:col-span-2 space-y-24">
                 <div>
                     <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-8 italic">Narrative Arc</h4>
@@ -1303,6 +1441,46 @@
     
     </div>
 </div>
+<!-- notification -->
+ <div id="neuralToast" class="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 z-[300] hidden animate-in slide-in-from-right-10 fade-in duration-500 cursor-pointer hover:scale-105 transition-transform" onclick="handleToastClick()">
+    <div class="bg-[#0a0c12]/95 backdrop-blur-xl border border-pulse/30 p-4 rounded-2xl shadow-2xl shadow-pulse/20 flex items-center gap-4 max-w-sm">
+        <div class="w-12 h-16 rounded-lg overflow-hidden shrink-0 border border-white/10">
+            <img id="toastImg" class="w-full h-full object-cover" src="">
+        </div>
+        <div>
+            <div id="toastBadge" class="text-[8px] font-black uppercase text-pulse tracking-widest mb-1">Neural Alert</div>
+            <div id="toastTitle" class="text-xs font-bold text-white line-clamp-1 italic"></div>
+            <div id="toastMsg" class="text-[9px] text-gray-400 mt-1 uppercase"></div>
+        </div>
+        <button onclick="closeToast(event)" class="ml-auto w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-pulse transition-all">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
+
+<button onclick="toggleNotifHub()" class="relative w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-pulse transition-all text-gray-400 hover:text-white z-[90] ml-4">
+    <i class="fas fa-bell"></i>
+    <span id="notifBadge" class="absolute top-0 right-0 w-3 h-3 bg-pulse rounded-full border-2 border-[#0a0c12] hidden"></span>
+</button>
+
+<div id="notifHub" class="fixed top-0 right-0 w-full md:w-96 h-full bg-[#0a0c12]/95 backdrop-blur-3xl border-l border-white/10 z-[400] transform translate-x-full transition-transform duration-500 flex flex-col">
+    <div class="p-8 border-b border-white/10 flex justify-between items-center">
+        <h3 class="text-2xl font-black italic uppercase text-pulse">Neural Hub</h3>
+        <button onclick="toggleNotifHub()" class="text-gray-500 hover:text-white transition-all"><i class="fas fa-times text-xl"></i></button>
+    </div>
+    <div id="notifList" class="flex-1 overflow-y-auto p-6 space-y-4">
+        </div>
+</div>
+<div id="watchModal" onclick="this.classList.add('hidden')" class="fixed inset-0 z-[250] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+    <div onclick="event.stopPropagation()" class="relative w-full max-w-sm bg-[#0a0c12] border border-white/10 rounded-[30px] shadow-2xl p-6">
+        <h3 class="text-xl font-black italic uppercase text-white mb-4 flex items-center gap-3">
+            <i class="fas fa-play text-[#22c55e]"></i> Select Source
+        </h3>
+        <p class="text-[10px] text-gray-500 uppercase font-bold mb-4 tracking-widest">Available Links for this Category</p>
+        <div id="watchSourceList" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2"></div>
+        <button onclick="document.getElementById('watchModal').classList.add('hidden')" class="mt-6 w-full py-3 bg-white/5 rounded-xl text-[10px] uppercase font-black tracking-widest text-gray-400 hover:text-white transition-all">Cancel</button>
+    </div>
+</div>
     <script>
         const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
         const BASE = 'https://api.themoviedb.org/3';
@@ -1331,6 +1509,7 @@
             labIsGrid: true,
             active: null,
             view: 'home',
+            
             searchParams: { q: '', y: '', g: '', s: 'popularity.desc' },
             searchMode: 'trending', // 'trending', 'actor', 'filter', 'search'
             actorCredits: [],
@@ -1342,6 +1521,10 @@
             listExpanded: {},
             listSearchQuery: '', 
             labSearchQuery: '',  
+            listSort: 'newest', 
+            labSort: 'newest',  
+            discoverFilters: { type: 'all', genres: [] },
+            discoverDataRaw: [],
             
         };
         // Initialize App
@@ -1381,7 +1564,9 @@ async function init() {
                 startClock();
                 setupSearchBehavior();
                 setupStarLogic();
-                
+                initNeuralEngine();
+                renderSources();
+
                 setInterval(nextHero, 10000);
             } catch (e) { console.error("Neural init error", e); 
                 
@@ -1430,13 +1615,49 @@ function setupSearchBehavior() {
     const bar = document.getElementById('searchBar');
     const drop = document.getElementById('searchDrop');
     const clearBtn = document.getElementById('clearSearch');
+    
+    let searchTimeout; // Neural debounce timer
+    let hoverTimeout;  // Mouse leave delay
+    let idleTimeout;   // Inactivity auto-clear timer
+
+    // --- Idle Auto-Clear Engine ---
+    const resetIdleTimer = () => {
+        clearTimeout(idleTimeout);
+        if (input.value.trim()) {
+            idleTimeout = setTimeout(() => {
+                input.value = '';
+                clearBtn.classList.add('hidden');
+                drop.classList.add('hidden');
+                bar.classList.remove('active');
+                input.blur();
+            }, 15000); // Clears if away for 15 seconds
+        }
+    };
 
     input.onfocus = () => {
         bar.classList.add('active');
         if (state.view !== 'search' && input.value.trim()) drop.classList.remove('hidden');
+        resetIdleTimer();
     };
 
-    // Handle Enter Key
+    // --- Hover In & Out Logic ---
+    bar.addEventListener('mouseleave', () => {
+        hoverTimeout = setTimeout(() => {
+            drop.classList.add('hidden');
+            bar.classList.remove('active');
+        }, 400); // 400ms grace period to move mouse to dropdown
+    });
+
+    bar.addEventListener('mouseenter', () => {
+        clearTimeout(hoverTimeout);
+        if (input.value.trim() && state.view !== 'search') {
+            drop.classList.remove('hidden');
+            bar.classList.add('active');
+        }
+        resetIdleTimer();
+    });
+
+    // --- Handle Enter Key (Search & Clear) ---
     input.onkeydown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -1448,9 +1669,10 @@ function setupSearchBehavior() {
                 navigate('search');
                 deepSearch(q);
                 
-                // AUTO-CLEAR after successful search
+                // Instantly auto-clear the input after execution
                 input.value = '';
                 clearBtn.classList.add('hidden');
+                clearTimeout(idleTimeout);
             }
         }
     };
@@ -1466,53 +1688,39 @@ function setupSearchBehavior() {
             loadDiscoverContent();
         }
         input.focus();
+        clearTimeout(idleTimeout);
     };
 
     input.oninput = (e) => {
         const q = e.target.value.trim();
         clearBtn.classList.toggle('hidden', !q);
         
+        clearTimeout(searchTimeout); 
+        resetIdleTimer();
+
         if (state.view === 'search') {
             drop.classList.add('hidden');
-            deepSearch(q); 
+            searchTimeout = setTimeout(() => {
+                deepSearch(q); 
+            }, 500); 
         } else {
             if(!q) { drop.classList.add('hidden'); return; }
-            clearTimeout(this.searchTimer);
-            this.searchTimer = setTimeout(async () => {
+            searchTimeout = setTimeout(async () => {
                 const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
                 renderDrop(data.results.slice(0, 8), q); 
             }, 300);
         }
     };
     
+    // Close dropdown when clicking strictly outside
     document.addEventListener('click', (e) => {
-        if (!bar.contains(e.target)) {
+        if (!bar.contains(e.target) && e.target.id !== 'clearSearch') {
             drop.classList.add('hidden');
             bar.classList.remove('active');
         }
     });
-
-    let clearTimer; // Timer for auto-clearing
-
-    bar.onmouseleave = () => {
-        this.leaveTimer = setTimeout(() => {
-            drop.classList.add('hidden');
-            bar.classList.remove('active');
-        }, 1000);
-
-        // AUTO-CLEAR if mouse leaves the search area for 5 seconds
-        clearTimer = setTimeout(() => {
-            input.value = '';
-            clearBtn.classList.add('hidden');
-            input.blur();
-        }, 5000);
-    };
-    
-    bar.onmouseenter = () => {
-        clearTimeout(this.leaveTimer);
-        clearTimeout(clearTimer); // Cancel clear if user returns
-    };
 }
+ 
 
 async function loadDiscoverContent(append = false) {
     
@@ -1523,10 +1731,7 @@ async function loadDiscoverContent(append = false) {
     state.searchMode = 'trending'; 
     const grid = document.getElementById('searchGrid');
     
-    if (!append) {
-        discoverPage = 1;
-        grid.innerHTML = '<div class="page-loader"></div>';
-    }
+  
 
     try {
         const data = await fetchAPI(`/trending/all/day?page=${discoverPage}`);
@@ -1542,14 +1747,12 @@ async function loadDiscoverContent(append = false) {
             </div>
         `).join('');
 
-        if (append) {
-            // Remove loader before appending
-            const loader = grid.querySelector('.page-loader');
-            if (loader) loader.remove();
-            grid.insertAdjacentHTML('beforeend', html);
-        } else {
-            grid.innerHTML = html;
-        }
+      if (append) {
+    state.discoverDataRaw = state.discoverDataRaw.concat(data.results);
+} else {
+    state.discoverDataRaw = data.results;
+}
+applyDiscoverLocalFilters();
 
         // Show button if more pages exist
         loadBtn.classList.remove('hidden');
@@ -1707,10 +1910,11 @@ async function deepSearch(q) {
         loadDiscoverContent();
         return;
     }
-
+  state.discoverDataRaw = data.results;
     state.searchMode = 'search';
     header.innerText = `Results: ${q}`;
     loadBtn.classList.add('hidden'); // Hide load more for raw search results
+  
     grid.innerHTML = '<div class="page-loader"></div>';
     
     const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
@@ -1720,8 +1924,10 @@ async function deepSearch(q) {
         return;
     }
 
+
     renderGrid('searchGrid', data.results, false, true);
     applyLayoutToGrid();
+    applyDiscoverLocalFilters();
 }
 
 async function applySearchFilters(append = false) {
@@ -1905,6 +2111,7 @@ async function applySearchFilters(append = false) {
                     type: cat,
                     status: status,
                     ep: 0,
+                    max_ep: item.number_of_episodes || 1,
                     score: 0,
                     imdb: item.vote_average,
                     year: (item.release_date || item.first_air_date || '').split('-')[0],
@@ -1936,7 +2143,7 @@ function renderList() {
 
     const html = order.map(status => {
         // Apply Filters
-        // Apply Filters
+        
         let items = state.db.filter(i => i.status === status);
         if (state.listSearchQuery) {
             items = items.filter(i => isSmartMatch(i.title, state.listSearchQuery));
@@ -1951,9 +2158,10 @@ function renderList() {
                 return i.genres.some(id => equivalents.includes(id));
             }));
         }
-
+        
         if(!items.length) return '';
-
+        items.sort((a, b) => state.listSort === 'newest' ? b.added - a.added : a.added - b.added);
+        if(!items.length) return '';
         const isExpanded = state.listExpanded[status];
         const displayItems = isExpanded ? items : items.slice(0, limit);
 
@@ -1968,6 +2176,11 @@ function renderList() {
                             <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
                                 <img src="${IMG+i.poster}" class="w-full h-full object-cover">
                                 <div class="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                ${i.type !== 'movie' && i.max_ep && i.ep > 0 ? `
+                                <div class="absolute bottom-0 left-0 w-full h-1.5 bg-dark/90 backdrop-blur-sm z-20">
+                                      <div class="h-full transition-all duration-500 ${i.ep / i.max_ep > 0.8 ? 'bg-[#22c55e]' : i.ep / i.max_ep > 0.3 ? 'bg-[#f59e0b]' : 'bg-pulse'}" style="width: ${(i.ep / i.max_ep) * 100}%"></div>
+                                </div>
+` :                             ''}
                             </div>
                             <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
                             <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">${i.type} • ★ ${i.imdb.toFixed(1)}</div>
@@ -2044,8 +2257,8 @@ function runLab() {
 
         let qMatch = !state.labSearchQuery || isSmartMatch(i.title, state.labSearchQuery);
 
-    // Return all conditions together (now including qMatch)
-    return sMatch && yMatch && iMatch && pMatch && typeMatch && genreMatch && qMatch;
+        // Return all conditions together (now including qMatch)
+        return sMatch && yMatch && iMatch && pMatch && typeMatch && genreMatch && qMatch;
     });
 
     document.getElementById('labCount').innerText = filtered.length;
@@ -2056,28 +2269,43 @@ function runLab() {
     labGrid.className = state.labIsGrid 
         ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' 
         : 'flex flex-col gap-4';
+        
+    // Sort by Time Added
+    filtered.sort((a, b) => state.labSort === 'newest' ? b.added - a.added : a.added - b.added);
+
+    document.getElementById('labCount').innerText = filtered.length;
 
     labGrid.innerHTML = filtered.map(item => state.labIsGrid ? `
         <div class="group cursor-pointer" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
-            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl">
+            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl relative">
+                
+                
                 <img src="${IMG+item.poster}" class="w-full h-full object-cover">
+
+                
+                
             </div>
+            
             <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
         </div>
     ` : `
-        <div class="lib-card-row cursor-pointer group" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
-            <img src="${IMG+item.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg border border-white/5 group-hover:border-pulse/50 transition-colors">
-            <div class="flex-1">
+        <div class="lib-card-row cursor-pointer group relative overflow-hidden" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
+            <img src="${IMG+item.poster}" class="w-16 h-24 object-cover rounded-xl shadow-lg border border-white/5 group-hover:border-pulse/50 transition-colors z-10 relative">
+            <div class="flex-1 z-10 relative">
                 <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${item.title}</div>
                 <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
                     <span class="bg-white/5 px-2 py-1 rounded-md">${item.type}</span> 
                     <span>${item.year}</span>
                 </div>
             </div>
-            <div class="stats text-right shrink-0">
+            <div class="stats text-right shrink-0 z-10 relative">
                 <div class="text-[12px] font-black text-pulse">★ ${parseFloat(item.imdb).toFixed(1)}</div>
                 <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${item.score ? item.score + '/5' : '-'}</div>
             </div>
+            
+            ${item.type !== 'movie' && item.max_ep && item.ep > 0 ? `
+                <div class="absolute bottom-0 left-0 h-1 z-0 transition-all duration-500 opacity-50 ${item.ep / item.max_ep > 0.8 ? 'bg-[#22c55e]' : item.ep / item.max_ep > 0.3 ? 'bg-[#f59e0b]' : 'bg-pulse'}" style="width: ${(item.ep / item.max_ep) * 100}%"></div>
+            ` : ''}
         </div>
     `).join('');
     
@@ -2688,20 +2916,135 @@ function isSmartMatch(text, query) {
     );
 }
 
+// Initialize Sources DB
+let sourcesDb = JSON.parse(localStorage.getItem('cp_elite_sources')) || {
+    movie: [], tv: [], anime: [], kdrama: [], turkish: []
+};
+
+function renderSources() {
+    const container = document.getElementById('sourceListContainer');
+    if (!container) return;
+    
+    const categories = Object.keys(sourcesDb);
+    container.innerHTML = categories.map(cat => {
+        if (!sourcesDb[cat].length) return '';
+        return `
+            <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <h4 class="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-4 border-b border-white/5 pb-2">${cat} Sources</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${sourcesDb[cat].map((src, idx) => {
+                        const domain = new URL(src.url.replace(/{.*?}/g, '')).hostname;
+                        return `
+                            <div class="flex items-center justify-between bg-dark border border-white/10 p-3 rounded-xl hover:border-pulse/50 transition-colors">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md bg-white/10 p-0.5 shrink-0">
+                                    <div class="truncate">
+                                        <div class="text-[11px] font-black uppercase text-white truncate">${src.name}</div>
+                                        <div class="text-[8px] text-gray-500 truncate">${domain}</div>
+                                    </div>
+                                </div>
+                                <button onclick="removeSource('${cat}', ${idx})" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/10 shrink-0 transition-all"><i class="fas fa-trash text-[10px]"></i></button>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }).join('') || `<div class="text-center py-10 text-[10px] uppercase font-black text-gray-600 tracking-widest">No Sources Configured</div>`;
+}
+
+function addSource() {
+    const cat = document.getElementById('srcCategory').value;
+    const name = document.getElementById('srcName').value.trim();
+    const url = document.getElementById('srcUrl').value.trim();
+
+    if (!name || !url) return alert("Please provide both a name and a URL template.");
+    if (!url.startsWith('http')) return alert("URL must start with http:// or https://");
+
+    sourcesDb[cat].push({ name, url });
+    localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
+    
+    document.getElementById('srcName').value = '';
+    document.getElementById('srcUrl').value = '';
+    renderSources();
+}
+
+function removeSource(cat, idx) {
+    sourcesDb[cat].splice(idx, 1);
+    localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
+    renderSources();
+}
+
+function openWatchMenu() {
+    if (!state.active) return;
+    
+    // Determine category based on your existing logic
+    let cat = state.active.media_type;
+    if (cat === 'tv') {
+        if (state.active.original_language === 'tr') cat = 'turkish';
+        else if (state.active.original_language === 'ko') cat = 'kdrama';
+        else if ((state.active.genres || []).some(g => g.id === 16)) cat = 'anime';
+    }
+
+    const availableSources = sourcesDb[cat] || [];
+    const listHtml = document.getElementById('watchSourceList');
+
+    if (availableSources.length === 0) {
+        listHtml.innerHTML = `
+            <div class="text-center py-6">
+                <i class="fas fa-satellite-dish text-3xl text-gray-600 mb-3"></i>
+                <p class="text-[10px] text-gray-400 uppercase font-black tracking-widest">No Sources Configured</p>
+                <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" class="mt-4 px-6 py-2 bg-white/5 rounded-full text-[9px] text-pulse uppercase tracking-widest hover:bg-pulse hover:text-white transition-all">Go to Source Engine</button>
+            </div>
+        `;
+    } else {
+        const title = encodeURIComponent(state.active.title || state.active.name);
+        const tmdbId = state.active.id;
+        const year = (state.active.release_date || state.active.first_air_date || '').split('-')[0];
+
+        listHtml.innerHTML = availableSources.map(src => {
+            // URL Templating Replacement Engine
+            const finalUrl = src.url
+                .replace(/{title}/g, title)
+                .replace(/{tmdb_id}/g, tmdbId)
+                .replace(/{year}/g, year);
+                
+            const domain = new URL(src.url.replace(/{.*?}/g, '')).hostname;
+
+            return `
+                <a href="${finalUrl}" target="_blank" class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-[#22c55e] hover:bg-[#22c55e]/10 transition-all group">
+                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-lg">
+                    <div class="flex-1">
+                        <div class="text-[11px] font-black uppercase text-white group-hover:text-[#22c55e] transition-colors">${src.name}</div>
+                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
+                    </div>
+                    <i class="fas fa-external-link-alt text-gray-600 group-hover:text-[#22c55e]"></i>
+                </a>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('watchModal').classList.remove('hidden');
+}
+
+
+
 // --- DYNAMIC FILTERS ---
 function renderGenrePills() {
-    const buildPills = (targetId, currentList) => {
-        document.getElementById(targetId).innerHTML = state.genres.map(g => {
+    const buildPills = (targetId, currentList, clickHandler) => {
+        const container = document.getElementById(targetId);
+        if (!container) return;
+        container.innerHTML = state.genres.map(g => {
             const isActive = currentList.includes(g.id);
-            // Updated styling: Active states now glow with the pulse color
             const baseClass = isActive 
                 ? "bg-pulse text-white border-pulse shadow-lg shadow-pulse/30" 
                 : "bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white";
-            return `<button onclick="toggleFilterGenre('${targetId}', ${g.id})" class="px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest shrink-0 transition-all snap-start ${baseClass}">${g.name}</button>`;
+            return `<button onclick="${clickHandler}('${targetId}', ${g.id})" class="px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest shrink-0 transition-all snap-start ${baseClass}">${g.name}</button>`;
         }).join('');
     };
-    if (document.getElementById('listGenreContainer')) buildPills('listGenreContainer', state.listFilters.genres);
-    if (document.getElementById('labGenreContainer')) buildPills('labGenreContainer', state.labFilters.genres);
+    buildPills('listGenreContainer', state.listFilters.genres, 'toggleFilterGenre');
+    buildPills('labGenreContainer', state.labFilters.genres, 'toggleFilterGenre');
+    buildPills('discoverGenreContainer', state.discoverFilters.genres, 'toggleDiscoverGenre'); // New line
 }
 
 function toggleFilterGenre(target, genreId) {
@@ -2739,6 +3082,193 @@ function toggleAdvancedLabFilters() {
     const filterBox = document.getElementById('labAdvancedFilters');
     filterBox.classList.toggle('hidden');
 }
+
+let notifications = [];
+let currentToastItem = null;
+
+function initNeuralEngine() {
+    // Run every 2 minutes (120000 ms)
+    setInterval(generateSmartNotification, 120000);
+    // Fire one off 10 seconds after load to show the user it works
+    setTimeout(generateSmartNotification, 10000); 
+}
+
+function generateSmartNotification() {
+    if (state.db.length === 0) return; // Need data to be smart
+
+    // Define notification types
+    const rules = [
+        {
+            type: 'Watching',
+            badge: 'Continue Sync',
+            msg: 'Pick up where you left off.',
+            filter: i => i.status === 'Watching'
+        },
+        {
+            type: 'Plan to Watch',
+            badge: 'Awaiting Initiation',
+            msg: 'Ready to start a new journey?',
+            filter: i => i.status === 'Plan to Watch'
+        },
+        {
+            type: 'Ongoing',
+            badge: 'Update Detected',
+            msg: 'Check for new episodes!',
+            filter: i => i.status === 'Ongoing'
+        },
+        {
+            type: 'Finished',
+            badge: 'Memory Log',
+            msg: 'You loved this. Time for a rewatch?',
+            filter: i => i.status === 'Finished' && i.score >= 4
+        }
+    ];
+
+    // Pick a random rule
+    const rule = rules[Math.floor(Math.random() * rules.length)];
+    const pool = state.db.filter(rule.filter);
+    
+    if (pool.length === 0) return; // Try again next interval if no matches
+
+    const item = pool[Math.floor(Math.random() * pool.length)];
+    
+    // Build notification object
+    const notif = {
+        id: Date.now(),
+        item: item,
+        badge: rule.badge,
+        msg: rule.msg,
+        read: false
+    };
+
+    notifications.unshift(notif);
+    if (notifications.length > 20) notifications.pop(); // Keep history clean
+
+    showToast(notif);
+    updateHubUI();
+}
+
+function showToast(notif) {
+    currentToastItem = notif.item;
+    document.getElementById('toastImg').src = IMG + notif.item.poster;
+    document.getElementById('toastBadge').innerText = notif.badge;
+    document.getElementById('toastTitle').innerText = notif.item.title;
+    document.getElementById('toastMsg').innerText = notif.msg;
+    
+    const toast = document.getElementById('neuralToast');
+    toast.classList.remove('hidden');
+    
+    // Auto hide after 8 seconds
+    setTimeout(() => { toast.classList.add('hidden'); }, 8000);
+}
+
+function closeToast(e) {
+    e.stopPropagation();
+    document.getElementById('neuralToast').classList.add('hidden');
+}
+
+function handleToastClick() {
+    if (currentToastItem) {
+        document.getElementById('neuralToast').classList.add('hidden');
+        openModal(currentToastItem.id, currentToastItem.type === 'movie' ? 'movie' : 'tv');
+    }
+}
+
+function toggleNotifHub() {
+    const hub = document.getElementById('notifHub');
+    hub.classList.toggle('translate-x-full');
+    
+    // Mark all as read when opened
+    notifications.forEach(n => n.read = true);
+    updateHubUI();
+}
+
+function updateHubUI() {
+    const unreadCount = notifications.filter(n => !n.read).length;
+    const badge = document.getElementById('notifBadge');
+    
+    if (unreadCount > 0) {
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+
+    const list = document.getElementById('notifList');
+    if (notifications.length === 0) {
+        list.innerHTML = '<div class="text-center text-gray-600 text-[10px] font-black uppercase mt-10">No Neural Alerts</div>';
+        return;
+    }
+
+    list.innerHTML = notifications.map(n => `
+        <div onclick="openModal(${n.item.id}, '${n.item.type === 'movie' ? 'movie' : 'tv'}'); toggleNotifHub()" class="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/5 cursor-pointer hover:border-pulse hover:bg-white/10 transition-all ${!n.read ? 'border-l-4 border-l-pulse' : ''}">
+            <img src="${IMG + n.item.poster}" class="w-10 h-14 object-cover rounded shadow-lg">
+            <div class="flex-1">
+                <div class="text-[8px] text-pulse font-black uppercase tracking-widest">${n.badge}</div>
+                <div class="text-xs font-bold text-white line-clamp-1 italic">${n.item.title}</div>
+                <div class="text-[9px] text-gray-500 uppercase mt-1">${n.msg}</div>
+            </div>
+        </div>
+    `).join('');
+}
+
+const searchInput = document.getElementById("mainSearch");
+const clearBtn = document.getElementById("clearSearch");
+
+searchInput.addEventListener("input", () => {
+    if (searchInput.value.length > 0) {
+        clearBtn.classList.remove("hidden");
+    } else {
+        clearBtn.classList.add("hidden");
+    }
+});
+
+clearBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    clearBtn.classList.add("hidden");
+    searchInput.focus();
+});
+
+function toggleDiscoverFilter(type, val) {
+    state.discoverFilters[type] = val;
+    document.querySelectorAll('.d-type-btn').forEach(b => b.className = "d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all");
+    document.getElementById(`dType-${val}`).className = "d-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all";
+    applyDiscoverLocalFilters();
+}
+
+function toggleDiscoverGenre(target, genreId) {
+    const idx = state.discoverFilters.genres.indexOf(genreId);
+    if (idx > -1) state.discoverFilters.genres.splice(idx, 1);
+    else state.discoverFilters.genres.push(genreId);
+    renderGenrePills();
+    applyDiscoverLocalFilters();
+}
+
+function applyDiscoverLocalFilters() {
+    if (!state.discoverDataRaw || state.discoverDataRaw.length === 0) return;
+
+    let filtered = state.discoverDataRaw.filter(i => {
+        // Parse Media Type
+        let type = i.media_type || (i.title ? 'movie' : 'tv');
+        if (type === 'tv') {
+            if (i.original_language === 'ko') type = 'kdrama';
+            else if (i.original_language === 'tr') type = 'turkish';
+            else if (i.genre_ids && i.genre_ids.includes(16)) type = 'anime';
+        }
+
+        // Apply Filters
+        let tMatch = state.discoverFilters.type === 'all' || type === state.discoverFilters.type;
+        let gMatch = state.discoverFilters.genres.length === 0 || state.discoverFilters.genres.every(g => {
+            const equivalents = GENRE_MAP[g] || [g];
+            return i.genre_ids && i.genre_ids.some(id => equivalents.includes(id));
+        });
+
+        return tMatch && gMatch;
+    });
+
+    renderGrid('searchGrid', filtered, false, true); // Overwrite grid with filtered data
+    applyLayoutToGrid();
+}
+
        // --- DATA DESTRUCTION: CUSTOM PURGE UI ---
 
         function clearLibrary() {
@@ -2781,6 +3311,8 @@ function toggleAdvancedLabFilters() {
         }
         init();
     </script>
+    
 </body>
 </html>
+
 
