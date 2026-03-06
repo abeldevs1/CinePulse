@@ -1509,7 +1509,6 @@
             labIsGrid: true,
             active: null,
             view: 'home',
-            
             searchParams: { q: '', y: '', g: '', s: 'popularity.desc' },
             searchMode: 'trending', // 'trending', 'actor', 'filter', 'search'
             actorCredits: [],
@@ -1910,11 +1909,10 @@ async function deepSearch(q) {
         loadDiscoverContent();
         return;
     }
-  state.discoverDataRaw = data.results;
+
     state.searchMode = 'search';
     header.innerText = `Results: ${q}`;
     loadBtn.classList.add('hidden'); // Hide load more for raw search results
-  
     grid.innerHTML = '<div class="page-loader"></div>';
     
     const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
@@ -1923,11 +1921,10 @@ async function deepSearch(q) {
         grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-600 font-black uppercase italic tracking-[0.5em]">No Neural Matches Found</div>`;
         return;
     }
-
-
+state.discoverDataRaw = data.results;
+applyDiscoverLocalFilters();
     renderGrid('searchGrid', data.results, false, true);
     applyLayoutToGrid();
-    applyDiscoverLocalFilters();
 }
 
 async function applySearchFilters(append = false) {
@@ -3314,5 +3311,3 @@ function applyDiscoverLocalFilters() {
     
 </body>
 </html>
-
-
