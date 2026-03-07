@@ -57,15 +57,20 @@ window.fetch = async (...args) => {
         let discoverPage = 1;
         let currentPersonCredits = [];
         let personDisplayLimit = 8;
+        let isSelectMode = false;
+        let selectedItems = new Set();
         let notifications = JSON.parse(localStorage.getItem('cp_elite_notifs')) || [];
-let archivedNotifs = JSON.parse(localStorage.getItem('cp_elite_notifs_archived')) || [];
-let currentNotifTab = 'recent';
+        let archivedNotifs = JSON.parse(localStorage.getItem('cp_elite_notifs_archived')) || [];
+        let currentNotifTab = 'recent';
 
-let prefs = JSON.parse(localStorage.getItem('cp_elite_prefs')) || {
-    listIsGrid: true,
-    labIsGrid: true,
-    searchLayout: 'grid-cols-4'
-};
+        let prefs = JSON.parse(localStorage.getItem('cp_elite_prefs')) || {
+            listIsGrid: true,
+            labIsGrid: true,
+            searchLayout: 'grid-cols-4',
+            safeMode: true
+        };
+// Failsafe for existing users
+if (typeof prefs.safeMode === 'undefined') prefs.safeMode = true;
 
 let currentSearchLayout = prefs.searchLayout;
        let state = {
@@ -118,7 +123,7 @@ function cleanNotifications() {
 cleanNotifications(); // Run immediately
         // Initialize App
 async function init() {
-    
+let customSagas = JSON.parse(localStorage.getItem('cp_elite_custom_sagas')) || [];    
     try {
         // Clear preloader
         setTimeout(() => {
@@ -183,7 +188,8 @@ checkReminders(); // Fire reminder check on load
                 setInterval(nextHero, 10000);
                 setupModalSearch();
                 loadCountries();
-
+                updateSafeModeUI();
+                setupLongPressSelection();
             } catch (e) { console.error("Neural init error", e); 
                 
        
@@ -350,7 +356,7 @@ function setupSearchBehavior() {
         } else {
             if(!q) { drop.classList.add('hidden'); return; }
             searchTimeout = setTimeout(async () => {
-                const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
+                const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=${!prefs.safeMode}`);
                 renderDrop(data.results.slice(0, 8), q); 
             }, 300);
         }
@@ -623,15 +629,30 @@ async function deepSearch(q) {
     loadBtn.classList.add('hidden'); 
     grid.innerHTML = '<div class="page-loader"></div>';
     
-    const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=false`);
+    // 1. Dynamic API Query based on Safe Mode
+    const adultParam = prefs.safeMode ? 'false' : 'true';
+    const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=${adultParam}`);
     
     if(!data.results || data.results.length === 0) {
         grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-600 font-black uppercase italic tracking-[0.5em]">No Neural Matches Found</div>`;
         return;
     }
     
-    state.discoverDataRaw = data.results;
-    applyDiscoverLocalFilters(); // This now automatically renders the filtered version
+    // 2. Strict Local Failsafe (Double-checks TMDB's work)
+    let safeResults = data.results;
+    if (prefs.safeMode) {
+        // Physically strip out anything with an adult flag
+        safeResults = safeResults.filter(item => item.adult !== true);
+    }
+    
+    // 3. UI Reaction if all results were blocked
+    if(safeResults.length === 0) {
+        grid.innerHTML = `<div class="col-span-full py-20 text-center text-pulse font-black uppercase italic tracking-[0.2em]"><i class="fas fa-shield-alt text-2xl mb-4 block"></i>Content Blocked by Neural Safe Mode</div>`;
+        return;
+    }
+
+    state.discoverDataRaw = safeResults;
+    applyDiscoverLocalFilters();
 }
 
 
@@ -890,7 +911,9 @@ renderMasterpieces = function() {
         const isReminded = state.reminders.some(r => r.id === id);
         updateRemindBtnUI(isReminded);
 
-        const target = new Date(targetDateStr).getTime();
+        // Manually split the string to force local timezone calculation
+        const [cYear, cMonth, cDay] = targetDateStr.split('-');
+        const target = new Date(cYear, cMonth - 1, cDay).getTime();
         const updateTimer = () => {
             const diff = target - new Date().getTime();
             if (diff < 0) {
@@ -903,11 +926,11 @@ renderMasterpieces = function() {
             const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const s = Math.floor((diff % (1000 * 60)) / 1000);
             
-            cTimer.innerHTML = `
-                <div class="flex flex-col items-center w-12"><span class="text-pulse">${d}</span><span class="text-[8px] text-gray-500 uppercase">Days</span></div><span class="text-gray-700 font-light">:</span>
-                <div class="flex flex-col items-center w-12"><span>${h.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Hrs</span></div><span class="text-gray-700 font-light">:</span>
-                <div class="flex flex-col items-center w-12"><span>${m.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Min</span></div><span class="text-gray-700 font-light">:</span>
-                <div class="flex flex-col items-center w-12"><span>${s.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Sec</span></div>
+           cTimer.innerHTML = `
+                <div class="flex flex-col items-center w-12 md:w-16"><span class="text-pulse tabular-nums">${d}</span><span class="text-[8px] text-gray-500 uppercase">Days</span></div><span class="text-gray-700 font-light">:</span>
+                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${h.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Hrs</span></div><span class="text-gray-700 font-light">:</span>
+                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${m.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Min</span></div><span class="text-gray-700 font-light">:</span>
+                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${s.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Sec</span></div>
             `;
         };
         updateTimer();
@@ -929,6 +952,7 @@ renderMasterpieces = function() {
     document.getElementById('mTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
 
     document.getElementById('mStatus').value = local ? local.status : '';
+    populateSagaDropdown(local ? local.sagaId : null);
     document.getElementById('mProgressBox').classList.toggle('hidden', type !== 'tv' || !local);
     
     if(type === 'tv' && local) {
@@ -1057,6 +1081,7 @@ function toggleSectionExpand(status) {
 }
 
 function renderList() {
+    
     const container = document.getElementById('listContainer');
     const order = ['Watching', 'Ongoing', 'Plan to Watch', 'On Hold', 'Finished', 'Dropped'];
     const limit = window.innerWidth < 768 ? 4 : (window.innerWidth < 1280 ? 5 : 6); 
@@ -1073,54 +1098,67 @@ function renderList() {
         const displayItems = isExpanded ? items : items.slice(0, limit);
 
         return `
-            <section class="animate-in fade-in duration-500">
-                <div class="lib-section-title">
-                    ${status} <span class="text-white bg-pulse px-4 py-1.5 rounded-full text-[11px] shadow-lg shadow-pulse/40 ml-2">${items.length}</span>
-                </div>
-                <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-4'}">
-                    ${displayItems.map(i => state.isGrid ? `
-                        <div class="group cursor-pointer" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
-                        <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
-                            <img src="${IMG+i.poster}" class="w-full h-full object-cover">
-                            <div class="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20"></div>
-                            
-                            ${getPlayHoverHTML(i)}
-                            ${getLiquidHTML(i)}
-                        </div>
-                        <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
-                        <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">${i.type} • ★ ${parseFloat(i.imdb).toFixed(1)}</div>
+          <section class="animate-in fade-in duration-500">
+        <div class="lib-section-title">
+            ${status} <span class="text-white bg-pulse px-4 py-1.5 rounded-full text-[11px] shadow-lg shadow-pulse/40 ml-2">${items.length}</span>
+        </div>
+        <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-4'}">
+            ${displayItems.map(i => state.isGrid ? `
+                
+                <div class="lib-card-wrapper relative group cursor-pointer selectable-card ${isSelectMode ? 'select-mode-pulse' : ''}" data-id="${i.id}" onclick="handleCardClick(event, ${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+                    
+                    <div class="card-checkbox ${selectedItems.has(i.id) ? 'selected' : ''} ${!isSelectMode ? 'hidden' : ''}">
+                        <i class="fas fa-check"></i>
                     </div>
-                    ` : `
-                       <div class="lib-card-row cursor-pointer group" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
-                        <div class="relative w-16 h-24 shrink-0 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-pulse/50 transition-all">
-                            <img src="${IMG+i.poster}" class="w-full h-full object-cover">
-                            
-                            ${getPlayHoverHTML(i)}
-                            ${getLiquidHTML(i)}
-                        </div>
-                            <div class="flex-1 ml-4">
-                                <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${i.title}</div>
-                                <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
-                                    <span class="bg-white/5 px-2 py-1 rounded-md">${i.type}</span> 
-                                    <span>${i.year}</span>
-                                </div>
-                            </div>
-                            <div class="stats text-right shrink-0">
-                                <div class="text-[12px] font-black text-pulse">★ ${parseFloat(i.imdb).toFixed(1)}</div>
-                                <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${i.score ? i.score + '/5' : '-'}</div>
-                            </div>
-                        </div>
-                    `).join('')}
+
+                    <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
+                        <img src="${IMG+i.poster}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20"></div>
+                        
+                        ${getPlayHoverHTML(i)}
+                        ${getLiquidHTML(i)}
+                    </div>
+                    <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
+                    <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">${i.type} • ★ ${parseFloat(i.imdb).toFixed(1)}</div>
                 </div>
-                ${items.length > limit ? `
-                <div class="mt-10 flex justify-center">
-                    <button onclick="toggleSectionExpand('${status}')" class="px-10 py-4 bg-pulse/10 border border-pulse/30 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-pulse hover:bg-pulse hover:text-white transition-all shadow-xl hover:shadow-pulse/40">
-                        ${isExpanded ? 'Collapse Neural Data <i class="fas fa-chevron-up ml-2"></i>' : `Show All Records (${items.length}) <i class="fas fa-chevron-down ml-2"></i>`}
-                    </button>
+
+            ` : `
+
+                <div class="lib-card-wrapper lib-card-row relative cursor-pointer group ${isSelectMode ? 'select-mode-pulse' : ''}" data-id="${i.id}" onclick="handleCardClick(event, ${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+                    
+                    <div class="card-checkbox ${selectedItems.has(i.id) ? 'selected' : ''} ${!isSelectMode ? 'hidden' : ''}">
+                        <i class="fas fa-check"></i>
+                    </div>
+
+                    <div class="relative w-16 h-24 shrink-0 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-pulse/50 transition-all">
+                        <img src="${IMG+i.poster}" class="w-full h-full object-cover">
+                        ${getPlayHoverHTML(i)}
+                        ${getLiquidHTML(i)}
+                    </div>
+                    <div class="flex-1 ml-4 md:ml-6">
+                        <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${i.title}</div>
+                        <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
+                            <span class="bg-white/5 px-2 py-1 rounded-md">${i.type}</span> 
+                            <span>${i.year}</span>
+                        </div>
+                    </div>
+                    <div class="stats text-right shrink-0">
+                        <div class="text-[12px] font-black text-pulse">★ ${parseFloat(i.imdb).toFixed(1)}</div>
+                        <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${i.score ? i.score + '/5' : '-'}</div>
+                    </div>
                 </div>
-                ` : ''}
-            </section>
-        `;
+
+            `).join('')}
+        </div>
+        ${items.length > limit ? `
+        <div class="mt-10 flex justify-center">
+            <button onclick="toggleSectionExpand('${status}')" class="px-10 py-4 bg-pulse/10 border border-pulse/30 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-pulse hover:bg-pulse hover:text-white transition-all shadow-xl hover:shadow-pulse/40">
+                ${isExpanded ? 'Collapse Neural Data <i class="fas fa-chevron-up ml-2"></i>' : `Show All Records (${items.length}) <i class="fas fa-chevron-down ml-2"></i>`}
+            </button>
+        </div>
+        ` : ''}
+    </section>
+`;
     }).join('');
 
     container.innerHTML = html || `
@@ -1245,11 +1283,13 @@ function checkReminders() {
 
 // Lab Engine
 function runLab() {
+    // 1. Grab filter values from the UI
     const status = document.getElementById('labStatus').value;
     const year = document.getElementById('labYear').value;
     const imdb = document.getElementById('labImdb').value;
     const pers = document.getElementById('labPersonal').value;
 
+    // 2. Filter the database based on UI state
     let filtered = state.db.filter(i => {
         let sMatch = status === 'all' || i.status === status;
         let yMatch = year === 'all' || i.year === year;
@@ -1261,54 +1301,88 @@ function runLab() {
         return sMatch && yMatch && iMatch && pMatch && typeMatch && genreMatch && qMatch;
     });
 
-    const labGrid = document.getElementById('labGrid');
-    labGrid.className = state.labIsGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' : 'flex flex-col gap-4';
+    // 3. Apply sorting and update count
     filtered.sort((a, b) => state.labSort === 'newest' ? b.added - a.added : a.added - b.added);
     document.getElementById('labCount').innerText = filtered.length;
 
-    labGrid.innerHTML = filtered.map(item => state.labIsGrid ? `
-        <div class="group cursor-pointer relative" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
-        <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl relative">
-            <img src="${IMG+item.poster}" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10"></div>
-            
-            <div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase text-${item.type} border border-white/10 z-30">
-                ${item.type}
-            </div>
-            
-            <div class="absolute bottom-3 left-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase text-white border border-white/10 z-30">
-                ${item.status}
-            </div>
+    const labGrid = document.getElementById('labGrid');
+    labGrid.className = state.labIsGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' : 'flex flex-col gap-4';
 
-            ${getPlayHoverHTML(item)}
+    // 4. Render the HTML
+    labGrid.innerHTML = filtered.map(item => {
+        // Determine the type string for the click handler
+        const mediaType = item.type === 'movie' ? 'movie' : 'tv';
+        
+        // Logic for "Select Mode" styling
+        const isSelected = typeof selectedItems !== 'undefined' && selectedItems.has(item.id);
+        const activeSelectClass = isSelectMode ? 'select-mode-pulse' : '';
+        const checkboxHiddenClass = !isSelectMode ? 'hidden' : '';
+        const checkboxSelectedClass = isSelected ? 'selected' : '';
 
-            ${getLiquidHTML(item)}
-        </div>
-        <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
-    </div>
-        ` : `
-        <div class="lib-card-row cursor-pointer group" onclick="openModal(${item.id}, '${item.type === 'movie' ? 'movie' : 'tv'}')">
-            <div class="relative w-16 h-24 shrink-0 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-pulse/50 transition-all">
-                <img src="${IMG+item.poster}" class="w-full h-full object-cover">
-                ${getLiquidHTML(item)}
-            </div>
-            <div class="flex-1 ml-4">
-                <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${item.title}</div>
-                <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
-                    <span class="bg-white/5 px-2 py-1 rounded-md">${item.type}</span> 
-                    <span>${item.year}</span>
+        // GRID VIEW
+        if (state.labIsGrid) {
+            return `
+            <div class="group cursor-pointer relative selectable-card ${activeSelectClass}" 
+                 data-id="${item.id}" 
+                 data-type="${item.type}" 
+                 onclick="handleCardClick(event, ${item.id}, '${mediaType}')">
+                
+                <div class="card-checkbox ${checkboxSelectedClass} ${checkboxHiddenClass}">
+                    <i class="fas fa-check"></i>
                 </div>
-            </div>
-            <div class="stats text-right shrink-0">
-                <div class="text-[12px] font-black text-pulse">★ ${parseFloat(item.imdb).toFixed(1)}</div>
-                <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${item.score ? item.score + '/5' : '-'}</div>
-            </div>
-        </div>
-    `).join('');
+
+                <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-3 border-t-4 border-${item.type} group-hover:scale-105 transition-all shadow-xl relative">
+                    <img src="${IMG + item.poster}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10"></div>
+                    
+                    <div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase text-${item.type} border border-white/10 z-30">
+                        ${item.type}
+                    </div>
+                    
+                    <div class="absolute bottom-3 left-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase text-white border border-white/10 z-30">
+                        ${item.status}
+                    </div>
+
+                    ${getPlayHoverHTML(item)}
+                    ${getLiquidHTML(item)}
+                </div>
+                <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
+            </div>`;
+        } 
+        
+        // LIST VIEW
+        else {
+            return `
+            <div class="lib-card-row cursor-pointer group selectable-card ${activeSelectClass}" 
+                 data-id="${item.id}" 
+                 data-type="${item.type}" 
+                 onclick="handleCardClick(event, ${item.id}, '${mediaType}')">
+                
+                <div class="card-checkbox ${checkboxSelectedClass} ${checkboxHiddenClass}">
+                    <i class="fas fa-check"></i>
+                </div>
+
+                <div class="relative w-16 h-24 shrink-0 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-pulse/50 transition-all">
+                    <img src="${IMG + item.poster}" class="w-full h-full object-cover">
+                    ${getLiquidHTML(item)}
+                </div>
+                <div class="flex-1 ml-4 md:ml-6">
+                    <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${item.title}</div>
+                    <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
+                        <span class="bg-white/5 px-2 py-1 rounded-md">${item.type}</span> 
+                        <span>${item.year}</span>
+                    </div>
+                </div>
+                <div class="stats text-right shrink-0">
+                    <div class="text-[12px] font-black text-pulse">★ ${parseFloat(item.imdb).toFixed(1)}</div>
+                    <div class="text-[9px] font-bold text-gray-600 mt-2 uppercase">My Score: ${item.score ? item.score + '/5' : '-'}</div>
+                </div>
+            </div>`;
+        }
+    }).join('');
     
     updateCounters();
 }
-
         // Sync Engine Logic
         async function renderSync() {
     const container = document.getElementById('syncContainer');
@@ -1886,19 +1960,21 @@ function showNotification(msg, isError = false) {
 
 // --- Smart Export ---
 function exportData() {
-    if (state.db.length === 0 && Object.keys(sourcesDb).every(k => sourcesDb[k].length === 0)) {
-        showNotification("Library and Source Engine are empty.", true);
+   
+    if (state.db.length === 0 && Object.keys(sourcesDb).every(k => sourcesDb[k].length === 0) && customSagas.length === 0) {
+        showNotification("Library, Source Engine, and Forge are empty.", true);
         return;
     }
 
     showNotification("Packaging Neural Data...");
 
-    // V3.0 Includes Neural Radar and Sagas natively
+   // 2. V3.1 Includes Neural Radar, Standard Sagas, AND Custom Forge Sagas
     const backupPackage = {
-        version: "3.0",
+        version: "3.1",
         db: state.db,
         sources: sourcesDb,
-        reminders: state.reminders 
+        reminders: state.reminders,
+        customSagas: customSagas // <--- Safely attached to the payload
     };
 
     setTimeout(() => {
@@ -1913,78 +1989,356 @@ function exportData() {
     }, 500);
 }
 
-function importData(event) {
+// ADVANCED I/O MODAL LOGIC
+function openAdvancedIO(mode) {
+    const modal = document.getElementById('advancedIOModal');
+    const expConfig = document.getElementById('exportConfig');
+    const impConfig = document.getElementById('importConfig');
+    const title = document.getElementById('ioModalTitle');
+
+    if (mode === 'export') {
+        title.innerHTML = 'Advanced <span class="text-pulse">Export</span>';
+        expConfig.classList.remove('hidden');
+        impConfig.classList.add('hidden');
+    } else {
+        title.innerHTML = 'Advanced <span class="text-[#22c55e]">Import</span>';
+        impConfig.classList.remove('hidden');
+        expConfig.classList.add('hidden');
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function executeAdvancedExport() {
+    const includeLib = document.getElementById('expLibrary').checked;
+    const includeSagas = document.getElementById('expSagas').checked;
+    const includeSources = document.getElementById('expSources').checked;
+    const includeRadar = document.getElementById('expRadar').checked;
+    const includePrefs = document.getElementById('expPrefs').checked;
+
+    if (!includeLib && !includeSagas && !includeSources && !includeRadar && !includePrefs) {
+        return showNotification("Must select at least one dataset to export.", true);
+    }
+
+    const backupPackage = { version: "3.2" };
+    if (includeLib) backupPackage.db = state.db;
+    if (includeSagas) backupPackage.customSagas = customSagas;
+    if (includeSources) backupPackage.sources = sourcesDb;
+    if (includeRadar) backupPackage.reminders = state.reminders;
+    if (includePrefs) backupPackage.prefs = prefs;
+
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
+    const node = document.createElement('a');
+    node.setAttribute("href", dataStr);
+    node.setAttribute("download", `cinepulse_elite_custom_${Date.now()}.json`);
+    document.body.appendChild(node);
+    node.click();
+    node.remove();
+    
+    document.getElementById('advancedIOModal').classList.add('hidden');
+    showNotification("Custom Backup Generated!");
+}
+
+function executeAdvancedImport(event) {
+    // FIX: Grab the actual file object at index 0, not the FileList object
     const file = event.target.files[0];
     if (!file) return;
 
-    showNotification("Analyzing Backup Data...");
+    const strategy = document.querySelector('input[name="importStrat"]:checked').value;
+    
+    // Feature Selections
+    const impLib = document.getElementById('impLibrary').checked;
+    const impSagas = document.getElementById('impSagas').checked;
+    const impSources = document.getElementById('impSources').checked;
+    const impRadar = document.getElementById('impRadar').checked;
+    const impPrefs = document.getElementById('impPrefs').checked;
+
+    showNotification("Analyzing Neural Data via " + strategy.toUpperCase() + " Protocol...");
 
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
-            
-            // 1. Merge Database
-            const importedDB = Array.isArray(data) ? data : (data.db || []);
-            let updatedCount = 0;
-            let newCount = 0;
+            let importedCount = 0; let updatedCount = 0; let skippedCount = 0;
 
-            importedDB.forEach(importedItem => {
-                const existingIdx = state.db.findIndex(ex => ex.id === importedItem.id);
-                if (existingIdx !== -1) {
-                    const ex = state.db[existingIdx];
-                    ex.score = Math.max(ex.score || 0, importedItem.score || 0);
-                    ex.crown = Math.max(ex.crown || 0, importedItem.crown || 0);
-                    ex.ep = Math.max(ex.ep || 0, importedItem.ep || 0);
-                    ex.status = importedItem.status || ex.status;
-                    
-                    // Pull in new Saga/Realm tags if old record lacks them
-                    if (importedItem.sagaId) ex.sagaId = importedItem.sagaId;
-                    if (importedItem.sagaName) ex.sagaName = importedItem.sagaName;
-                    if (importedItem.realm) ex.realm = importedItem.realm;
-                    
-                    updatedCount++;
-                } else {
-                    state.db.push(importedItem);
-                    newCount++;
-                }
-            });
-
-            // 2. Merge Sources
-            if (data.sources) {
-                Object.keys(data.sources).forEach(cat => {
-                    if(!sourcesDb[cat]) sourcesDb[cat] = [];
-                    data.sources[cat].forEach(src => {
-                        if (!sourcesDb[cat].some(existing => existing.url === src.url)) {
-                            sourcesDb[cat].push(src);
+            // 1. Database Processing
+            if (impLib && (data.db || Array.isArray(data))) {
+                const importedDB = Array.isArray(data) ? data : data.db;
+                importedDB.forEach(importedItem => {
+                    const existingIdx = state.db.findIndex(ex => ex.id === importedItem.id);
+                    if (existingIdx !== -1) {
+                        if (strategy === 'skip') {
+                            skippedCount++;
+                        } else if (strategy === 'overwrite') {
+                            state.db[existingIdx] = importedItem;
+                            updatedCount++;
+                        } else { // Merge
+                            const ex = state.db[existingIdx];
+                            ex.score = Math.max(ex.score || 0, importedItem.score || 0);
+                            ex.crown = Math.max(ex.crown || 0, importedItem.crown || 0);
+                            ex.ep = Math.max(ex.ep || 0, importedItem.ep || 0);
+                            if (importedItem.status === 'Finished') ex.status = 'Finished';
+                            if (importedItem.sagaId) ex.sagaId = importedItem.sagaId;
+                            updatedCount++;
                         }
-                    });
-                });
-                localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
-                if(typeof renderSources === 'function') renderSources();
-            }
-
-            // 3. Merge Neural Radar (Reminders)
-            if (data.reminders) {
-                data.reminders.forEach(r => {
-                    if (!state.reminders.find(ex => ex.id === r.id)) {
-                        state.reminders.push(r);
+                    } else {
+                        state.db.push(importedItem);
+                        importedCount++;
                     }
                 });
+            }
+
+            // 2. Sources
+            if (impSources && data.sources) {
+                if (strategy === 'overwrite') {
+                    sourcesDb = data.sources;
+                } else {
+                    Object.keys(data.sources).forEach(cat => {
+                        if (!sourcesDb[cat]) sourcesDb[cat] = [];
+                        data.sources[cat].forEach(src => {
+                            if (!sourcesDb[cat].some(ex => ex.url === src.url)) sourcesDb[cat].push(src);
+                        });
+                    });
+                }
+                localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
+                if (typeof renderSources === 'function') renderSources();
+            }
+
+            // 3. Custom Sagas
+            if (impSagas && data.customSagas) {
+                if (strategy === 'overwrite') {
+                    customSagas = data.customSagas;
+                } else {
+                    data.customSagas.forEach(impSaga => {
+                        const exIdx = customSagas.findIndex(ex => ex.id === impSaga.id || ex.name === impSaga.name);
+                        if (exIdx === -1) customSagas.push(impSaga);
+                        else if (strategy !== 'skip') customSagas[exIdx].parts = impSaga.parts;
+                    });
+                }
+                localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
+            }
+
+            // 4. Reminders
+            if (impRadar && data.reminders) {
+                if (strategy === 'overwrite') state.reminders = data.reminders;
+                else if (strategy === 'merge') {
+                    data.reminders.forEach(r => {
+                        if (!state.reminders.find(ex => ex.id === r.id)) state.reminders.push(r);
+                    });
+                }
                 localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
+            }
+
+            // 5. Settings / Prefs
+            if (impPrefs && data.prefs) {
+                prefs = { ...prefs, ...data.prefs };
+                savePrefs();
+                updateSafeModeUI();
+                currentSearchLayout = prefs.searchLayout;
+                setSearchLayout(currentSearchLayout);
             }
 
             save();
             if (state.view === 'mylist') renderList();
-            updateCounters();
             
-            showNotification(`Imported: ${newCount} New, ${updatedCount} Updated`);
-            document.getElementById('importFile').value = ''; 
+            document.getElementById('advancedIOModal').classList.add('hidden');
+            document.getElementById('advImportFile').value = ''; 
+            
+            showNotification(`Sync Complete! ${importedCount} Added, ${updatedCount} Updated, ${skippedCount} Skipped.`);
+
         } catch (err) {
-            showNotification("Invalid backup file format.", true);
+            console.error(err);
+            showNotification("Data corruption detected. Import aborted.", true);
         }
     };
     reader.readAsText(file);
+}
+// --- MULTI-SELECT ENGINE ---
+
+function toggleSelectMode() {
+    isSelectMode = !isSelectMode;
+    selectedItems.clear(); 
+    
+    const bar = document.getElementById('multiSelectBar');
+    if (isSelectMode) bar.classList.add('active');
+    else bar.classList.remove('active');
+    
+    updateSelectCount();
+    
+    // Refresh the current view to show/hide checkboxes
+    if (state.view === 'mylist') renderList();
+    if (state.view === 'rhythmlab') runLab();
+    if (state.view === 'sagamatrix') renderMySagas();
+}
+
+function updateSelectCount() {
+    const countEl = document.getElementById('selectedCount');
+    if(countEl) countEl.innerText = selectedItems.size;
+}
+
+function handleCardClick(event, id, type) {
+    if (isSelectMode) {
+        // Intercept standard click behavior
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if (selectedItems.has(id)) {
+            selectedItems.delete(id);
+        } else {
+            selectedItems.add(id);
+        }
+        
+        updateSelectCount();
+        if (state.view === 'mylist') renderList(); // Re-render instantly updates visual checkmarks
+        return;
+    }
+    
+    // Default flow if not in select mode
+    openModal(id, type);
+}
+
+function selectAllItems() {
+    const visibleCards = document.querySelectorAll('.selectable-card');
+    visibleCards.forEach(el => {
+        const rawId = el.getAttribute('data-id');
+        const isSaga = el.getAttribute('data-issaga') === 'true';
+        const id = isSaga ? rawId : parseInt(rawId);
+        if (id) selectedItems.add(id);
+    });
+    
+    updateSelectCount();
+    if (state.view === 'mylist') renderList();
+    if (state.view === 'rhythmlab') runLab();
+    if (state.view === 'sagamatrix') renderMySagas();
+}
+// Custom click handler for Saga Matrix cards
+function handleSagaCardClick(event, id) {
+    if (isSelectMode) {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        if (selectedItems.has(id)) selectedItems.delete(id);
+        else selectedItems.add(id);
+        
+        updateSelectCount();
+        renderMySagas(); 
+        return;
+    }
+    openSaga(id);
+}
+function deleteSelectedItems() {
+    if (selectedItems.size === 0) return;
+    
+    if (state.view === 'sagamatrix') {
+        if (!confirm(`Are you sure you want to permanently eject ${selectedItems.size} Universes from your Neural Link?`)) return;
+        
+        selectedItems.forEach(sagaId => {
+            // Delete custom saga if it is one
+            customSagas = customSagas.filter(s => String(s.id) !== String(sagaId));
+            // Sever the link from any items currently in the library
+            state.db.forEach(item => {
+                if (String(item.sagaId) === String(sagaId)) {
+                    delete item.sagaId;
+                    delete item.sagaName;
+                }
+            });
+        });
+        localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
+    } else {
+        // Normal Library/Lab items
+        if (!confirm(`Are you sure you want to permanently eject ${selectedItems.size} items from your Neural Library?`)) return;
+        state.db = state.db.filter(i => !selectedItems.has(i.id));
+    }
+    
+    save();
+    toggleSelectMode(); 
+    showNotification(`${selectedItems.size} Entries Purged Successfully.`);
+}
+// --- MOBILE LONG-PRESS SELECTION ENGINE ---
+function setupLongPressSelection() {
+    let touchTimer;
+    let isDragging = false;
+
+    const startPress = (e) => {
+        // Look for cards equipped with our new selectable class
+        const card = e.target.closest('.selectable-card');
+        if (!card) return;
+        isDragging = false;
+        
+        touchTimer = setTimeout(() => {
+            if (!isDragging) {
+                // Haptic feedback if supported
+                if (navigator.vibrate) navigator.vibrate(50);
+                
+                // Activate select mode if it isn't already
+                if (!isSelectMode) toggleSelectMode();
+                
+                // Extract metadata
+                const rawId = card.getAttribute('data-id');
+                const type = card.getAttribute('data-type');
+                const isSaga = card.getAttribute('data-issaga') === 'true';
+                const id = isSaga ? rawId : parseInt(rawId); // Sagas can have string IDs ('custom_123')
+                
+                // Select the item
+                if (!selectedItems.has(id)) {
+                    selectedItems.add(id);
+                    updateSelectCount();
+                    
+                    // Re-render the active view instantly
+                    if (state.view === 'mylist') renderList();
+                    if (state.view === 'rhythmlab') runLab();
+                    if (state.view === 'sagamatrix') renderMySagas();
+                }
+            }
+        }, 500); // 500ms long press to trigger
+    };
+
+    const cancelPress = () => clearTimeout(touchTimer);
+    const movePress = () => { isDragging = true; clearTimeout(touchTimer); };
+
+    // Attach to the main content area for event delegation
+    const main = document.getElementById('mainContent');
+    main.addEventListener('touchstart', startPress, { passive: true });
+    main.addEventListener('touchend', cancelPress);
+    main.addEventListener('touchcancel', cancelPress);
+    main.addEventListener('touchmove', movePress, { passive: true });
+}
+
+
+
+// FACTORY RESET (THE NUKE)
+function openFactoryResetModal() {
+    document.getElementById('factoryResetModal').classList.remove('hidden');
+}
+
+function executeFactoryReset() {
+    // 1. Identify all CinePulse data keys
+    const keysToDestroy = [
+        'cp_elite_db_v3', 
+        'cp_elite_sources', 
+        'cp_elite_custom_sagas', 
+        'cp_elite_reminders', 
+        'cp_elite_notifs', 
+        'cp_elite_notifs_archived', 
+        'cp_elite_prefs'
+    ];
+    
+    // 2. Erase from Local Storage
+    keysToDestroy.forEach(key => localStorage.removeItem(key));
+    
+    // 3. The cleanest way to reset in-memory variables and UI is to reload the window.
+    // The visual transition makes it feel like a true system reboot.
+    document.body.innerHTML = `
+        <div style="height: 100vh; width: 100vw; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; color: #ff2d55; font-family: sans-serif;">
+            <i class="fas fa-radiation fa-spin" style="font-size: 64px; margin-bottom: 20px;"></i>
+            <h1 style="font-weight: 900; letter-spacing: 5px; text-transform: uppercase;">System Wiped</h1>
+            <p style="color: #666; font-size: 10px; margin-top: 10px; letter-spacing: 2px;">Rebooting Neural Interface...</p>
+        </div>
+    `;
+    
+    setTimeout(() => {
+        location.reload();
+    }, 1500);
 }
 
         // --- NEW: Grid Layout Engine ---
@@ -2161,21 +2515,34 @@ function isSmartMatch(text, query) {
 }
 
 // Initialize Sources DB
-let sourcesDb = JSON.parse(localStorage.getItem('cp_elite_sources')) || { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
 
+// 1. Bulletproof Initialization (Fixes the Asian array crash)
+function initSourcesDb() {
+    let db = JSON.parse(localStorage.getItem('cp_elite_sources'));
+    const defaultDb = { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
+    if (!db || typeof db !== 'object') return defaultDb;
+    // Forces a merge, ensuring 'asian' and any future categories are always present
+    return { ...defaultDb, ...db };
+}
+let sourcesDb = initSourcesDb();
+
+// 2. Upgraded Render function with the Edit Button
 function renderSources() {
     const container = document.getElementById('sourceListContainer');
     if (!container) return;
     
     const categories = Object.keys(sourcesDb);
     container.innerHTML = categories.map(cat => {
-        if (!sourcesDb[cat].length) return '';
+        if (!sourcesDb[cat] || !sourcesDb[cat].length) return '';
         return `
             <div class="bg-white/5 border border-white/10 rounded-2xl p-6">
                 <h4 class="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-4 border-b border-white/5 pb-2">${cat} Sources</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     ${sourcesDb[cat].map((src, idx) => {
-                        const domain = new URL(src.url.replace(/{.*?}/g, '')).hostname;
+                        // Safe fallback if URL is malformed
+                        let domain = 'Link';
+                        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
+                        
                         return `
                             <div class="flex items-center justify-between bg-dark border border-white/10 p-3 rounded-xl hover:border-pulse/50 transition-colors">
                                 <div class="flex items-center gap-3 overflow-hidden">
@@ -2185,7 +2552,10 @@ function renderSources() {
                                         <div class="text-[8px] text-gray-500 truncate">${domain}</div>
                                     </div>
                                 </div>
-                                <button onclick="removeSource('${cat}', ${idx})" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/10 shrink-0 transition-all"><i class="fas fa-trash text-[10px]"></i></button>
+                                <div class="flex gap-2 shrink-0">
+                                    <button onclick="editSource('${cat}', ${idx})" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#3b82f6]/20 transition-all" title="Edit Source"><i class="fas fa-edit text-[10px]"></i></button>
+                                    <button onclick="removeSource('${cat}', ${idx})" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/10 transition-all" title="Delete Source"><i class="fas fa-trash text-[10px]"></i></button>
+                                </div>
                             </div>
                         `;
                     }).join('')}
@@ -2193,6 +2563,25 @@ function renderSources() {
             </div>
         `;
     }).join('') || `<div class="text-center py-10 text-[10px] uppercase font-black text-gray-600 tracking-widest">No Sources Configured</div>`;
+}
+
+// 3. The New Edit Function
+function editSource(cat, idx) {
+    const src = sourcesDb[cat][idx];
+    const newName = prompt(`Editing name for ${cat.toUpperCase()} source:`, src.name);
+    if (newName === null) return; // Cancelled
+    
+    const newUrl = prompt(`Editing URL template for ${newName}:`, src.url);
+    if (newUrl === null) return; // Cancelled
+    
+    if (!newName.trim() || !newUrl.trim() || !newUrl.startsWith('http')) {
+        return alert("Invalid input. Must provide a name and a valid HTTP/HTTPS URL.");
+    }
+    
+    sourcesDb[cat][idx] = { name: newName.trim(), url: newUrl.trim() };
+    localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
+    renderSources();
+    showNotification("Source Matrix Updated");
 }
 
 function addSource() {
@@ -2203,6 +2592,7 @@ function addSource() {
     if (!name || !url) return alert("Please provide both a name and a URL template.");
     if (!url.startsWith('http')) return alert("URL must start with http:// or https://");
 
+    if (!sourcesDb[cat]) sourcesDb[cat] = []; 
     sourcesDb[cat].push({ name, url });
     localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
     
@@ -2210,6 +2600,17 @@ function addSource() {
     document.getElementById('srcUrl').value = '';
     renderSources();
 }
+
+function clearAllSources() {
+    if(confirm("Are you sure you want to delete all configured sources?")) {
+        sourcesDb = { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
+        localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
+        renderSources();
+        showNotification("All sources purged.");
+    }
+}
+
+
 
 function removeSource(cat, idx) {
     sourcesDb[cat].splice(idx, 1);
@@ -2838,7 +3239,8 @@ async function autoHealDatabase() {
 
 function clearAllSources() {
     if(confirm("Are you sure you want to delete all configured sources?")) {
-        sourcesDb = { movie: [], tv: [], anime: [], kdrama: [], turkish: [] };
+        // FIX: Include 'asian' in the wipe reset
+        sourcesDb = { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
         localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
         renderSources();
         showNotification("All sources purged.");
@@ -3399,7 +3801,10 @@ async function loadCountries() {
     }
 }
 // --- SAGA MATRIX ENGINE (UPGRADED) ---
-const ELITE_SAGAS = [119, 86311, 531241, 1241, 404609, 3033]; // Defaults: LOTR, Avengers, Spider-Verse, Harry Potter, John Wick, Matrix
+const EXTENDED_SAGAS = [
+    119, 86311, 531241, 1241, 404609, 3033, 10, 230, 645, 295, 
+    124, 9485, 87359, 131635, 1703, 33514, 264, 420, 84, 118, 528, 556, 178
+];
 let currentSagaTab = 'discover';
 let sagaSearchTimeout;
 
@@ -3407,9 +3812,20 @@ function setSagaTab(tab) {
     currentSagaTab = tab;
     document.getElementById('sagaTab-discover').className = tab === 'discover' ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
     document.getElementById('sagaTab-mylist').className = tab === 'mylist' ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
-    
+    const originalSetSagaTab = setSagaTab;
+        setSagaTab = function(tab) {
+            originalSetSagaTab(tab);
+            const selectBtn = document.getElementById('sagaSelectBtn');
+            if (selectBtn) {
+                if (tab === 'mylist') selectBtn.classList.remove('hidden');
+                else selectBtn.classList.add('hidden');
+            }
+            // Turn off select mode if leaving the tab
+            if (isSelectMode && tab !== 'mylist') toggleSelectMode();
+        };
     if (tab === 'discover') renderSagaMatrix();
     else renderMySagas();
+    updateSelectButtonVisibility(tab);
 }
 
 // Dynamic Debounced Search
@@ -3425,12 +3841,19 @@ async function searchSagas(query) {
     
     try {
         const data = await fetchAPI(`/search/collection?query=${encodeURIComponent(query)}`);
-        if(!data.results.length) {
-            grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest">No Universes Found</div>`;
+        
+        // Filter out sagas that are already tracked
+        let untrackedCollections = data.results.filter(c => 
+            !state.db.some(i => String(i.sagaId) === String(c.id)) && 
+            !customSagas.some(cs => String(cs.id) === String(c.id))
+        );
+
+        if(!untrackedCollections.length) {
+            grid.innerHTML = `<div class="col-span-full text-center py-20 text-[#22c55e] font-black uppercase tracking-widest">All matching universes are already tracked or none found.</div>`;
             return;
         }
         
-        const sagas = await Promise.all(data.results.slice(0, 10).map(c => fetchAPI(`/collection/${c.id}`)));
+        const sagas = await Promise.all(untrackedCollections.slice(0, 10).map(c => fetchAPI(`/collection/${c.id}`)));
         renderSagaGridUI(sagas, grid, false);
     } catch (e) {
         grid.innerHTML = `<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest">Search Link Severed</div>`;
@@ -3442,7 +3865,25 @@ async function renderSagaMatrix() {
     grid.innerHTML = '<div class="page-loader"></div>';
 
     try {
-        const sagas = await Promise.all(ELITE_SAGAS.map(id => fetchAPI(`/collection/${id}`)));
+        // Shuffle array to randomize recommendations
+        const shuffled = EXTENDED_SAGAS.sort(() => 0.5 - Math.random());
+        
+        let untrackedIds = [];
+        for (let id of shuffled) {
+            // Check if it's already in the DB or Custom Sagas
+            const isTracked = state.db.some(i => String(i.sagaId) === String(id)) || customSagas.some(c => String(c.id) === String(id));
+            if (!isTracked) {
+                untrackedIds.push(id);
+            }
+            if (untrackedIds.length >= 10) break; // Limit to 10 fresh recommendations
+        }
+
+        if (untrackedIds.length === 0) {
+             grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest italic">All known elite universes tracked. Search for more.</div>`;
+             return;
+        }
+
+        const sagas = await Promise.all(untrackedIds.map(id => fetchAPI(`/collection/${id}`)));
         renderSagaGridUI(sagas, grid, false);
     } catch (err) {
        grid.innerHTML = `<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest">Neural Link to Saga Matrix Severed</div>`;
@@ -3453,7 +3894,6 @@ function renderSagaGridUI(sagas, gridElement, isMyList) {
     gridElement.innerHTML = sagas.filter(s => s && s.parts && s.parts.length > 0).map(saga => {
         let overlayHtml = `<div class="absolute -top-3 -right-3 bg-pulse text-white text-[10px] font-black px-3 py-1.5 rounded-full z-40 shadow-[0_0_15px_rgba(255,45,85,0.6)]">${saga.parts.length} Parts</div>`;
         
-        // Inject progress UI if we are in "My Sagas"
         if (isMyList) {
             const statusColor = saga.progress === 100 ? 'text-[#22c55e]' : (saga.progress > 0 ? 'text-[#f59e0b]' : 'text-gray-500');
             const statusBg = saga.progress === 100 ? 'bg-[#22c55e]' : (saga.progress > 0 ? 'bg-[#f59e0b]' : 'bg-gray-500');
@@ -3473,26 +3913,46 @@ function renderSagaGridUI(sagas, gridElement, isMyList) {
             `;
         }
 
-        return `
-        <div class="group cursor-pointer mb-8 animate-in zoom-in duration-300" onclick="openSaga(${saga.id})">
-            <div class="memory-cluster mb-4 relative">
-                <img src="${saga.parts[0]?.poster_path ? IMG+saga.parts[0].poster_path : 'https://via.placeholder.com/300'}" class="cluster-top object-cover bg-dark">
-                ${saga.parts[1] ? `<img src="${IMG+saga.parts[1].poster_path}" class="cluster-mid object-cover bg-dark">` : ''}
-                ${saga.parts[2] ? `<img src="${IMG+saga.parts[2].poster_path}" class="cluster-back object-cover bg-dark">` : ''}
-                ${overlayHtml}
+        // The New Quick Add Button
+        const quickAddBtn = !isMyList ? `
+            <button onclick="event.stopPropagation(); syncSagaData('${saga.id}', '${saga.name.replace(/'/g, "\\'")}')" class="absolute bottom-2 left-2 right-2 bg-pulse/90 hover:bg-pulse text-white text-[9px] font-black uppercase py-2 rounded-xl z-50 transition-all shadow-lg backdrop-blur-sm flex items-center justify-center gap-2">
+                <i class="fas fa-plus"></i> Track Universe
+            </button>
+        ` : '';
+
+      return `
+    <div class="group cursor-pointer mb-8 animate-in zoom-in duration-300 relative saga-selectable-card selectable-card ${isMyList && isSelectMode ? 'select-mode-pulse' : ''}" 
+         data-id="${saga.id}" data-issaga="true" 
+         onclick="${isMyList ? `handleSagaCardClick(event, '${saga.id}')` : `openSaga('${saga.id}')`}">
+        
+        ${isMyList ? `
+            <div class="card-checkbox ${selectedItems.has(String(saga.id)) ? 'selected' : ''} ${!isSelectMode ? 'hidden' : ''}" style="top: -10px; left: -10px;">
+                <i class="fas fa-check"></i>
             </div>
-            <div class="bg-dark/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 group-hover:border-pulse/50 transition-colors shadow-xl">
-                <div class="text-[10px] font-black uppercase text-white tracking-widest line-clamp-1">${saga.name}</div>
-            </div>
+        ` : ''}
+
+        <div class="memory-cluster mb-4 relative">
+            <img src="${saga.parts[0]?.poster_path ? IMG+saga.parts[0].poster_path : 'https://via.placeholder.com/300'}" class="cluster-top object-cover bg-dark">
+            ${saga.parts[1] ? `<img src="${IMG+saga.parts[1].poster_path}" class="cluster-mid object-cover bg-dark">` : ''}
+            ${saga.parts[2] ? `<img src="${IMG+saga.parts[2].poster_path}" class="cluster-back object-cover bg-dark">` : ''}
+            ${overlayHtml}
+            ${quickAddBtn}
         </div>
-        `;
+        <div class="bg-dark/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 group-hover:border-pulse/50 transition-colors shadow-xl">
+            <div class="text-[10px] font-black uppercase text-white tracking-widest line-clamp-1">${saga.name}</div>
+        </div>
+    </div>
+    `;
     }).join('');
 }
 
 function renderMySagas() {
-    const grid = document.getElementById('sagaGrid');
-    const grouped = {};
+    const grid = document.getElementById('sagaGrid'); // Fixed container target
+    if (!grid) return;
     
+    grid.innerHTML = '<div class="page-loader"></div>';
+    let grouped = {}; // FIXED: Was completely missing
+
     // Group local DB by sagaId
     state.db.forEach(item => {
         if (item.sagaId) {
@@ -3503,63 +3963,84 @@ function renderMySagas() {
     
     const mySagas = Object.values(grouped);
     
-    if (!mySagas.length) {
+    // Format Standard Sagas
+    const formattedSagas = mySagas.filter(s => !String(s.id).startsWith('custom_')).map(s => {
+        const total = s.parts.length;
+        const finished = s.parts.filter(p => p.status === 'Finished').length;
+        const progress = total > 0 ? Math.round((finished / total) * 100) : 0;
+        let status = progress === 100 ? 'Completed' : (progress > 0 ? 'In Progress' : 'Uncharted');
+
+        return {
+            id: s.id, name: s.name,
+            parts: s.parts.sort((a,b) => (a.year || 0) - (b.year || 0)).map(p => ({ poster_path: p.poster })),
+            progress: progress, status: status, finished: finished, total: total
+        };
+    });
+    
+    // Format Custom Sagas
+    const customSagasList = typeof customSagas !== 'undefined' ? customSagas : [];
+    const customFormatted = customSagasList.map(cs => {
+        const total = cs.parts.length;
+        const watchedCount = cs.parts.filter(p => {
+            const match = state.db.find(d => d.id === p.id);
+            return match && match.status === 'Finished';
+        }).length;
+        const progress = total > 0 ? Math.round((watchedCount / total) * 100) : 0;
+        
+        return {
+            id: cs.id,
+            name: cs.name + ' <span class="text-pulse text-[8px] ml-2 border border-pulse px-1 rounded shadow-[0_0_10px_rgba(255,45,85,0.4)]">(CUSTOM)</span>',
+            parts: cs.parts,
+            progress: progress,
+            status: progress === 100 ? 'Completed' : (progress > 0 ? 'In Progress' : 'Custom Realm'),
+            finished: watchedCount, total: total, isCustom: true
+        };
+    });
+
+    const combinedSagas = [...formattedSagas, ...customFormatted];
+
+    if (!combinedSagas.length) {
         grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest italic">No synchronized sagas detected in your library.</div>`;
         return;
     }
     
-    // Map local format to calculate progress
-    const formattedSagas = mySagas.map(s => {
-        const total = s.parts.length;
-        const finished = s.parts.filter(p => p.status === 'Finished').length;
-        const progress = Math.round((finished / total) * 100);
-        let status = progress === 100 ? 'Completed' : (progress > 0 ? 'In Progress' : 'Uncharted');
-
-        return {
-            id: s.id,
-            name: s.name,
-            parts: s.parts.sort((a,b) => a.year - b.year).map(p => ({ poster_path: p.poster })),
-            progress: progress,
-            status: status,
-            finished: finished,
-            total: total
-        };
-    });
-    
-    renderSagaGridUI(formattedSagas, grid, true);
+    renderSagaGridUI(combinedSagas, grid, true);
 }
 
 // Global Core Function to Sync a Saga
 async function syncSagaData(cId, cName) {
     try {
         const col = await fetchAPI(`/collection/${cId}`);
-        let addedCount = 0;
+        let addedCount = 0; let linkedCount = 0;
         
         col.parts.forEach(part => {
-            if (!state.db.find(i => i.id === part.id)) {
+            let existing = state.db.find(i => i.id === part.id);
+            if (!existing) {
                 state.db.push({
-                    id: part.id,
-                    title: part.title,
-                    poster: part.poster_path,
-                    type: 'movie',
-                    status: 'Plan to Watch', // Default status for auto-synced parts
-                    ep: 0,
-                    max_ep: 1,
-                    score: 0,
-                    crown: 0,
-                    imdb: part.vote_average,
-                    year: (part.release_date || '').split('-')[0],
-                    genres: part.genre_ids || [],
-                    added: Date.now(),
-                    sagaId: cId,
-                    sagaName: cName
+                    id: part.id, title: part.title, poster: part.poster_path, type: 'movie',
+                    status: 'Plan to Watch', ep: 0, max_ep: 1, score: 0, crown: 0, imdb: part.vote_average,
+                    year: (part.release_date || '').split('-')[0], genres: part.genre_ids || [],
+                    added: Date.now(), sagaId: cId, sagaName: cName
                 });
                 addedCount++;
+            } else {
+                existing.sagaId = cId;
+                existing.sagaName = cName;
+                linkedCount++;
             }
         });
+        
         save();
-        showNotification(`Synced ${addedCount} new records from ${cName}!`);
-        if (state.view === 'sagamatrix') renderMySagas(); // Refresh UI if on Saga page
+        showNotification(`Universe Synced: ${addedCount} new, ${linkedCount} linked!`);
+        document.getElementById('sagaModal').classList.add('hidden');
+        
+        // If on Discover tab, replace with new recommendations immediately
+        if (currentSagaTab === 'discover') {
+            renderSagaMatrix(); 
+        } else {
+            setSagaTab('mylist'); 
+        }
+        
         return true;
     } catch (e) {
         showNotification("Failed to synchronize universe.", true);
@@ -3569,13 +4050,17 @@ async function syncSagaData(cId, cName) {
 
 // Global Core Function to Delete a Saga
 function purgeSagaData(cId, cName) {
-    if (confirm(`Are you sure you want to eject the entire ${cName} from your library?`)) {
-        state.db = state.db.filter(i => i.sagaId !== cId);
-        save();
-        showNotification(`${cName} has been purged.`);
-        document.getElementById('sagaModal').classList.add('hidden');
-        if (state.view === 'sagamatrix') renderMySagas();
-    }
+    if (!confirm(`Are you sure you want to eject "${cName}" and all its entities from your neural link?`)) return;
+
+    state.db = state.db.filter(item => String(item.sagaId) !== String(cId));
+    save();
+
+    document.getElementById('sagaModal').classList.add('hidden');
+    showNotification(`Link with ${cName} terminated.`);
+
+    // Dynamic UI Refresh Fix
+    if (state.view === 'mylist') renderList();
+    if (state.view === 'sagamatrix') renderMySagas();
 }
 
 // Auto-Prompt Hook when updating a movie's status
@@ -3614,50 +4099,172 @@ updateStatus = function() {
     }
 };
 
-async function openSaga(id) {
-    const saga = await fetchAPI(`/collection/${id}`);
+// --- NEW: INLINE SAGA EDITING ENGINE ---
+let currentSagaViewContext = null; 
+let inlineSearchTimer = null;
+
+async function openSaga(id, isEditing = false) {
     const modal = document.getElementById('sagaModal');
-    
-    // Check local library ownership
-    const ownedParts = state.db.filter(i => i.sagaId === id);
+    const isCustomId = String(id).startsWith('custom_');
+
+    if (!isEditing || !currentSagaViewContext) {
+        if (isCustomId) {
+            const found = customSagas.find(s => String(s.id) === String(id));
+            if (!found) return showNotification("Custom Universe lost.", true);
+            currentSagaViewContext = JSON.parse(JSON.stringify(found)); 
+        } else {
+            currentSagaViewContext = await fetchAPI(`/collection/${id}`);
+            if (!currentSagaViewContext) return showNotification("Universe data corrupted.", true);
+        }
+    }
+
+    // ============================================
+    // MODE A: INLINE EDIT MODE 
+    // ============================================
+    if (isEditing) {
+        if (!isCustomId && !currentSagaViewContext.isCustom) {
+            currentSagaViewContext = {
+                id: 'custom_' + Date.now() + '_' + id, 
+                name: currentSagaViewContext.name + ' (Custom)',
+                description: currentSagaViewContext.overview || '',
+                backdrop_path: currentSagaViewContext.backdrop_path,
+                parts: currentSagaViewContext.parts.map(p => ({
+                    id: p.id, media_type: 'movie', title: p.title,
+                    poster_path: p.poster_path, release_date: p.release_date || '2000-01-01', size: 'main'
+                })),
+                isCustom: true
+            };
+            showNotification("TMDB Blueprint converted for editing.");
+        }
+
+        const saga = currentSagaViewContext;
+
+        modal.innerHTML = `
+            <div class="relative min-h-screen pb-32 bg-dark p-4 md:p-12 lg:p-24 animate-in zoom-in-95 duration-300">
+                <button onclick="document.getElementById('sagaModal').classList.add('hidden')" class="saga-close-btn rounded-full flex items-center justify-center shadow-2xl">
+                    <i class="fas fa-times text-lg"></i>
+                </button>
+
+                <div class="max-w-4xl mx-auto space-y-6 md:space-y-8 mt-12 md:mt-10 relative z-50">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 md:gap-6 border-b border-white/10 pb-6 md:pb-8">
+                        <div>
+                            <h2 class="text-3xl md:text-5xl font-black italic uppercase text-white tracking-tighter">Edit <span class="text-pulse">Universe</span></h2>
+                            <p class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2">Modify Blueprint & Entities Instantly</p>
+                        </div>
+                        <button onclick="saveInlineSaga()" class="w-full md:w-auto px-6 py-4 bg-[#22c55e] rounded-xl text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#22c55e]/30 hover:scale-105 transition-all flex items-center justify-center gap-3">
+                            <i class="fas fa-save"></i> Commit Changes
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <label class="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-2">Universe Identity</label>
+                        <input type="text" id="inlineSagaTitle" value="${saga.name || ''}" class="w-full bg-white/5 border border-white/10 p-4 md:p-5 rounded-2xl text-[12px] md:text-[14px] font-black uppercase tracking-widest text-white outline-none focus:border-pulse transition-all" placeholder="Enter Universe Name...">
+                        <textarea id="inlineSagaDesc" class="w-full bg-white/5 border border-white/10 p-4 md:p-5 rounded-2xl text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-gray-300 outline-none focus:border-pulse transition-all h-24 md:h-28 resize-none" placeholder="Enter lore or description...">${saga.description || ''}</textarea>
+                    </div>
+
+                    <div class="space-y-4 relative z-[200]">
+                        <label class="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-2">Inject Entities</label>
+                        <div class="relative">
+                            <i class="fas fa-search absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-white/40"></i>
+                            <input type="text" oninput="handleInlineSagaSearch(this.value)" placeholder="Search TMDB Archives to add..." class="w-full bg-dark border border-white/10 p-4 md:p-5 pl-12 md:pl-14 rounded-2xl text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white outline-none focus:border-pulse transition-all shadow-inner">
+                            <div id="inlineSagaSearchResults" class="absolute top-full left-0 w-full mt-2 bg-[#0a0c12] border border-white/10 rounded-2xl shadow-2xl max-h-64 overflow-y-auto hidden"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mt-8">
+                     <label id="inlineSagaCountLabel" class="text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 ml-2 flex justify-between">
+                            <span>Entity Hierarchy (${saga.parts.length} Parts)</span>
+                        </label>
+                        <div class="space-y-3" id="inlineSagaList">
+                            ${saga.parts.map((p, idx) => `
+                                <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-3 md:p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-pulse/30 transition-colors gap-3 md:gap-0">
+                                    <div class="flex items-center gap-3 md:gap-4 w-full md:w-2/3">
+                                        <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-dark border border-white/10 flex items-center justify-center text-[9px] md:text-[10px] font-black text-gray-500 shrink-0">${idx + 1}</div>
+                                        <img src="${p.poster_path ? IMG+p.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 md:w-10 md:h-14 object-cover rounded-md shadow-lg shrink-0">
+                                        <div class="truncate flex-1">
+                                            <div class="text-[10px] md:text-[11px] font-black uppercase text-white truncate">${p.title || p.name}</div>
+                                            <div class="text-[7px] md:text-[8px] text-gray-500 uppercase tracking-widest mt-1">${(p.release_date || p.first_air_date || '').split('-')[0] || 'N/A'} • ${p.media_type || 'movie'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 w-full md:w-auto justify-end shrink-0 border-t border-white/5 pt-2 md:pt-0 md:border-t-0 mt-2 md:mt-0">
+                                        <button onclick="moveInlineSagaItem(${idx}, -1)" class="w-8 h-8 rounded-lg bg-dark border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><i class="fas fa-arrow-up text-[10px]"></i></button>
+                                        <button onclick="moveInlineSagaItem(${idx}, 1)" class="w-8 h-8 rounded-lg bg-dark border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center"><i class="fas fa-arrow-down text-[10px]"></i></button>
+                                        <div class="w-px h-6 bg-white/10 mx-1"></div>
+                                        <button onclick="removeInlineSagaItem(${idx})" class="w-8 h-8 rounded-lg bg-pulse/10 text-pulse hover:bg-pulse hover:text-white transition-all flex items-center justify-center"><i class="fas fa-times text-[10px]"></i></button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+        renderInlineSagaList(); // <-- ADD THIS LINE
+        return;
+    }
+
+   // ============================================
+    // MODE B: CINEMATIC VIEW MODE 
+    // ============================================
+    const saga = currentSagaViewContext;
+    const ownedParts = state.db.filter(i => String(i.sagaId) === String(id));
     const isFullySynced = ownedParts.length >= saga.parts.length;
-    const hasAnyParts = ownedParts.length > 0;
+    
+    // Bulletproof Custom Saga Check (Catches older custom formats too)
+    const isCustomSaga = String(id).startsWith('custom_') || customSagas.some(s => String(s.id) === String(id));
 
-    const parts = saga.parts.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
-
-    // Determine Action Buttons based on ownership
     let actionButtons = '';
-    if (!isFullySynced) {
-        actionButtons += `<button onclick="syncSagaData(${id}, '${saga.name.replace(/'/g, "\\'")}')" class="bg-pulse text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-pulse/30 hover:scale-105 transition-all flex items-center gap-2"><i class="fas fa-plus"></i> Add All</button>`;
+    
+    // 1. Add All (Only if there are missing parts AND it's a TMDB saga)
+    if (!isFullySynced && !isCustomSaga) {
+        actionButtons += `<button onclick="syncSagaData('${id}', '${saga.name.replace(/'/g, "\\'")}')" class="bg-pulse text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-pulse/30 hover:scale-105 transition-all flex items-center gap-2 w-full md:w-auto justify-center"><i class="fas fa-plus"></i> Add All</button>`;
     }
-    if (hasAnyParts) {
-        // NEW Finish All button
-        actionButtons += `<button onclick="markSagaFinished(${id})" class="bg-[#22c55e] text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 shadow-lg shadow-[#22c55e]/30"><i class="fas fa-check-double"></i> Finish All</button>`;
-        
-        actionButtons += `<button onclick="purgeSagaData(${id}, '${saga.name.replace(/'/g, "\\'")}')" class="bg-white/5 text-gray-400 hover:text-pulse border border-white/10 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-pulse transition-all flex items-center gap-2"><i class="fas fa-trash-alt"></i> Eject</button>`;
+    
+    // 2. Finish All (If they own parts of it, or if it's custom)
+    if (ownedParts.length > 0 || isCustomSaga) {
+        actionButtons += `<button onclick="markSagaFinished('${id}')" class="bg-[#22c55e] text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 shadow-lg shadow-[#22c55e]/30 w-full md:w-auto justify-center"><i class="fas fa-check-double"></i> Finish All</button>`;
+    }
+    
+    // 3. Eject (For Official TMDB sagas they have tracked)
+    if (ownedParts.length > 0 && !isCustomSaga) {
+        actionButtons += `<button onclick="purgeSagaData('${id}', '${saga.name.replace(/'/g, "\\'")}')" class="bg-white/5 text-gray-400 hover:text-pulse border border-white/10 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-pulse transition-all flex items-center gap-2 w-full md:w-auto justify-center"><i class="fas fa-trash-alt"></i> Eject</button>`;
+    }
+    
+    // 4. Edit Inline (Always available to modify the blueprint)
+    actionButtons += `<button onclick="openSaga('${id}', true)" class="bg-[#3b82f6]/20 border border-[#3b82f6]/50 text-[#3b82f6] hover:bg-[#3b82f6] hover:text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-[#3b82f6]/20 w-full md:w-auto justify-center"><i class="fas fa-edit"></i> Edit Inline</button>`;
+    
+    // 5. Collapse (For Custom Sagas)
+    if (isCustomSaga) {
+        actionButtons += `<button onclick="deleteCustomUniverse('${id}')" class="bg-red-600/20 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 w-full md:w-auto justify-center"><i class="fas fa-radiation"></i> Collapse</button>`;
     }
 
-modal.innerHTML = `
-        <div class="relative min-h-screen pb-32">
-            
-      
+    const parts = saga.parts.sort((a, b) => new Date(a.release_date || a.first_air_date) - new Date(b.release_date || b.first_air_date));
+
+    // Fallback logic for TMDB's "overview" vs Custom Forge's "description"
+    const displayDesc = saga.description || saga.overview;
+
+    modal.innerHTML = `
+        <div class="relative min-h-screen pb-32 animate-in fade-in duration-300">
             <button onclick="document.getElementById('sagaModal').classList.add('hidden')" class="saga-close-btn rounded-full flex items-center justify-center shadow-2xl">
                 <i class="fas fa-times text-lg"></i>
             </button>
-            <div class="relative w-full h-[35vh] md:h-[45vh] md:rounded-b-[40px] overflow-hidden mb-12 border-b border-white/10 shadow-2xl bg-dark">
-                <img src="${IMG_HD+saga.backdrop_path}" class="saga-backdrop-img">
-                <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/20 to-transparent"></div>
+            <div class="relative w-full h-[35vh] md:h-[45vh] md:rounded-b-[40px] overflow-hidden mb-8 border-b border-white/10 shadow-2xl bg-dark">
+                <img src="${IMG_HD + (saga.backdrop_path || '')}" class="saga-backdrop-img">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
                 <h2 class="absolute bottom-6 left-6 md:left-12 text-3xl md:text-6xl font-black italic uppercase tracking-tighter text-white drop-shadow-2xl">
                     ${saga.name}
                 </h2>
             </div>
+            
+            ${displayDesc ? `<p class="px-6 md:px-12 text-[10px] md:text-sm text-gray-400 mb-8 max-w-3xl leading-relaxed font-medium italic border-l-4 border-pulse ml-6 md:ml-12 pl-4">"${displayDesc}"</p>` : ''}
 
-            <div class="action-buttons-wrap px-6 md:px-12 mb-10 relative z-50">
-                <button onclick="toggleSagaCollapse()" class="text-[9px] font-bold text-gray-400 hover:text-white border border-white/10 px-4 py-2 rounded-xl uppercase tracking-widest bg-dark/50 backdrop-blur-md flex items-center gap-2 transition-all"><i class="fas fa-layer-group"></i> Toggle View</button>
+            <div class="px-6 md:px-12 mb-10 relative z-50 flex flex-wrap gap-2 md:gap-3">
+                <button onclick="toggleSagaCollapse()" class="text-[9px] font-bold text-gray-400 hover:text-white border border-white/10 px-4 py-2 rounded-xl uppercase tracking-widest bg-dark/50 backdrop-blur-md flex items-center gap-2 transition-all w-full md:w-auto justify-center"><i class="fas fa-layer-group"></i> Toggle View</button>
                 ${actionButtons}
             </div>
 
-            <div class="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-px before:bg-gradient-to-b before:from-pulse before:via-white/10 before:to-transparent">
+            <div class="space-y-6 md:space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-px before:bg-gradient-to-b before:from-pulse before:via-white/10 before:to-transparent px-2 md:px-0">
                 ${parts.map((p, index) => {
                     const localData = state.db.find(i => i.id === p.id);
                     const isFinished = localData && localData.status === 'Finished';
@@ -3666,22 +4273,22 @@ modal.innerHTML = `
 
                     return `
                     <div class="saga-movie-card relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group transition-all duration-500 overflow-hidden" style="max-height: 500px; opacity:1;">
-                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-dark ${localData ? (isFinished ? 'bg-[#22c55e]' : 'bg-pulse') : 'bg-gray-800'} text-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors">
-                            <span class="text-[10px] font-black">${statusIcon || (index + 1)}</span>
+                        <div class="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-dark ${localData ? (isFinished ? 'bg-[#22c55e]' : 'bg-pulse') : 'bg-gray-800'} text-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors ml-1 md:ml-0">
+                            <span class="text-[9px] md:text-[10px] font-black">${statusIcon || (index + 1)}</span>
                         </div>
                         
-                        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] p-3 md:p-4 rounded-3xl border ${borderHighlight} bg-[#0a0c12]/80 backdrop-blur-md hover:border-pulse transition-all flex gap-4 cursor-pointer shadow-xl" onclick="document.getElementById('sagaModal').classList.add('hidden'); openModal(${p.id}, 'movie')">
-                            <div class="w-20 h-28 md:w-24 md:h-32 shrink-0 rounded-xl overflow-hidden border border-white/5">
-                                <img src="${IMG+p.poster_path}" class="w-full h-full object-cover">
+                        <div class="w-[calc(100%-3rem)] md:w-[calc(50%-3rem)] p-3 md:p-4 rounded-2xl md:rounded-3xl border ${borderHighlight} bg-[#0a0c12]/80 backdrop-blur-md hover:border-pulse transition-all flex gap-3 md:gap-4 cursor-pointer shadow-xl" onclick="document.getElementById('sagaModal').classList.add('hidden'); openModal('${p.id}', '${p.media_type || 'movie'}')">
+                            <div class="w-16 h-24 md:w-24 md:h-32 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                                <img src="${IMG + (p.poster_path || '')}" class="w-full h-full object-cover bg-dark">
                             </div>
                             <div class="flex flex-col justify-center flex-1">
-                                <h4 class="text-[12px] md:text-sm font-black uppercase italic text-white line-clamp-2">${p.title}</h4>
-                                <div class="text-[9px] text-gray-500 font-bold tracking-widest mt-2 flex items-center justify-between w-full">
+                                <h4 class="text-[11px] md:text-sm font-black uppercase italic text-white line-clamp-2">${p.title || p.name}</h4>
+                                <div class="text-[8px] md:text-[9px] text-gray-500 font-bold tracking-widest mt-2 flex flex-col md:flex-row md:items-center justify-between w-full gap-2 md:gap-0">
                                     <div class="flex items-center gap-2">
-                                        <span class="bg-white/5 px-2 py-1 rounded text-white">${(p.release_date || '').split('-')[0]}</span>
+                                        <span class="bg-white/5 px-2 py-1 rounded text-white">${(p.release_date || p.first_air_date || '').split('-')[0] || 'N/A'}</span>
                                         <span class="text-pulse">★ ${p.vote_average ? p.vote_average.toFixed(1) : 'N/A'}</span>
                                     </div>
-                                    ${localData ? `<span class="uppercase font-black ${isFinished ? 'text-[#22c55e]' : 'text-pulse'} text-[8px] bg-white/10 px-2 py-1 rounded tracking-tighter">${localData.status}</span>` : ''}
+                                    ${localData ? `<span class="uppercase font-black ${isFinished ? 'text-[#22c55e]' : 'text-pulse'} text-[7px] md:text-[8px] bg-white/10 px-2 py-1 rounded tracking-tighter w-fit">${localData.status}</span>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -3691,6 +4298,72 @@ modal.innerHTML = `
         </div>
     `;
     modal.classList.remove('hidden');
+}
+
+async function saveInlineSaga() {
+    const title = document.getElementById('inlineSagaTitle').value.trim();
+    const desc = document.getElementById('inlineSagaDesc').value || "A curated cinematic universe.";
+
+    if (!title) return showNotification("Universe Title is required!", true);
+    if (!currentSagaViewContext) return;
+
+    // 1. Sync the context
+    currentSagaViewContext.name = title;
+    currentSagaViewContext.description = desc;
+    // currentSagaViewContext.parts is already updated by add/remove functions
+
+    // 2. Identify if it's an existing custom saga or a new conversion
+    const sId = String(currentSagaViewContext.id);
+    const existingIndex = customSagas.findIndex(s => String(s.id) === sId);
+
+    if (existingIndex !== -1) {
+        customSagas[existingIndex] = currentSagaViewContext;
+    } else {
+        customSagas.push(currentSagaViewContext);
+    }
+
+    // 3. Save Custom Sagas cleanly to LocalStorage
+    localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
+
+    let addedCount = 0;
+    currentSagaViewContext.parts.forEach(part => {
+        let localItem = state.db.find(i => i.id === part.id);
+        if (localItem) {
+            localItem.sagaId = sId;
+            localItem.sagaName = title;
+        } else {
+            state.db.push({
+                id: part.id, title: part.title || part.name, poster: part.poster_path || part.poster,
+                type: part.media_type || 'movie', status: 'Plan to Watch', 
+                ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0, 
+                year: (part.release_date || '').split('-')[0], genres: [], added: Date.now(),
+                sagaId: sId, sagaName: title
+            });
+            addedCount++;
+        }
+    });
+
+    // 4. Cleanup Ejected Items (Remove link if user deleted a part from the universe)
+    state.db.forEach(item => {
+        if (String(item.sagaId) === sId && !currentSagaViewContext.parts.find(f => String(f.id) === String(item.id))) {
+            delete item.sagaId; delete item.sagaName;
+        }
+    });
+
+    // 5. Trigger master save which auto-updates general counters
+    save();
+
+    // 6. Close Modal & Give Feedback
+    document.getElementById('sagaModal').classList.add('hidden');
+    showNotification(`Universe "${title}" synchronized.`);
+
+    // 7. Dynamically update UI Background Grids instantly
+    if (state.view === 'sagamatrix') {
+        if (currentSagaTab === 'mylist') renderMySagas();
+        else if (currentSagaTab === 'discover') renderSagaMatrix();
+    } else if (state.view === 'mylist') {
+        renderList();
+    }
 }
 
 function toggleSagaCollapse() {
@@ -3708,24 +4381,675 @@ function toggleSagaCollapse() {
 }
 function markSagaFinished(sagaId) {
     let updated = 0;
-    state.db.forEach(item => {
-        if (item.sagaId === sagaId && item.status !== 'Finished') {
-            item.status = 'Finished';
-            updated++;
+    const isCustom = String(sagaId).startsWith('custom_');
+    let sagaParts = [];
+
+    if (isCustom) {
+        const cs = customSagas.find(s => String(s.id) === String(sagaId));
+        if (cs) sagaParts = cs.parts;
+    }
+
+    if (isCustom) {
+        // Custom Sagas: Ensure all blueprint parts exist in DB and mark as Finished
+        sagaParts.forEach(part => {
+            let item = state.db.find(i => i.id === part.id);
+            if (item) {
+                item.status = 'Finished';
+                item.ep = item.max_ep || 1;
+                item.sagaId = sagaId;
+                updated++;
+            } else {
+                state.db.push({
+                    id: part.id, title: part.title || part.name, poster: part.poster_path,
+                    type: part.media_type || 'movie', status: 'Finished', 
+                    ep: 1, max_ep: 1, score: 0, crown: 0, imdb: 0, 
+                    year: (part.release_date || '').split('-')[0], genres: [], added: Date.now(),
+                    sagaId: sagaId, sagaName: "Custom Universe"
+                });
+                updated++;
+            }
+        });
+    } else {
+        // Standard Sagas: Update existing DB links
+        state.db.forEach(item => {
+            if (item.sagaId && String(item.sagaId) === String(sagaId)) {
+                item.status = 'Finished';
+                item.ep = item.max_ep || 1;
+                updated++;
+            }
+        });
+    }
+
+    save(); 
+    document.getElementById('sagaModal').classList.add('hidden');
+    showNotification(updated > 0 ? `Universe Completed! ${updated} records updated.` : "Universe marked as completed.");
+
+    // Dynamic UI Refresh Fix
+    if (state.view === 'mylist') renderList();
+    if (state.view === 'sagamatrix') renderMySagas();
+}
+
+function toggleSafeMode() {
+    prefs.safeMode = !prefs.safeMode;
+    savePrefs();
+    updateSafeModeUI();
+    showNotification(`Safe Mode is now ${prefs.safeMode ? 'ON' : 'OFF'}.`);
+}
+
+function updateSafeModeUI() {
+    document.querySelectorAll('.safe-mode-toggle').forEach(btn => {
+        if (prefs.safeMode) {
+            btn.innerHTML = `<i class="fas fa-shield-alt text-[#22c55e] text-lg"></i> <span class="text-[#22c55e]">Safe: ON</span>`;
+            btn.classList.add('border-[#22c55e]/30', 'bg-[#22c55e]/10');
+            btn.classList.remove('border-pulse/30', 'bg-pulse/10');
+        } else {
+            btn.innerHTML = `<i class="fas fa-exclamation-triangle text-pulse text-lg"></i> <span class="text-pulse">Safe: OFF</span>`;
+            btn.classList.add('border-pulse/30', 'bg-pulse/10');
+            btn.classList.remove('border-[#22c55e]/30', 'bg-[#22c55e]/10');
+        }
+    });
+}
+
+// Ensure UI sets correctly on load by adding this inside your init() function:
+updateSafeModeUI();
+
+// --- SAGA FORGE ENGINE ---
+let customSagas = JSON.parse(localStorage.getItem('cp_elite_custom_sagas')) || [];
+let activeForgeItems = [];
+let forgeSearchTimer;
+let draggedItemIndex = null;
+let currentEditingSagaId = null; // Tracks if the Forge is currently editing a Universe
+
+function populateSagaDropdown(currentSagaId) {
+    const select = document.getElementById('mSagaAssign');
+    if (!select) return;
+
+    let optionsHTML = '<option value="">None / Independent</option>';
+    
+    // Inject Custom Sagas
+    customSagas.forEach(s => {
+        const selected = (currentSagaId && String(currentSagaId) === String(s.id)) ? 'selected' : '';
+        optionsHTML += `<option value="${s.id}" ${selected}>[Custom] ${s.name}</option>`;
+    });
+
+    // Inject Standard Sagas mapped from the DB
+    const standardSagasMap = new Map();
+    state.db.forEach(i => {
+        if (i.sagaId && !String(i.sagaId).startsWith('custom_')) {
+            standardSagasMap.set(i.sagaId, i.sagaName);
+        }
+    });
+    standardSagasMap.forEach((name, id) => {
+        const selected = (currentSagaId && String(currentSagaId) === String(id)) ? 'selected' : '';
+        optionsHTML += `<option value="${id}" ${selected}>${name}</option>`;
+    });
+
+    select.innerHTML = optionsHTML;
+}
+
+function assignToSaga(sagaId) {
+    if (!state.active) return;
+    const item = state.db.find(i => i.id === state.active.id);
+    
+    if (!item) {
+        showNotification("Initialize record first by setting a status.", true);
+        document.getElementById('mSagaAssign').value = "";
+        return;
+    }
+
+    if (!sagaId) {
+        delete item.sagaId;
+        delete item.sagaName;
+        showNotification(`Ejected from Universe.`);
+    } else {
+        let sagaName = "Universe";
+        if (String(sagaId).startsWith('custom_')) {
+            const cs = customSagas.find(s => String(s.id) === String(sagaId));
+            if (cs) {
+                sagaName = cs.name;
+                // Safely add to custom saga blueprint
+                if (!cs.parts.find(p => p.id === item.id)) {
+                    cs.parts.push({
+                        id: item.id, title: item.title, poster_path: item.poster,
+                        media_type: item.type, release_date: item.year + '-01-01', size: 'main'
+                    });
+                    localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
+                }
+            }
+        } else {
+            const existing = state.db.find(i => String(i.sagaId) === String(sagaId));
+            if (existing) sagaName = existing.sagaName;
+        }
+
+        item.sagaId = sagaId;
+        item.sagaName = sagaName;
+        showNotification(`Assigned to ${sagaName}`);
+    }
+    save();
+    if (state.view === 'sagamatrix') renderMySagas();
+}
+
+async function handleInlineSagaSearch(query) {
+    const resultsContainer = document.getElementById('inlineSagaSearchResults');
+    if (!query || query.length < 2) {
+        // If search is empty, show contextual recommendations based on the Saga content
+        if (currentSagaViewContext.parts.length > 0) {
+            const lastId = currentSagaViewContext.parts[currentSagaViewContext.parts.length - 1].id;
+            const data = await fetchAPI(`/movie/${lastId}/recommendations`);
+            renderInlineResults(data.results.slice(0, 5), "Based on Universe Content");
+        } else {
+            resultsContainer.classList.add('hidden');
+        }
+        return;
+    }
+
+    // Standard search logic
+    clearTimeout(inlineSearchTimer);
+    inlineSearchTimer = setTimeout(async () => {
+        const data = await fetchAPI(`/search/multi`, `&query=${encodeURIComponent(query)}`);
+        renderInlineResults(data.results, "Search Results");
+    }, 500);
+}
+
+function renderInlineResults(results, label) {
+    const container = document.getElementById('inlineSagaSearchResults');
+    container.innerHTML = `<div class="p-3 text-[8px] font-black uppercase text-pulse bg-white/5 border-b border-white/10 tracking-[0.2em]">${label}</div>`;
+    
+    results.forEach(item => {
+        if (item.media_type === 'person') return;
+        const div = document.createElement('div');
+        div.className = "p-3 hover:bg-white/10 cursor-pointer flex items-center gap-3 transition-all border-b border-white/5";
+        div.onclick = () => addEntityToSaga(item);
+        div.innerHTML = `
+            <img src="${item.poster_path ? IMG + item.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-10 object-cover rounded">
+            <div class="truncate">
+                <div class="text-[10px] font-bold uppercase text-white truncate">${item.title || item.name}</div>
+                <div class="text-[8px] text-gray-500 uppercase">${(item.release_date || item.first_air_date || '').split('-')[0]}</div>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+    container.classList.remove('hidden');
+}
+
+
+// Override setSagaTab to handle the Forge View
+function setSagaTab(tab) {
+    currentSagaTab = tab;
+    const tabs = ['discover', 'mylist', 'forge'];
+    tabs.forEach(t => {
+        const btn = document.getElementById(`sagaTab-${t}`);
+        if(btn) {
+            btn.className = t === tab 
+                ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" 
+                : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
         }
     });
     
-    if (updated > 0) {
-        save();
-        showNotification(`Universe Completed! ${updated} records updated.`);
-        document.getElementById('sagaModal').classList.add('hidden');
-        if (state.view === 'sagamatrix') renderMySagas();
-        if (state.view === 'mylist') renderList();
-    } else {
-        showNotification("All records in this Universe are already finished.");
+    document.getElementById('sagaGrid').classList.toggle('hidden', tab === 'forge');
+    document.getElementById('sagaSearchInput').parentElement.classList.toggle('hidden', tab === 'forge');
+    document.getElementById('sagaForgeContainer').classList.toggle('hidden', tab !== 'forge');
+
+    if (tab === 'discover') renderSagaMatrix();
+    else if (tab === 'mylist') renderMySagas(); // Now includes Custom Sagas!
+    else initForge();
+}
+
+
+// Forge Search
+function handleForgeSearch(query) {
+    clearTimeout(forgeSearchTimer);
+    if (!query) { document.getElementById('forgeSearchResults').innerHTML = ''; return; }
+    forgeSearchTimer = setTimeout(async () => {
+        const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(query)}&include_adult=${!prefs.safeMode}`);
+        const results = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv').slice(0, 8);
+        
+        document.getElementById('forgeSearchResults').innerHTML = results.map(i => `
+            <div class="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:border-pulse/50 transition-all cursor-pointer group" 
+                draggable="true" 
+                ondragstart="forgeSearchDragStart(event, ${i.id}, '${i.media_type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')"
+                onclick="addToForge(${i.id}, '${i.media_type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')">
+                <div class="flex items-center gap-3">
+                    <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 object-cover rounded-md pointer-events-none">
+                    <div class="pointer-events-none">
+                        <div class="text-[10px] font-black uppercase text-white line-clamp-1 group-hover:text-pulse">${i.title || i.name}</div>
+                        <div class="text-[8px] font-bold text-gray-500 tracking-widest mt-1">${i.media_type} • ${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
+                    </div>
+                </div>
+                <i class="fas fa-plus text-gray-500 group-hover:text-pulse pointer-events-none"></i>
+            </div>
+        `).join('');
+    }, 400);
+}
+function forgeSearchDragStart(e, id, type, title, poster, year) {
+    e.dataTransfer.setData('application/json', JSON.stringify({id, type, title, poster, year}));
+    e.dataTransfer.effectAllowed = 'copy';
+}
+function addToForge(id, type, title, poster, year) {
+    if (activeForgeItems.find(i => i.id === id)) return showNotification("Entity already in canvas.", true);
+    
+    activeForgeItems.push({
+        id: id, type: type, title: title, poster: poster, year: year, size: 'main' // default size
+    });
+    renderForgeCanvas();
+    showNotification(`Added ${title} to Canvas.`);
+    loadForgeRecommendations();
+}
+
+function removeFromForge(index) {
+    activeForgeItems.splice(index, 1);
+    renderForgeCanvas();
+}
+
+// Manual Controls
+function moveForgeItem(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= activeForgeItems.length) return;
+    
+    // Add [0] to extract the actual object from the spliced array
+    const item = activeForgeItems.splice(index, 1)[0]; 
+    activeForgeItems.splice(newIndex, 0, item);
+    renderForgeCanvas();
+}
+
+function toggleForgeSize(index) {
+    const sizes = ['main', 'spinoff'];
+    const current = sizes.indexOf(activeForgeItems[index].size);
+    activeForgeItems[index].size = sizes[(current + 1) % sizes.length];
+    renderForgeCanvas();
+}
+
+// Drag and Drop Controls
+function forgeDragStart(e, index) {
+    draggedItemIndex = index;
+    e.target.classList.add('dragging');
+    e.dataTransfer.effectAllowed = "move";
+}
+function forgeDragEnd(e) {
+    e.target.classList.remove('dragging');
+    document.querySelectorAll('.forge-item').forEach(el => el.classList.remove('drag-over'));
+}
+function forgeDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/json') ? "copy" : "move";
+    
+    const targetCard = e.target.closest('.forge-item');
+    if (targetCard && targetCard.dataset.index != draggedItemIndex) {
+        targetCard.classList.add('drag-over');
+    }
+}
+function forgeDragLeave(e) {
+    const targetCard = e.target.closest('.forge-item');
+    if (targetCard) targetCard.classList.remove('drag-over');
+}
+function forgeDrop(e) {
+    e.preventDefault();
+    document.querySelectorAll('.forge-item').forEach(el => el.classList.remove('drag-over'));
+
+    // 1. Handle drop from search (Added for the new search drag feature)
+    try {
+        const searchData = e.dataTransfer.getData('application/json');
+        if (searchData) {
+            const data = JSON.parse(searchData);
+            addToForge(data.id, data.type, data.title, data.poster, data.year);
+            return;
+        }
+    } catch(err) {}
+
+    // 2. Existing Canvas Reorder Logic
+    const targetCard = e.target.closest('.forge-item');
+    if (!targetCard || draggedItemIndex === null) return;
+    
+    const dropIndex = parseInt(targetCard.dataset.index);
+    if (draggedItemIndex === dropIndex) return;
+
+    // Add [0] here as well
+    const itemToMove = activeForgeItems.splice(draggedItemIndex, 1)[0]; 
+    activeForgeItems.splice(dropIndex, 0, itemToMove);
+    
+    draggedItemIndex = null;
+    setTimeout(() => { renderForgeCanvas(); }, 10); 
+}
+
+function renderForgeCanvas() {
+    const canvas = document.getElementById('forgeCanvas');
+    if (activeForgeItems.length === 0) {
+        canvas.innerHTML = `
+            <div class="text-center py-20 text-gray-600 text-[10px] font-black uppercase tracking-[0.3em] opacity-50">
+                <i class="fas fa-meteor text-4xl mb-4 block"></i> Canvas is Empty. Search to add.
+            </div>`;
+        return;
+    }
+
+    canvas.innerHTML = activeForgeItems.map((item, index) => `
+        <div class="forge-item bg-dark/80 backdrop-blur-md border border-white/10 rounded-2xl p-4 flex justify-between items-center cursor-grab active:cursor-grabbing ${item.size === 'main' ? 'forge-size-main' : 'forge-size-spinoff'}" 
+             draggable="true" 
+             data-index="${index}"
+             ondragstart="forgeDragStart(event, ${index})" 
+             ondragend="forgeDragEnd(event)"
+             ondragenter="forgeDragOver(event)"
+             ondragleave="forgeDragLeave(event)">
+            
+            <div class="flex items-center gap-4 pointer-events-none">
+                <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-black text-[10px]">${index + 1}</div>
+                <img src="${item.poster ? IMG+item.poster : 'https://via.placeholder.com/50'}" class="w-12 h-16 rounded object-cover shadow-lg">
+                <div>
+                    <h4 class="text-[12px] font-black uppercase text-white line-clamp-1">${item.title}</h4>
+                    <span class="text-[8px] uppercase tracking-widest text-gray-500">${item.type} • ${item.year}</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="toggleForgeSize(${index})" class="w-8 h-8 rounded-lg bg-white/5 text-gray-400 hover:text-white hover:bg-pulse/20 transition-all flex items-center justify-center text-[10px]" title="Toggle Size/Importance"><i class="fas fa-compress-alt"></i></button>
+                <div class="flex flex-col gap-1 mx-2">
+                    <button onclick="moveForgeItem(${index}, -1)" class="text-gray-500 hover:text-white text-[10px]"><i class="fas fa-chevron-up"></i></button>
+                    <button onclick="moveForgeItem(${index}, 1)" class="text-gray-500 hover:text-white text-[10px]"><i class="fas fa-chevron-down"></i></button>
+                </div>
+                <button onclick="removeFromForge(${index})" class="w-8 h-8 rounded-full bg-pulse/10 text-pulse hover:bg-pulse hover:text-white transition-all flex items-center justify-center text-[10px]"><i class="fas fa-times"></i></button>
+            </div>
+        </div>
+    `).join('');
+    loadForgeRecommendations();
+}
+function deleteCustomUniverse(id) {
+    if (!confirm("CRITICAL WARNING: This will permanently erase this Universe blueprint from your Forge. Entities already in your library will remain, but the Saga link will be severed. Proceed?")) return;
+
+    // 1. Remove from the local array
+    customSagas = customSagas.filter(s => String(s.id) !== String(id));
+    
+    // 2. Update localStorage
+    localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
+    
+    // 3. Clean up the state: Remove the saga link from any items in your DB
+    state.db.forEach(item => {
+        if (String(item.sagaId) === String(id)) {
+            delete item.sagaId;
+            delete item.sagaName;
+        }
+    });
+
+    save();
+    
+    // 4. UI Refresh
+    document.getElementById('sagaModal').classList.add('hidden');
+    showNotification("Universe collapsed and erased from memory.");
+    
+    // Go back to the matrix to show it's gone
+    setSagaTab('mylist');
+}
+function initForge() {
+    activeForgeItems = [];
+    currentEditingSagaId = null; // Reset editing state
+    document.getElementById('forgeTitleInput').value = '';
+    document.getElementById('forgeDescInput').value = '';
+    document.getElementById('forgeSearchInput').value = '';
+    document.getElementById('forgeSearchResults').innerHTML = '';
+    document.getElementById('forgeRecGrid').innerHTML = '';
+    renderForgeCanvas();
+}
+
+function editCustomUniverse(id) {
+    const saga = customSagas.find(s => String(s.id) === String(id));
+    if (!saga) return;
+
+    currentEditingSagaId = saga.id;
+    document.getElementById('forgeTitleInput').value = saga.name;
+    document.getElementById('forgeDescInput').value = saga.description || '';
+    
+    activeForgeItems = saga.parts.map(p => ({
+        id: p.id, type: p.media_type || 'movie', title: p.title, 
+        poster: p.poster_path, year: (p.release_date || '').split('-')[0], size: p.size || 'main'
+    }));
+
+    document.getElementById('sagaModal').classList.add('hidden');
+    setSagaTab('forge');
+    renderForgeCanvas();
+}
+
+async function loadForgeRecommendations() {
+    const container = document.getElementById('forgeRecGrid');
+    if (!container) return;
+    
+    if (activeForgeItems.length === 0) {
+        container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">Add an entity to see neural suggestions.</div>';
+        return;
+    }
+
+    const seed = activeForgeItems[activeForgeItems.length - 1];
+    const apiType = seed.type === 'tv' ? 'tv' : 'movie';
+    
+    try {
+        const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
+        let recs = (data.results || []).filter(r => !activeForgeItems.find(f => f.id === r.id)).slice(0, 5);
+        
+        if (recs.length === 0) {
+            container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">No matching suggestions found.</div>';
+            return;
+        }
+
+        container.innerHTML = recs.map(i => `
+            <div class="flex items-center gap-3 bg-dark/50 border border-white/5 p-3 rounded-xl hover:border-pulse/50 cursor-pointer transition-all group"
+                 onclick="addToForge(${i.id}, '${apiType}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')">
+                <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 rounded object-cover shadow">
+                <div class="flex-1 overflow-hidden">
+                    <div class="text-[10px] font-black uppercase text-white truncate group-hover:text-pulse">${i.title || i.name}</div>
+                    <div class="text-[8px] font-bold text-gray-500 uppercase mt-1 tracking-widest"><i class="fas fa-plus"></i> Add Entity</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        container.innerHTML = '';
     }
 }
 
+// --- INLINE EDIT MODE: LIST RENDERER & LOGIC ---
+
+// Dynamically renders the list so it can update instantly on move/drag
+function renderInlineSagaList() {
+    const container = document.getElementById('inlineSagaList');
+    const countLabel = document.getElementById('inlineSagaCountLabel');
+    if (!container || !currentSagaViewContext) return;
+
+    if (countLabel) {
+        countLabel.innerHTML = `<span>Entity Hierarchy (${currentSagaViewContext.parts.length} Parts)</span>`;
+    }
+
+    container.innerHTML = currentSagaViewContext.parts.map((p, idx) => `
+        <div class="inline-saga-item flex flex-col md:flex-row items-start md:items-center justify-between p-3 md:p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-pulse/30 transition-colors gap-3 md:gap-0 cursor-grab active:cursor-grabbing"
+             draggable="true" 
+             data-index="${idx}"
+             ondragstart="inlineDragStart(event, ${idx})" 
+             ondragend="inlineDragEnd(event)"
+             ondragover="inlineDragOver(event)"
+             ondragleave="inlineDragLeave(event)"
+             ondrop="inlineDrop(event, ${idx})">
+             
+            <div class="flex items-center gap-3 md:gap-4 w-full md:w-2/3 pointer-events-none">
+                <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-dark border border-white/10 flex items-center justify-center text-[9px] md:text-[10px] font-black text-gray-500 shrink-0">${idx + 1}</div>
+                <img src="${p.poster_path ? IMG+p.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 md:w-10 md:h-14 object-cover rounded-md shadow-lg shrink-0">
+                <div class="truncate flex-1">
+                    <div class="text-[10px] md:text-[11px] font-black uppercase text-white truncate">${p.title || p.name}</div>
+                    <div class="text-[7px] md:text-[8px] text-gray-500 uppercase tracking-widest mt-1">${(p.release_date || p.first_air_date || '').split('-')[0] || 'N/A'} • ${p.media_type || 'movie'}</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 w-full md:w-auto justify-end shrink-0 border-t border-white/5 pt-2 md:pt-0 md:border-t-0 mt-2 md:mt-0 z-10">
+                <button onclick="moveInlineSagaItem(${idx}, -1)" class="w-8 h-8 rounded-lg bg-dark border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center" title="Move Up"><i class="fas fa-arrow-up text-[10px]"></i></button>
+                <button onclick="moveInlineSagaItem(${idx}, 1)" class="w-8 h-8 rounded-lg bg-dark border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all flex items-center justify-center" title="Move Down"><i class="fas fa-arrow-down text-[10px]"></i></button>
+                <div class="w-px h-6 bg-white/10 mx-1"></div>
+                <button onclick="removeInlineSagaItem(${idx})" class="w-8 h-8 rounded-lg bg-pulse/10 text-pulse hover:bg-pulse hover:text-white transition-all flex items-center justify-center" title="Remove Entity"><i class="fas fa-times text-[10px]"></i></button>
+                <div class="ml-2 text-gray-600 pointer-events-none"><i class="fas fa-grip-lines"></i></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Manual Button Logic
+function moveInlineSagaItem(index, direction) {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= currentSagaViewContext.parts.length) return;
+    
+    const itemToMove = currentSagaViewContext.parts.splice(index, 1)[0];
+    currentSagaViewContext.parts.splice(newIndex, 0, itemToMove);
+    renderInlineSagaList();
+}
+
+function removeInlineSagaItem(index) {
+    currentSagaViewContext.parts.splice(index, 1);
+    renderInlineSagaList();
+}
+
+// Search Injector Logic
+function addEntityToSaga(item) {
+    if (!currentSagaViewContext) return;
+    if (currentSagaViewContext.parts.find(p => p.id === item.id)) {
+        return showNotification("Entity is already in the blueprint.", true);
+    }
+    
+    currentSagaViewContext.parts.push({
+        id: item.id,
+        title: item.title || item.name,
+        poster_path: item.poster_path,
+        media_type: item.media_type || 'movie',
+        release_date: item.release_date || item.first_air_date || '2000-01-01'
+    });
+    
+    renderInlineSagaList();
+    showNotification(`Injected ${item.title || item.name} into Universe.`);
+    document.getElementById('inlineSagaSearchResults').classList.add('hidden');
+}
+
+// Drag & Drop Engine
+let draggedInlineIndex = null;
+
+function inlineDragStart(e, index) {
+    draggedInlineIndex = index;
+    e.target.classList.add('opacity-40', 'scale-[0.98]', 'border-pulse');
+    e.dataTransfer.effectAllowed = "move";
+}
+
+function inlineDragEnd(e) {
+    e.target.classList.remove('opacity-40', 'scale-[0.98]', 'border-pulse');
+    document.querySelectorAll('.inline-saga-item').forEach(el => {
+        el.classList.remove('border-t-4', 'border-t-pulse', 'mt-4');
+    });
+}
+
+function inlineDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    const targetCard = e.target.closest('.inline-saga-item');
+    if (targetCard && parseInt(targetCard.dataset.index) !== draggedInlineIndex) {
+        targetCard.classList.add('border-t-4', 'border-t-pulse', 'mt-4');
+    }
+}
+
+function inlineDragLeave(e) {
+    const targetCard = e.target.closest('.inline-saga-item');
+    if (targetCard) {
+        targetCard.classList.remove('border-t-4', 'border-t-pulse', 'mt-4');
+    }
+}
+
+function inlineDrop(e, dropIndex) {
+    e.preventDefault();
+    document.querySelectorAll('.inline-saga-item').forEach(el => {
+        el.classList.remove('border-t-4', 'border-t-pulse', 'mt-4');
+    });
+    
+    if (draggedInlineIndex === null || draggedInlineIndex === dropIndex) return;
+
+    const itemToMove = currentSagaViewContext.parts.splice(draggedInlineIndex, 1)[0];
+    currentSagaViewContext.parts.splice(dropIndex, 0, itemToMove);
+    
+    draggedInlineIndex = null;
+    renderInlineSagaList();
+}
+
+function saveCustomUniverse() {
+    let title = document.getElementById('forgeTitleInput').value.trim();
+    let desc = document.getElementById('forgeDescInput').value.trim();
+    
+    if (!title) title = "Universe " + Math.floor(Math.random() * 1000);
+    if (activeForgeItems.length < 2) return showNotification("Add at least 2 items to forge.", true);
+
+    const sagaId = currentEditingSagaId || ('custom_' + Date.now());
+    
+    // Prevent duplicates only if creating new
+    if (!currentEditingSagaId) {
+        let finalTitle = title;
+        let counter = 1;
+        while(customSagas.some(s => s.name === finalTitle)) {
+            finalTitle = `${title} (${counter})`;
+            counter++;
+        }
+        title = finalTitle;
+    }
+
+    const newSagaBlueprint = {
+        id: sagaId, name: title, description: desc, isCustom: true,
+        backdrop_path: activeForgeItems[0].poster,
+        parts: activeForgeItems.map(item => ({
+            id: item.id, title: item.title, poster_path: item.poster,
+            media_type: item.type, release_date: item.year + '-01-01', size: item.size
+        }))
+    };
+
+    if (currentEditingSagaId) {
+        const idx = customSagas.findIndex(s => s.id === currentEditingSagaId);
+        if (idx > -1) customSagas[idx] = newSagaBlueprint;
+    } else {
+        customSagas.push(newSagaBlueprint);
+    }
+
+    localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
+    
+    // Smart Syncing with the Neural DB
+    let addedCount = 0;
+    activeForgeItems.forEach(part => {
+        let existing = state.db.find(i => i.id === part.id);
+        if (existing) {
+            existing.sagaId = sagaId;
+            existing.sagaName = title;
+        } else {
+            state.db.push({
+                id: part.id, title: part.title, poster: part.poster,
+                type: part.type === 'tv' ? 'tv' : 'movie', status: 'Plan to Watch', 
+                ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0, 
+                year: part.year, genres: [], added: Date.now(),
+                sagaId: sagaId, sagaName: title
+            });
+            addedCount++;
+        }
+    });
+
+    // Cleanup Ejected Items (if editing)
+    if (currentEditingSagaId) {
+        state.db.forEach(item => {
+            if (item.sagaId === sagaId && !activeForgeItems.find(f => f.id === item.id)) {
+                delete item.sagaId; delete item.sagaName;
+            }
+        });
+    }
+    
+    save(); 
+    showNotification(currentEditingSagaId ? `Universe "${title}" updated!` : `Universe "${title}" forged! ${addedCount} new items tracked.`);
+    setSagaTab('mylist');
+    renderMySagas();
+}
+function updateSelectButtonVisibility(tabName) {
+    const selectBtn = document.getElementById('sagaSelectBtn');
+    const separator = document.getElementById('sagaSelectSeparator');
+
+    if (tabName === 'mylist') {
+        // Remove 'hidden' and ensure it uses flex alignment
+        selectBtn.classList.remove('hidden');
+        separator.classList.remove('hidden');
+    } else {
+        selectBtn.classList.add('hidden');
+        separator.classList.add('hidden');
+    }
+}
   // --- NOTIFICATION CLEANUP ROUTINE ---
     if (state.notifications && state.notifications.length > 0) {
         const now = Date.now();
