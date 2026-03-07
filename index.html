@@ -170,7 +170,7 @@
     text-shadow: 0 0 10px rgba(0,0,0,0.5);
     z-index: 10;
 }
-/* --- ELITE MOBILE OPTIMIZATION --- */
+/* --- MOBILE OPTIMIZATION --- */
 @media (max-width: 1024px) {
     /* 1. NAVIGATION (STAYS THE SAME) */
     aside {
@@ -350,7 +350,7 @@
         padding: 0 20px !important;
     }
 }
-/* --- ELITE MOBILE OPTIMIZATION (MOBILE ONLY) --- */
+/* --- MOBILE OPTIMIZATION (MOBILE ONLY) --- */
 @media (max-width: 1024px) {
     /* 1. BOTTOM NAVIGATION BAR */
     aside {
@@ -738,16 +738,163 @@
         .animate-wave-slide {
          animation: wave-slide 4s linear infinite;
         }
+        /* --- GLOBAL NETWORK LOADER --- */
+#globalLoader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: #ff2d55;
+    z-index: 99999;
+    transition: width 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 0 15px #ff2d55, 0 0 5px #ff2d55;
+    pointer-events: none;
+    opacity: 0;
+    width: 0%;
+}
+
+/* From Uiverse.io by Pradeepsaranbishnoi */ 
+/* The loader container */
+.loader {
+  width: 200px;
+  height: 200px;
+  perspective: 200px;
+}
+
+
+/* The dot */
+.dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  margin-top: -60px;
+  margin-left: -60px;
+  border-radius: 100px;
+  border: 40px outset #ff2d55;
+  transform-origin: 50% 50%;
+  transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+  background-color: transparent;
+  animation: dot1 1000ms cubic-bezier(.49,.06,.43,.85) infinite;
+}
+
+.dot:nth-child(2) {
+  width: 140px;
+  height: 140px;
+  margin-top: -70px;
+  margin-left: -70px;
+  border-width: 30px;
+  border-color: #ffffff;
+  animation-name: dot2;
+  animation-delay: 75ms;
+  box-shadow: inset 0 0 15px 0 rgba(0, 0, 0, 0.1);
+  transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+}
+
+.dot:nth-child(3) {
+  width: 160px;
+  height: 160px;
+  margin-top: -80px;
+  margin-left: -80px;
+  border-width: 20px;
+  border-color: #eb012c;
+  animation-name: dot3;
+  animation-delay: 150ms;
+  box-shadow: inset 0 0 15px 0 rgba(0, 0, 0, 0.1);
+  transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+}
+
+@keyframes dot1 {
+  0% { 
+    border-color: #80162a; /* Deep Dark Red */
+    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
+  }
+  50% { 
+    border-color: #ff2d55; /* Signature Pulse Red */
+    transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px); 
+  }
+  100% { 
+    border-color: #ffffff; /* Pure White */
+    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
+  }
+}
+
+@keyframes dot2 {
+  0% { 
+    border-color: #ffffff; 
+    box-shadow: inset 0 0 15px 0 rgba(255, 255, 255, 0.4); 
+    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
+  }
+  50% { 
+    border-color: #ff8a9f; /* Soft Frosted Pink/Red */
+    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.4); 
+    transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px); 
+  }
+  100% { 
+    border-color: #ff2d55; 
+    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.8); 
+    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
+  }
+}
+
+@keyframes dot3 {
+  0% { 
+    border-color: #ff2d55; 
+    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.6); 
+    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
+  }
+  50% { 
+    border-color: #ffffff; 
+    box-shadow: inset 0 0 15px 0 rgba(255, 255, 255, 0.8); 
+    transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px); 
+  }
+  100% { 
+    border-color: #80162a; 
+    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.2); 
+    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
+  }
+}
+
+/* New Constructing Text CSS */
+.constructing-text {
+    margin-top: 40px;
+    perspective: 500px;
+}
+.constructing-text span {
+    display: inline-block;
+    opacity: 0;
+    transform: rotateX(-90deg) scale(0.5);
+    animation: constructText 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite alternate;
+}
+.constructing-text span:nth-child(1) { animation-delay: 0.1s; }
+.constructing-text span:nth-child(2) { animation-delay: 0.2s; }
+.constructing-text span:nth-child(3) { animation-delay: 0.3s; }
+.constructing-text span:nth-child(4) { animation-delay: 0.4s; }
+.constructing-text span:nth-child(5) { animation-delay: 0.5s; color: white; }
+.constructing-text span:nth-child(6) { animation-delay: 0.6s; color: white; }
+.constructing-text span:nth-child(7) { animation-delay: 0.7s; color: white; }
+.constructing-text span:nth-child(8) { animation-delay: 0.8s; color: white; }
+.constructing-text span:nth-child(9) { animation-delay: 0.9s; color: white; }
+
+@keyframes constructText {
+    0% { opacity: 0; transform: rotateX(-90deg) rotateY(180deg) scale(0.5) translateZ(-50px); filter: blur(4px); }
+    50% { opacity: 1; transform: rotateX(0deg) rotateY(0deg) scale(1.2) translateZ(20px); filter: blur(0px); text-shadow: 0 0 15px rgba(255, 45, 85, 0.8); }
+    100% { opacity: 1; transform: rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px); filter: blur(0px); text-shadow: 0 0 5px rgba(255, 45, 85, 0.4); }
+}
     </style>
 </head>
 <body class="antialiased select-none">
 
     <!-- PRELOADER -->
-<div id="preloader" class="fixed inset-0 z-[9999] bg-[#020408] flex items-center justify-center transition-all duration-1000">
-    <div class="relative flex items-center justify-center">
-        <div class="absolute w-24 h-24 border border-pulse/20 rounded-full animate-[ping_2.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-        <div class="absolute w-16 h-16 border border-pulse/40 rounded-full animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-        <div class="w-6 h-6 bg-pulse rounded-full shadow-[0_0_40px_rgba(255,45,85,0.8)] animate-pulse"></div>
+<div id="preloader" class="fixed inset-0 z-[9999] bg-[#020408] flex flex-col items-center justify-center transition-all duration-1000">
+    <div class="loader mb-8">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    <div class="constructing-text text-pulse text-2xl font-black italic tracking-widest flex gap-1">
+        <span>C</span><span>I</span><span>N</span><span>E</span><span>P</span><span>U</span><span>L</span><span>S</span><span>E</span>
     </div>
 </div>
 
@@ -775,6 +922,9 @@
             </button>
             <button onclick="navigate('sources')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
                 <i class="fas fa-satellite-dish text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Sources</span>
+            </button>
+            <button onclick="navigate('masterpieces')" class="nav-btn sidebar-link w-full flex items-center gap-6 px-8 py-5 text-gray-500 transition-all">
+                <i class="fas fa-crown text-xl"></i> <span class="hidden lg:inline text-[11px] font-bold uppercase tracking-widest">Masterpieces</span>
             </button>
         </nav>
 
@@ -895,7 +1045,22 @@
             </div>
         </div>
 
-        <!-- SEARCH PAGE -->
+
+<!-- masterpiece  -->
+
+<div id="view-masterpieces" class="page-view hidden p-10 lg:p-24 pt-32 min-h-screen">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-12">
+        <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter liquid-glass">Masterpieces</h2>
+        <div class="flex bg-[#0a0c12] p-1.5 rounded-2xl border border-white/10 shadow-2xl overflow-x-auto hide-scroll">
+            <button onclick="setMpTab('crowned')" id="mpTab-crowned" class="px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap">👑 Crowned</button>
+            <button onclick="setMpTab('perfect')" id="mpTab-perfect" class="px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap">★ Perfect 5/5s</button>
+            <button onclick="setMpTab('ranked')" id="mpTab-ranked" class="px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap">🏆 Rankings</button>
+        </div>
+    </div>
+    <div id="mpContainer" class="pb-20"></div>
+</div>
+
+ <!-- SEARCH PAGE -->
        <div id="view-search" class="page-view hidden p-10 lg:p-24 pt-32">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-12">
                 <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter" id="searchHeader">Discover</h2>
@@ -966,8 +1131,10 @@
                 </button>
             </div>
         </div>
-        <!-- my-list  -->
-    <div id="view-mylist" class="page-view hidden p-6 lg:p-24 pt-24 lg:pt-32">
+        
+<!-- my-list  -->
+
+<div id="view-mylist" class="page-view hidden p-6 lg:p-24 pt-24 lg:pt-32">
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-16">
         <div>
             <h2 class="text-4xl md:text-6xl lg:text-7xl font-black italic uppercase tracking-tighter liquid-glass mb-2">My Library</h2>
@@ -1269,11 +1436,19 @@
             <button onclick="closeModal()" class="fixed top-6 right-6 lg:top-10 lg:right-10 z-[160] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
                 <i class="fas fa-times"></i>
             </button>
-            
+            <button id="mBackBtn" onclick="modalGoBack()" class="fixed top-6 left-6 lg:top-10 lg:left-10 z-[160] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all hidden">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+                        
             <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 lg:p-20">
                 <div id="mGenres" class="flex flex-wrap gap-2 lg:gap-3 mb-4 lg:mb-8"></div>
                 
-                <h2 id="mTitle" class="text-3xl md:text-4xl lg:text-7xl font-black italic uppercase mb-4 lg:mb-8 leading-tight line-clamp-2"></h2>
+           <div class="flex items-start lg:items-center gap-4 mb-4 lg:mb-8">
+                <h2 id="mTitle" class="text-3xl md:text-4xl lg:text-7xl font-black italic uppercase leading-tight line-clamp-2 m-0 cursor-pointer select-auto"></h2>
+                <button id="copyTitleBtn" onclick="copyModalTitle()" class="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-white/10 border border-white/5 hover:bg-pulse hover:border-pulse flex items-center justify-center transition-all text-white/50 hover:text-white shrink-0 mt-1 lg:mt-0 shadow-lg" title="Copy Title">
+                    <i class="fas fa-copy text-xs lg:text-base"></i>
+                </button>
+            </div>
                 
                 <div class="flex flex-wrap items-center gap-4 lg:gap-10 text-[9px] lg:text-[11px] font-black uppercase tracking-widest text-white/50">
                     <span id="mYear"></span>
@@ -1327,30 +1502,51 @@
                         </div>
 
                         <!-- Progress Bar (TV Only) -->
-                        <div id="mProgressBox" class="hidden space-y-6">
-                            <div class="flex justify-between text-[10px] font-black uppercase">
-                                <span class="text-gray-500">Progress</span>
-                                <span id="mEpLabel" class="text-pulse">0/0</span>
-                            </div>
-                            <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                <div id="mProgressBar" class="h-full bg-pulse transition-all"></div>
-                            </div>
-                            <input type="range" id="mEpRange" min="0" oninput="syncProgress(this.value)" class="w-full accent-pulse">
-                        </div>
+                      <div id="mProgressBox" class="hidden space-y-4">
+    <div class="flex justify-between items-end text-[10px] font-black uppercase">
+        <span class="text-gray-500 tracking-widest">Neural Progress</span>
+        <span id="mEpLabel" class="text-pulse text-xs bg-pulse/10 px-3 py-1 rounded-full border border-pulse/20">0/0</span>
+    </div>
+    
+    <div id="mSeasonsList" class="flex flex-wrap gap-2 overflow-x-auto hide-scroll pb-2"></div>
+    
+    <div class="h-1.5 bg-white/5 rounded-full overflow-hidden shadow-inner">
+        <div id="mProgressBar" class="h-full bg-pulse transition-all duration-300"></div>
+    </div>
+    
+    <div class="flex items-center gap-3 bg-dark/50 p-2 rounded-2xl border border-white/5">
+        <button onclick="adjustProgress(-1)" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-pulse hover:shadow-[0_0_15px_rgba(255,45,85,0.4)] transition-all text-white shrink-0">
+            <i class="fas fa-minus text-xs"></i>
+        </button>
+        <input type="range" id="mEpRange" min="0" oninput="syncProgress(this.value)" class="w-full accent-pulse h-2 bg-transparent">
+        <button onclick="adjustProgress(1)" class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-[#22c55e] hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-all text-white shrink-0">
+            <i class="fas fa-plus text-xs"></i>
+        </button>
+    </div>
+</div>
 
-                        <!-- Personal Rating Pop-up Card -->
-                        <div id="mRatingCard" class="hidden p-8 bg-pulse/5 border border-pulse/20 rounded-3xl text-center">
-                            <h5 class="text-[10px] font-black uppercase text-pulse mb-6 tracking-widest">Rate this Title</h5>
-                            <div id="starRating" class="flex justify-center gap-4 text-3xl star-box">
-                                <i class="far fa-star" data-val="1"></i>
-                                <i class="far fa-star" data-val="2"></i>
-                                <i class="far fa-star" data-val="3"></i>
-                                <i class="far fa-star" data-val="4"></i>
-                                <i class="far fa-star" data-val="5"></i>
-                            </div>
-                            <p class="text-[8px] font-bold text-gray-600 uppercase mt-4">Personal Sentiment Score</p>
-                        </div>
 
+<div id="mRatingCard" class="hidden p-8 bg-pulse/5 border border-pulse/20 rounded-3xl text-center">
+    <h5 class="text-[10px] font-black uppercase text-pulse mb-6 tracking-widest">Rate this Title</h5>
+    <div id="starRating" class="flex justify-center gap-4 text-3xl star-box">
+        <i class="far fa-star" data-val="1"></i>
+        <i class="far fa-star" data-val="2"></i>
+        <i class="far fa-star" data-val="3"></i>
+        <i class="far fa-star" data-val="4"></i>
+        <i class="far fa-star" data-val="5"></i>
+    </div>
+    <p class="text-[8px] font-bold text-gray-600 uppercase mt-4 mb-6">Personal Sentiment Score</p>
+    
+    <div id="mCrownUI" class="border-t border-pulse/20 pt-6 mt-2">
+        <p class="text-[8px] font-bold text-gray-500 uppercase mb-3 tracking-widest">Crown Ranking (Top 3 of Type)</p>
+        <select id="mCrownSelect" onchange="handleCrownSelect(this.value)" class="w-full bg-dark border border-white/10 p-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-yellow-500 text-yellow-500 text-center">
+            <option value="0">Uncrowned</option>
+            <option value="1">👑 #1 Crown</option>
+            <option value="2">👑 #2 Crown</option>
+            <option value="3">👑 #3 Crown</option>
+        </select>
+    </div>
+</div>
                         <button id="mRemoveBtn" onclick="removeItem()" class="hidden w-full text-[10px] font-black uppercase text-gray-700 hover:text-pulse transition-all pt-6">Eject from Library</button>
                     </div>
                 </div>
@@ -1560,7 +1756,43 @@
             10752: [10752, 10768], // War <-> War & Politics
             10768: [10768, 10752]
         };
-       
+       // --- NETWORK LOADER LOGIC ---
+function showLoader() {
+    let el = document.getElementById('globalLoader');
+    if(!el) {
+        el = document.createElement('div');
+        el.id = 'globalLoader';
+        document.body.appendChild(el);
+    }
+    el.style.opacity = '1';
+    el.style.width = '30%';
+    setTimeout(() => { if(el.style.opacity === '1') el.style.width = '70%'; }, 200);
+}
+
+function hideLoader() {
+    const el = document.getElementById('globalLoader');
+    if(el) {
+        el.style.width = '100%';
+        setTimeout(() => { 
+            el.style.opacity = '0'; 
+            setTimeout(() => { el.style.width = '0%'; }, 300); 
+        }, 250);
+    }
+}
+
+// Intercept fetchAPI to trigger the loader automatically
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+    showLoader();
+    try {
+        const response = await originalFetch(...args);
+        hideLoader();
+        return response;
+    } catch (error) {
+        hideLoader();
+        throw error;
+    }
+};
         let discoverPage = 1;
         let currentPersonCredits = [];
         let personDisplayLimit = 8;
@@ -1599,8 +1831,27 @@ let currentSearchLayout = prefs.searchLayout;
             labSort: 'newest',  
             discoverFilters: { type: 'all', genres: [] },
             discoverDataRaw: [],
+            modalHistory: [],
+            mpTab: 'crowned',
+            mpLimit: 25,
+            mpFilter: 'all', 
+            
             
         };
+
+
+// --- CLEANUP ENGINE (Runs on load) ---
+function cleanNotifications() {
+    const now = Date.now();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // Auto-clear after 7 days
+    
+    // Filter old ones, then slice to strictly limit to 30 items
+    notifications = notifications.filter(n => (now - (n.date || now)) < SEVEN_DAYS_MS).slice(0, 30);
+    archivedNotifs = archivedNotifs.filter(n => (now - (n.date || now)) < SEVEN_DAYS_MS).slice(0, 30);
+    
+    saveNotifs();
+}
+cleanNotifications(); // Run immediately
         // Initialize App
 async function init() {
     
@@ -1614,7 +1865,7 @@ async function init() {
         const [trending, tv, anime, kdrama, turkish, mGenres, tGenres] = await Promise.all([
             fetchAPI('/trending/all/week'),
             fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
-            fetchAPI('/discover/tv?with_genres=16&sort_by=popularity.desc'),
+            fetchAPI('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
             fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
             fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
             fetchAPI('/genre/movie/list'), // Movie Genres
@@ -1642,7 +1893,7 @@ async function init() {
                 setupStarLogic();
                 initNeuralEngine();
                 renderSources();
-
+                setupLongPressCopy();
                 setInterval(nextHero, 10000);
             } catch (e) { console.error("Neural init error", e); 
                 
@@ -1656,34 +1907,32 @@ async function init() {
         }
 
         // Navigation
-        function navigate(view) {
-            state.view = view;
-            document.querySelectorAll('.page-view').forEach(v => v.classList.add('hidden'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(`view-${view}`).classList.remove('hidden');
-            document.getElementById('pathLabel').innerText = view.toUpperCase();
-            
-            const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.onclick.toString().includes(view));
-            if(btn) btn.classList.add('active');
+function navigate(view) {
+    showLoader(); // Trigger Loader
+    state.view = view;
+    document.querySelectorAll('.page-view').forEach(v => v.classList.add('hidden'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`view-${view}`).classList.remove('hidden');
+    document.getElementById('pathLabel').innerText = view.toUpperCase();
+    
+    const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.onclick.toString().includes(view));
+    if(btn) btn.classList.add('active');
 
-            if(view === 'mylist') renderList();
-            if(view === 'rhythmlab') runLab();
-            if(view === 'sync') renderSync();
-            if(view === 'search') {
+    if(view === 'mylist') renderList();
+    if(view === 'rhythmlab') runLab();
+    if(view === 'sync') renderSync();
+    if(view === 'masterpieces') renderMasterpieces();
+    if(view === 'search') {
         const input = document.getElementById('mainSearch');
         const header = document.getElementById('searchHeader');
-        
-        // If the user didn't come from an actor click (input is empty), reset title
         if (!input.value && !header.innerText.includes('• Works')) {
             header.innerText = "Discover";
             loadDiscoverContent();
         }
-    
     }
-    
-          
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(hideLoader, 300); // Hide after transition
+}
         
 
         // Search Behavior
@@ -1800,45 +2049,7 @@ function setupSearchBehavior() {
 }
  
 
-async function loadDiscoverContent(append = false) {
-    
-    const loadBtn = document.getElementById('discoverLoadContainer');
-// PREVENT OVERWRITE: If we are in actor mode, don't load trending
-    if (state.searchMode === 'actor') return;
 
-    state.searchMode = 'trending'; 
-    const grid = document.getElementById('searchGrid');
-    
-  
-
-    try {
-        const data = await fetchAPI(`/trending/all/day?page=${discoverPage}`);
-        
-        // Use your existing render logic
-        const html = data.results.map(i => `
-            <div class="group cursor-pointer" onclick="${i.media_type === 'person' ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${i.media_type}')`}">
-                <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse group-hover:-translate-y-2 transition-all shadow-xl relative">
-                    <img src="${i.poster_path || i.profile_path ? IMG + (i.poster_path || i.profile_path) : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
-                </div>
-                <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
-                <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${(i.release_date || i.first_air_date || 'N/A').split('-')[0]}</div>
-            </div>
-        `).join('');
-
-      if (append) {
-    state.discoverDataRaw = state.discoverDataRaw.concat(data.results);
-} else {
-    state.discoverDataRaw = data.results;
-}
-applyDiscoverLocalFilters();
-
-        // Show button if more pages exist
-        loadBtn.classList.remove('hidden');
-        document.getElementById('searchHeader').innerText = "Discover";
-    } catch (err) {
-        console.error("Discovery error", err);
-    }
-}
 
 
 function resetSearchMode() {
@@ -1846,31 +2057,6 @@ function resetSearchMode() {
     document.getElementById('discoverLoadContainer').classList.remove('hidden');
 }
 
-async function loadMoreDiscover() {
-    const btn = document.getElementById('btnDiscoverLoadMore');
-    btn.innerText = "Syncing...";
-    
-    if (state.searchMode === 'actor') {
-        state.actorPage++;
-        const start = (state.actorPage - 1) * 20;
-        const slice = state.actorCredits.slice(start, start + 20);
-        
-        renderGrid('searchGrid', slice, false, false); // append = false clear
-        applyLayoutToGrid();
-        
-        if (start + 20 >= state.actorCredits.length) {
-            document.getElementById('discoverLoadContainer').classList.add('hidden');
-        }
-    } else if (state.searchMode === 'filter') {
-        state.filterPage++;
-        await applySearchFilters(true); // true = append
-    } else if (state.searchMode === 'trending') {
-        discoverPage++;
-        await loadDiscoverContent(true); // true = append
-    }
-    
-    btn.innerText = "Load More Discovery";
-}
 
 async function openPersonModal(id) {
     document.getElementById('searchDrop').classList.add('hidden');
@@ -2082,63 +2268,86 @@ async function applySearchFilters(append = false) {
         }
 
         // Modal Logic
-        async function openModal(id, type) {
-            const [details, credits, vids] = await Promise.all([
-                fetchAPI(`/${type}/${id}`),
-                fetchAPI(`/${type}/${id}/credits`),
-                fetchAPI(`/${type}/${id}/videos`)
-            ]);
+      async function openModal(id, type, isBack = false) {
+    // History Tracking
+    if (!isBack && state.active) {
+        state.modalHistory.push({ id: state.active.id, type: state.active.media_type });
+    }
+    document.getElementById('mBackBtn').classList.toggle('hidden', state.modalHistory.length === 0);
 
-            state.active = { ...details, media_type: type };
-            const local = state.db.find(i => i.id === id);
+    const [details, credits, vids] = await Promise.all([
+        fetchAPI(`/${type}/${id}`),
+        fetchAPI(`/${type}/${id}/credits`),
+        fetchAPI(`/${type}/${id}/videos`)
+    ]);
 
-            document.getElementById('mBackdrop').src = IMG_HD + (details.backdrop_path || details.poster_path);
-            document.getElementById('mTitle').innerText = (details.title || details.name);
-            document.getElementById('mOverview').innerText = details.overview || "Narrative archive encrypted.";
-            document.getElementById('mYear').innerText = (details.release_date || details.first_air_date || '----').split('-')[0];
-            document.getElementById('mRating').innerHTML = `<i class="fas fa-star text-pulse"></i> ${details.vote_average?.toFixed(1) || '0.0'}`;
-            
-            document.getElementById('mGenres').innerHTML = (details.genres || []).map(g => `
-                <span class="text-[9px] font-black uppercase border border-white/10 px-4 py-2 rounded-full text-gray-400">${g.name}</span>
-            `).join('');
+    state.active = { ...details, media_type: type };
+    const local = state.db.find(i => i.id === id);
 
-            document.getElementById('mCast').innerHTML = (credits.cast || []).slice(0, 10).map(c => `
-                <div class="flex-none w-24 text-center group cursor-pointer" onclick="openActor(${c.id}, '${c.name}')">
-                    <img src="${c.profile_path ? IMG + c.profile_path : 'https://via.placeholder.com/150'}" class="w-24 h-24 rounded-full object-cover mb-4 border-2 border-transparent group-hover:border-pulse transition-all">
-                    <div class="text-[9px] font-black uppercase line-clamp-1">${c.name}</div>
-                    <div class="text-[7px] text-gray-500 font-bold mt-1 line-clamp-1">${c.character}</div>
-                </div>
-            `).join('');
+    document.getElementById('mBackdrop').src = IMG_HD + (details.backdrop_path || details.poster_path);
+    document.getElementById('mTitle').innerText = (details.title || details.name);
+    document.getElementById('mOverview').innerText = details.overview || "Narrative archive encrypted.";
+    document.getElementById('mYear').innerText = (details.release_date || details.first_air_date || '----').split('-')[0];
+    document.getElementById('mRating').innerHTML = `<i class="fas fa-star text-pulse"></i> ${details.vote_average?.toFixed(1) || '0.0'}`;
+    
+    document.getElementById('mGenres').innerHTML = (details.genres || []).map(g => `
+        <span class="text-[9px] font-black uppercase border border-white/10 px-4 py-2 rounded-full text-gray-400">${g.name}</span>
+    `).join('');
 
-            const tr = vids.results.find(v => v.type === 'Trailer');
-            document.getElementById('mTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
+    document.getElementById('mCast').innerHTML = (credits.cast || []).slice(0, 10).map(c => `
+        <div class="flex-none w-24 text-center group cursor-pointer" onclick="openActor(${c.id}, '${c.name.replace(/'/g, "\\'")}')">
+            <img src="${c.profile_path ? IMG + c.profile_path : 'https://via.placeholder.com/150'}" class="w-24 h-24 rounded-full object-cover mb-4 border-2 border-transparent group-hover:border-pulse transition-all">
+            <div class="text-[9px] font-black uppercase line-clamp-1">${c.name}</div>
+            <div class="text-[7px] text-gray-500 font-bold mt-1 line-clamp-1">${c.character}</div>
+        </div>
+    `).join('');
 
-            document.getElementById('mStatus').value = local ? local.status : '';
-            document.getElementById('mProgressBox').classList.toggle('hidden', type !== 'tv' || !local);
-            
-            if(type === 'tv' && local) {
-                const total = details.number_of_episodes || 1;
-                document.getElementById('mEpRange').max = total;
-                document.getElementById('mEpRange').value = local.ep || 0;
-                updateEpUI(local.ep || 0, total);
-            }
+    const tr = vids.results.find(v => v.type === 'Trailer');
+    document.getElementById('mTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
 
-            // Rating logic: only show if Finished
-            updateRatingCard(local);
+    document.getElementById('mStatus').value = local ? local.status : '';
+    document.getElementById('mProgressBox').classList.toggle('hidden', type !== 'tv' || !local);
+    
+    if(type === 'tv' && local) {
+        const total = details.number_of_episodes || 1;
+        document.getElementById('mEpRange').max = total;
+        document.getElementById('mEpRange').value = local.ep || 0;
+        updateEpUI(local.ep || 0, total);
+    }
+    if(type === 'tv' && local) {
+    const total = details.number_of_episodes || 1;
+    document.getElementById('mEpRange').max = total;
+    document.getElementById('mEpRange').value = local.ep || 0;
+    
+    // Process Seasons
+    state.activeSeasons = (details.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
+    let cumulative = 0;
+    state.activeSeasons.forEach(s => {
+        s.startEp = cumulative;
+        cumulative += s.episode_count;
+        s.endEp = cumulative;
+    });
+    
+    updateEpUI(local.ep || 0, total);
+    renderSeasonsUI(); // Initialize season bubbles
+}
 
-            document.getElementById('mRemoveBtn').classList.toggle('hidden', !local);
-            document.getElementById('modal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-           //Trigger Recommendation Engine
-            state.recPage = 1;
-            loadModalRecommendations(id, type, state.recPage, false);
-        }
+    updateRatingCard(local);
+
+    document.getElementById('mRemoveBtn').classList.toggle('hidden', !local);
+    document.getElementById('modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    
+    state.recPage = 1;
+    loadModalRecommendations(id, type, state.recPage, false);
+}
 
         function updateRatingCard(local) {
             const card = document.getElementById('mRatingCard');
             if(local && local.status === 'Finished') {
                 card.classList.remove('hidden');
                 setStars(local.score || 0);
+                document.getElementById('mCrownSelect').value = local.crown || 0;
             } else {
                 card.classList.add('hidden');
             }
@@ -2165,41 +2374,51 @@ async function applySearchFilters(append = false) {
             });
         }
 
-        function updateStatus() {
-            const status = document.getElementById('mStatus').value;
-            if(!status) return;
-            const item = state.active;
-            let existing = state.db.find(i => i.id === item.id);
+function updateStatus() {
+    const status = document.getElementById('mStatus').value;
+    if(!status) return;
+    
+    const item = state.active;
+    let existing = state.db.find(i => i.id === item.id);
 
-            if(existing) {
-                existing.status = status;
-            } else {
-                let cat = item.media_type;
-                if(cat === 'tv') {
-                    if(item.original_language === 'tr') cat = 'turkish';
-                    else if(item.original_language === 'ko') cat = 'kdrama';
-                    else if((item.genres || []).some(g => g.id === 16)) cat = 'anime';
-                    else cat = 'tv';
-                }
-                state.db.push({
-                    id: item.id,
-                    title: item.title || item.name,
-                    poster: item.poster_path,
-                    type: cat,
-                    status: status,
-                    ep: 0,
-                    max_ep: item.number_of_episodes || 1,
-                    score: 0,
-                    imdb: item.vote_average,
-                    year: (item.release_date || item.first_air_date || '').split('-')[0],
-                    genres: (item.genres || []).map(g => g.id),
-                    added: Date.now()
-                });
-            }
-            save();
-            openModal(item.id, item.media_type);
-        }
-
+    if(existing) {
+        existing.status = status;
+    } else {
+        let cat = determineCategory(item);
+        existing = {
+            id: item.id,
+            title: item.title || item.name,
+            poster: item.poster_path,
+            type: cat,
+            status: status,
+            ep: 0,
+            max_ep: item.number_of_episodes || 1,
+            score: 0,
+            crown: 0,
+            imdb: item.vote_average,
+            year: (item.release_date || item.first_air_date || '').split('-')[0],
+            genres: (item.genres || []).map(g => g.id),
+            added: Date.now()
+        };
+        state.db.push(existing);
+    }
+    
+    save(); // Persists to localStorage
+    updateRatingCard(existing); // Instantly shows the rating/crown card if "Finished"
+    
+    // NEW: Dynamically reveal the Episode Tracker and Remove Button instantly
+    document.getElementById('mRemoveBtn').classList.remove('hidden');
+    
+    if (existing.type !== 'movie') {
+        document.getElementById('mProgressBox').classList.remove('hidden');
+        const total = item.number_of_episodes || 1;
+        document.getElementById('mEpRange').max = total;
+        document.getElementById('mEpRange').value = existing.ep || 0;
+        updateEpUI(existing.ep || 0, total);
+    } else {
+        document.getElementById('mProgressBox').classList.add('hidden');
+    }
+}
         // List Rendering with Hierarchy
         function toggleListView() {
             state.isGrid = !state.isGrid;
@@ -2366,40 +2585,117 @@ function runLab() {
 
         // Sync Engine Logic
         async function renderSync() {
-            const container = document.getElementById('syncContainer');
-            const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
+    const container = document.getElementById('syncContainer');
+    container.innerHTML = '<div class="col-span-full py-20 text-center text-pulse text-[10px] font-black uppercase tracking-[0.5em] animate-pulse">Initializing Neural Sync...</div>';
+
+    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
+    let sectionsHTML = [];
+    
+    // FEATURE 1: Neural Exclusion (Get a Set of IDs the user already has)
+    let dbIds = new Set(state.db.map(i => i.id)); 
+
+    // Calculate Neural Match % based on user's highest rated genres
+    const calculateMatch = (itemGenres) => {
+        if (!itemGenres || !itemGenres.length) return Math.floor(Math.random() * 20) + 70; // fallback
+        const userGenres = state.db.filter(i => i.score >= 4).flatMap(i => i.genres);
+        if (!userGenres.length) return Math.floor(Math.random() * 20) + 70;
+        
+        let matches = itemGenres.filter(g => userGenres.includes(g)).length;
+        let pct = Math.min(99, 60 + (matches * 15) + Math.floor(Math.random() * 10));
+        return pct;
+    };
+
+    for (let type of types) {
+        // FEATURE 2: Elite Seeding (Only seed from items scored 4+ or currently watching)
+        const anchors = state.db.filter(i => i.type === type && (i.score >= 4 || i.status === 'Watching'));
+        if(!anchors.length) continue;
+        
+        const seed = anchors[Math.floor(Math.random() * anchors.length)];
+        const apiType = (type === 'movie' ? 'movie' : 'tv');
+        const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
+        
+        // Apply Neural Exclusion
+        let recommendations = data.results.filter(i => !dbIds.has(i.id));
+        if (recommendations.length === 0) continue; 
+
+        // FEATURE 3: Context UI Text
+        let contextText = seed.crown > 0 ? `Because you crowned 👑 ${seed.title}` :
+                          seed.score >= 4 ? `Because you rated ${seed.title} ★ ${seed.score}/5` :
+                          `Since you are watching ${seed.title}`;
+
+        let rowHtml = `
+            <section class="animate-in fade-in duration-500">
+                <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-8 italic flex items-center gap-4">
+                    <span class="w-2 h-2 bg-pulse rounded-full shadow-[0_0_10px_#ff2d55]"></span>
+                    ${contextText} <div class="h-px flex-1 bg-white/5"></div>
+                </h3>
+                <div class="flex gap-8 overflow-x-auto hide-scroll pb-6">
+                    ${recommendations.slice(0, 10).map(i => {
+                        // FEATURE 4: Neural Match Percentages
+                        let matchPct = calculateMatch(i.genre_ids);
+                        let matchColor = matchPct >= 90 ? 'text-[#22c55e]' : matchPct >= 80 ? 'text-[#f59e0b]' : 'text-pulse';
+                        
+                        return `
+                        <div class="flex-none w-44 group cursor-pointer relative" onclick="openModal(${i.id}, '${apiType}')">
+                            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
+                                <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
+                                <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10 opacity-80"></div>
+                                
+                                <div class="absolute top-3 left-3 bg-dark/80 backdrop-blur-md px-2 py-1 rounded-md text-[8px] font-black uppercase border border-white/10 z-30 flex items-center gap-1 ${matchColor}">
+                                    <i class="fas fa-brain"></i> ${matchPct}% Match
+                                </div>
+                                
+                                ${getPlayHoverHTML({...i, type: type})}
+                            </div>
+                            <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
+                        </div>
+                    `}).join('')}
+                </div>
+            </section>
+        `;
+        sectionsHTML.push(rowHtml);
+    }
+
+    // FEATURE 5: The "Sync Engine Mix" (Advanced Intersection)
+    if (state.db.length > 5) {
+        let allGenres = state.db.filter(i => i.score >= 4).flatMap(i => i.genres);
+        let counts = {};
+        allGenres.forEach(g => counts[g] = (counts[g] || 0) + 1);
+        let topGenres = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 3);
+        
+        if (topGenres.length >= 2) {
+            const mixData = await fetchAPI(`/discover/movie?with_genres=${topGenres.join(',')}&sort_by=vote_average.desc&vote_count.gte=500`);
+            let mixRecs = mixData.results.filter(i => !dbIds.has(i.id)).slice(0, 10);
             
-            const sections = await Promise.all(types.map(async type => {
-                const anchors = state.db.filter(i => i.type === type);
-                if(!anchors.length) return '';
-                
-                const seed = anchors[Math.floor(Math.random() * anchors.length)];
-                const apiType = (type === 'movie' ? 'movie' : 'tv');
-                const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
-                
-                return `
-                    <section>
-                        <h3 class="text-[10px] font-black uppercase tracking-[0.5em] text-pulse mb-10 italic">
-                            Neural suggestions for <span class="text-white">${type}</span> based on "${seed.title}"
+            if (mixRecs.length > 0) {
+                sectionsHTML.push(`
+                    <section class="animate-in fade-in duration-500">
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-pulse mb-8 italic flex items-center gap-4">
+                            <i class="fas fa-dna"></i> Neural Intersection Mix <div class="h-px flex-1 bg-white/5 shadow-[0_0_10px_#ff2d55]"></div>
                         </h3>
                         <div class="flex gap-8 overflow-x-auto hide-scroll pb-6">
-                            ${data.results.slice(0, 10).map(i => `
-                               
-                            <div class="flex-none w-44 group cursor-pointer" onclick="openModal(${i.id}, '${apiType}')">
-                                <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
-                                    <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
-                                    
-                                    ${getPlayHoverHTML({...i, type: type})}
+                            ${mixRecs.map(i => `
+                                <div class="flex-none w-44 group cursor-pointer relative" onclick="openModal(${i.id}, 'movie')">
+                                    <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-pulse/30 shadow-[0_0_20px_rgba(255,45,85,0.15)] group-hover:border-pulse transition-all relative">
+                                        <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10"></div>
+                                        <div class="absolute top-3 left-3 bg-pulse/20 text-pulse px-2 py-1 rounded-md text-[8px] font-black uppercase border border-pulse/30 z-30">
+                                            99% Match
+                                        </div>
+                                        ${getPlayHoverHTML({...i, type: 'movie'})}
+                                    </div>
+                                    <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
                                 </div>
-                                <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
-                            </div>
-                        `).join('')}
+                            `).join('')}
                         </div>
                     </section>
-                `;
-            }));
-            container.innerHTML = sections.join('') || `<div class="text-center py-20 text-gray-700 font-black uppercase tracking-widest italic">Insufficient data for sync</div>`;
+                `);
+            }
         }
+    }
+
+    container.innerHTML = sectionsHTML.join('') || `<div class="text-center py-20 text-gray-700 font-black uppercase tracking-widest italic">Insufficient elite data for synchronization. Add highly rated shows to seed the engine.</div>`;
+}
 
         // Global Helpers
         // --- COUNTER INTERACTIVITY & CATEGORY ENGINE ---
@@ -2475,15 +2771,16 @@ function runLab() {
             fetchAndRenderCategory(true);
         }
 
-        function getCategoryApiPath(type, sort, page) {
+      function getCategoryApiPath(type, sort, page) {
             if (type === 'movie') {
                 return sort === 'trending' ? `/trending/movie/week?page=${page}` : `/movie/top_rated?page=${page}`;
             } else {
                 let base = `/discover/tv?page=${page}`;
-                let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300'; // Added vote_count to ensure quality
+                let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300'; 
                 
                 if (type === 'tv') return `${base}&sort_by=${sortParam}&with_original_language=en`;
-                if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16`;
+                // Enforce JA language for Anime category fetching
+                if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16&with_original_language=ja`;
                 if (type === 'kdrama') return `${base}&sort_by=${sortParam}&with_original_language=ko`;
                 if (type === 'turkish') return `${base}&sort_by=${sortParam}&with_original_language=tr`;
             }
@@ -2651,16 +2948,57 @@ function runLab() {
             document.getElementById('mEpLabel').innerText = `${curr}/${tot}`;
             document.getElementById('mProgressBar').style.width = `${(curr/tot)*100}%`;
         }
+// --- NEW SYNC & SEASON LOGIC ---
+function renderSeasonsUI() {
+    const container = document.getElementById('mSeasonsList');
+    if (!state.activeSeasons || !state.activeSeasons.length) { 
+        container.innerHTML = ''; return; 
+    }
+    
+    const currentEp = parseInt(document.getElementById('mEpRange').value) || 0;
 
-        function syncProgress(v) {
-            const idx = state.db.findIndex(i => i.id === state.active.id);
-            if(idx !== -1) {
-                state.db[idx].ep = parseInt(v);
-                updateEpUI(v, state.active.number_of_episodes || 1);
-                save();
-            }
+    container.innerHTML = state.activeSeasons.map(s => {
+        let isChecked = currentEp >= s.endEp; // Passed the season
+        let isGlowing = currentEp > s.startEp && currentEp < s.endEp; // Inside the season
+        
+        let styleClasses = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase cursor-pointer transition-all border shrink-0 ";
+        
+        if (isChecked) {
+            styleClasses += "bg-[#22c55e] text-white border-[#22c55e] shadow-[0_0_10px_rgba(34,197,94,0.3)]";
+        } else if (isGlowing) {
+            styleClasses += "bg-pulse/20 text-pulse border-pulse shadow-[0_0_15px_rgba(255,45,85,0.6)] animate-pulse";
+        } else {
+            styleClasses += "bg-white/5 text-gray-500 border-white/10 hover:border-white/30 hover:text-white";
         }
 
+        return `<button onclick="syncProgress(${s.endEp})" class="${styleClasses}">S${s.season_number}</button>`;
+    }).join('');
+}
+
+function syncProgress(v) {
+    const max = parseInt(document.getElementById('mEpRange').max);
+    v = Math.max(0, Math.min(parseInt(v), max)); // Prevent going below 0 or above max
+    
+    document.getElementById('mEpRange').value = v;
+    const idx = state.db.findIndex(i => i.id === state.active.id);
+    
+    if(idx !== -1) {
+        state.db[idx].ep = v;
+        updateEpUI(v, max);
+        renderSeasonsUI(); // Update glowing/checked states instantly
+        save();
+        
+        // Auto-mark finished if max is reached
+        if (v === max && state.db[idx].status !== 'Finished') {
+            document.getElementById('mStatus').value = 'Finished';
+            updateStatus(); 
+        }
+    }
+}
+function adjustProgress(dir) {
+    const curr = parseInt(document.getElementById('mEpRange').value) || 0;
+    syncProgress(curr + dir);
+}
  async function openActor(id, name) {
     closeModal();
     navigate('search');
@@ -2736,8 +3074,19 @@ function runLab() {
               if (state.view === 'mylist') renderList();
               if (state.view === 'rhythmlab') runLab();
 }
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); document.body.style.overflow = 'auto'; }
+        function closeModal() { 
+                state.modalHistory = []; // Wipe history on full close
+                document.getElementById('mBackBtn').classList.add('hidden');
+                document.getElementById('modal').classList.add('hidden'); 
+                document.body.style.overflow = 'auto'; 
+            }
         function removeItem() { state.db = state.db.filter(i => i.id !== state.active.id); save(); closeModal(); }
+        function modalGoBack() {
+            if (state.modalHistory.length > 0) {
+                const prev = state.modalHistory.pop();
+                openModal(prev.id, prev.type, true); // true = isBack
+            }
+}
 // --- DATA SYNC: IMPORT & EXPORT ---
 
    // --- Beautiful UI Notification System ---
@@ -2801,10 +3150,15 @@ function importData(event) {
             let updatedCount = 0;
             let newCount = 0;
 
-            importedDB.forEach(importedItem => {
+           importedDB.forEach(importedItem => {
                 const existingIdx = state.db.findIndex(existing => existing.id === importedItem.id);
                 if (existingIdx !== -1) {
-                    state.db[existingIdx] = importedItem; // Update existing
+                    // SMART MERGE: Keep the highest Masterpiece ratings and progress
+                    const ex = state.db[existingIdx];
+                    ex.score = Math.max(ex.score || 0, importedItem.score || 0);
+                    ex.crown = Math.max(ex.crown || 0, importedItem.crown || 0);
+                    ex.ep = Math.max(ex.ep || 0, importedItem.ep || 0);
+                    ex.status = importedItem.status || ex.status;
                     updatedCount++;
                 } else {
                     state.db.push(importedItem); // Add new
@@ -3076,52 +3430,90 @@ function removeSource(cat, idx) {
     renderSources();
 }
 
+
+function getPlayHoverHTML(item) {
+    // Rely on local DB type if available to guarantee anime/kdrama/turkish routing
+    const local = state.db.find(i => i.id === item.id);
+    const cat = local ? local.type : determineCategory(item);
+    
+    const available = sourcesDb[cat] || [];
+    if (available.length === 0) return ''; 
+
+    // If 1 source, direct link. If multiple, open modal.
+    let action = `openModal(${item.id}, '${item.media_type || (cat === 'movie' ? 'movie' : 'tv')}'); setTimeout(openWatchMenu, 100);`;
+    if (available.length === 1) {
+        const title = encodeURIComponent(item.title || item.name);
+        const url = available[0].url.replace(/{title}/g, title).replace(/{tmdb_id}/g, item.id);
+        action = `window.open('${url}', '_blank')`;
+    }
+    
+    return `
+    <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-40 pointer-events-none flex items-center justify-center">
+        <button onclick="event.stopPropagation(); ${action}" class="w-14 h-14 rounded-full bg-white/5 border border-white/40 flex items-center justify-center text-white text-xl hover:bg-white/20 hover:border-pulse hover:scale-110 transition-all pointer-events-auto shadow-[inset_0_2px_10px_rgba(255,255,255,0.4),0_5px_15px_rgba(0,0,0,0.4)]">
+            <i class="fas fa-play ml-1"></i>
+        </button>
+    </div>`;
+}
 function openWatchMenu() {
     if (!state.active) return;
-    const cat = determineCategory(state.active);
-    const availableSources = sourcesDb[cat] || [];
-
-    if (availableSources.length === 0) {
-        document.getElementById('watchSourceList').innerHTML = `
-            <div class="text-center py-6">
-                <i class="fas fa-satellite-dish text-3xl text-gray-600 mb-3"></i>
-                <p class="text-[10px] text-gray-400 uppercase font-black tracking-widest">No Sources</p>
-            </div>`;
-        document.getElementById('watchModal').classList.remove('hidden');
-        return;
-    }
+    
+    // Explicitly determine type
+    const type = determineCategory(state.active);
+    const availableSources = sourcesDb[type] || [];
 
     const title = encodeURIComponent(state.active.title || state.active.name);
     const tmdbId = state.active.id;
     const year = (state.active.release_date || state.active.first_air_date || '').split('-')[0];
 
-    // If only ONE source exists, skip modal and redirect immediately!
+    // IF NO SOURCES: Show Explicit "Add Source" Redirect
+    if (availableSources.length === 0) {
+        document.getElementById('watchSourceList').innerHTML = `
+            <div class="text-center py-8 space-y-4">
+                <div class="w-16 h-16 bg-${type}/10 text-${type} rounded-full flex items-center justify-center mx-auto mb-4 border border-${type}/20">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                </div>
+                <p class="text-[12px] text-white uppercase font-black tracking-widest">No ${type} Sources Found</p>
+                <p class="text-[9px] text-gray-500 uppercase font-bold px-6 leading-relaxed">
+                    You haven't added any sources for the <span class="text-${type}">${type}</span> category yet.
+                </p>
+                <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" 
+                        class="mt-4 px-8 py-3 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] uppercase font-black hover:bg-white/10 transition-all w-full">
+                    Configure ${type} Sources
+                </button>
+            </div>`;
+        document.getElementById('watchModal').classList.remove('hidden');
+        return;
+    }
+
+    // IF 1 SOURCE: Launch Explicitly
     if (availableSources.length === 1) {
         const url = availableSources[0].url.replace(/{title}/g, title).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
         window.open(url, '_blank');
         return;
     }
 
-    // Otherwise, generate the selection list
-    document.getElementById('watchSourceList').innerHTML = availableSources.map(src => {
-        const finalUrl = src.url.replace(/{title}/g, title).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
-        const domain = new URL(src.url.replace(/{.*?}/g, '')).hostname;
-        return `
-            <a href="${finalUrl}" target="_blank" class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-[#22c55e] hover:bg-[#22c55e]/10 transition-all group">
-                <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-lg">
-                <div class="flex-1">
-                    <div class="text-[11px] font-black uppercase text-white group-hover:text-[#22c55e] transition-colors">${src.name}</div>
-                    <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
-                </div>
-            </a>
-        `;
-    }).join('');
+    // IF MULTIPLE: Show Selection List
+    document.getElementById('watchSourceList').innerHTML = `
+        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 ml-1">Select ${type} Source</div>
+        ${availableSources.map(src => {
+            const finalUrl = src.url.replace(/{title}/g, title).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
+            const domain = new URL(src.url.replace(/{.*?}/g, '')).hostname;
+            return `
+                <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
+                   class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-${type} hover:bg-${type}/10 transition-all group mb-3">
+                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-lg grayscale group-hover:grayscale-0 transition-all">
+                    <div class="flex-1">
+                        <div class="text-[11px] font-black uppercase text-white group-hover:text-${type}">${src.name}</div>
+                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${type} transition-all"></i>
+                </a>
+            `;
+        }).join('')}
+    `;
     
     document.getElementById('watchModal').classList.remove('hidden');
 }
-
-
-
 // --- DYNAMIC FILTERS ---
 function renderGenrePills() {
     const buildPills = (targetId, currentList, clickHandler) => {
@@ -3310,30 +3702,74 @@ clearBtn.addEventListener("click", () => {
     searchInput.focus();
 });
 
-// Replace the old toggleDiscoverFilter with this:
+// toggleDiscoverFilter :
+async function fetchDiscoverData(append = false) {
+    let val = state.discoverFilters.type;
+    let path = `/trending/all/day?page=${discoverPage}`;
+    
+    if (val === 'movie') path = `/discover/movie?sort_by=popularity.desc&page=${discoverPage}`;
+    if (val === 'tv') path = `/discover/tv?sort_by=popularity.desc&with_original_language=en&page=${discoverPage}`;
+    if (val === 'anime') path = `/discover/tv?with_genres=16&sort_by=popularity.desc&with_original_language=ja&page=${discoverPage}`;
+    if (val === 'kdrama') path = `/discover/tv?with_original_language=ko&sort_by=popularity.desc&page=${discoverPage}`;
+    if (val === 'turkish') path = `/discover/tv?with_original_language=tr&sort_by=popularity.desc&page=${discoverPage}`;
+
+    const data = await fetchAPI(path);
+    
+    if (append) {
+        state.discoverDataRaw = state.discoverDataRaw.concat(data.results);
+    } else {
+        state.discoverDataRaw = data.results;
+    }
+    applyDiscoverLocalFilters();
+}
+
 async function toggleDiscoverFilter(type, val) {
     state.discoverFilters.type = val;
+    discoverPage = 1; // RESET PAGE BATCHING
+    
     document.querySelectorAll('.d-type-btn').forEach(b => b.className = "d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all");
     document.getElementById(`dType-${val}`).className = "d-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all";
     
     const grid = document.getElementById('searchGrid');
     grid.innerHTML = '<div class="page-loader"></div>';
     
-    // Instead of local filtering, we hit the API for massive results
-    let path = '/trending/all/day?page=1';
-    if (val === 'movie') path = '/discover/movie?sort_by=popularity.desc';
-    if (val === 'tv') path = '/discover/tv?sort_by=popularity.desc&with_original_language=en';
-    if (val === 'anime') path = '/discover/tv?with_genres=16&sort_by=popularity.desc';
-    if (val === 'kdrama') path = '/discover/tv?with_original_language=ko&sort_by=popularity.desc';
-    if (val === 'turkish') path = '/discover/tv?with_original_language=tr&sort_by=popularity.desc';
-
-    const data = await fetchAPI(path);
-    state.discoverDataRaw = data.results;
-    
-    // Render the fresh data
-    renderGrid('searchGrid', state.discoverDataRaw, false, true);
-    applyLayoutToGrid();
+    await fetchDiscoverData(false);
 }
+
+async function loadDiscoverContent(append = false) {
+    if (state.searchMode === 'actor') return; // Prevent overwriting actor mode
+    state.searchMode = 'trending'; 
+    document.getElementById('discoverLoadContainer').classList.remove('hidden');
+    document.getElementById('searchHeader').innerText = "Discover";
+    await fetchDiscoverData(append);
+}
+
+async function loadMoreDiscover() {
+    const btn = document.getElementById('btnDiscoverLoadMore');
+    btn.innerText = "Syncing...";
+    
+    if (state.searchMode === 'actor') {
+        state.actorPage++;
+        const start = (state.actorPage - 1) * 20;
+        const slice = state.actorCredits.slice(start, start + 20);
+        
+        renderGrid('searchGrid', slice, false, false); // append = false clear
+        applyLayoutToGrid();
+        
+        if (start + 20 >= state.actorCredits.length) {
+            document.getElementById('discoverLoadContainer').classList.add('hidden');
+        }
+    } else if (state.searchMode === 'filter') {
+        state.filterPage++;
+        await applySearchFilters(true);
+    } else if (state.searchMode === 'trending') {
+        discoverPage++; // INCREMENT BATCH
+        await fetchDiscoverData(true); // FETCH NEW BATCH INSTEAD OF GENERIC TRENDING
+    }
+    
+    btn.innerText = "Load More Discovery";
+}
+
 
 function getPlayHoverHTML(item) {
     const available = sourcesDb[item.type] || [];
@@ -3370,15 +3806,14 @@ function applyDiscoverLocalFilters() {
     if (!state.discoverDataRaw || state.discoverDataRaw.length === 0) return;
 
     let filtered = state.discoverDataRaw.filter(i => {
-        // Parse Media Type
         let type = i.media_type || (i.title ? 'movie' : 'tv');
         if (type === 'tv') {
             if (i.original_language === 'ko') type = 'kdrama';
             else if (i.original_language === 'tr') type = 'turkish';
-            else if (i.genre_ids && i.genre_ids.includes(16)) type = 'anime';
+            // STRICT ANIME RULE APPLIED HERE: MUST BE JAPANESE ('ja') + ANIMATED (16)
+            else if (i.original_language === 'ja' && i.genre_ids && i.genre_ids.includes(16)) type = 'anime';
         }
 
-        // Apply Filters
         let tMatch = state.discoverFilters.type === 'all' || type === state.discoverFilters.type;
         let gMatch = state.discoverFilters.genres.length === 0 || state.discoverFilters.genres.every(g => {
             const equivalents = GENRE_MAP[g] || [g];
@@ -3388,7 +3823,7 @@ function applyDiscoverLocalFilters() {
         return tMatch && gMatch;
     });
 
-    renderGrid('searchGrid', filtered, false, true); // Overwrite grid with filtered data
+    renderGrid('searchGrid', filtered, false, true); 
     applyLayoutToGrid();
 }
 
@@ -3475,35 +3910,43 @@ function saveNotifs() {
 }
 // --- SMART CATEGORY PARSER ---
 function determineCategory(item) {
-    if (item.type) return item.type; // Local DB item
-    let t = item.media_type || (item.title ? 'movie' : 'tv'); // API item
-    if (t === 'tv') {
-        if (item.original_language === 'tr') return 'turkish';
-        if (item.original_language === 'ko') return 'kdrama';
-        if (item.genre_ids && item.genre_ids.includes(16)) return 'anime';
-        if (item.genres && item.genres.some(g=>g.id===16)) return 'anime';
-    }
-    return t;
-}
+    // 1. Check if we already have this item in our DB with a set type
+    const local = state.db.find(i => i.id === item.id);
+    if (local && local.type) return local.type;
 
+    // 2. Language & Genre Overrides (The "Explicit" Logic)
+    const lang = item.original_language;
+    const genres = item.genre_ids || (item.genres ? item.genres.map(g => g.id) : []);
+
+    if (lang === 'ja' && genres.includes(16)) return 'anime'; // Japanese + Animation = Anime
+    if (lang === 'ko') return 'kdrama';                        // Korean = K-Drama
+    if (lang === 'tr') return 'turkish';                      // Turkish = Turkish
+
+    // 3. Fallback to standard TMDB types
+    return item.title ? 'movie' : 'tv';
+}
 // --- NON-BLOCKING HOVER PLAY ---
 function getPlayHoverHTML(item) {
-    const cat = determineCategory(item);
+    const local = state.db.find(i => i.id === item.id);
+    const cat = local ? local.type : determineCategory(item);
     const available = sourcesDb[cat] || [];
-    if (available.length === 0) return ''; 
-
-    // If 1 source, direct link. If multiple, open modal.
-    let action = `openModal(${item.id}, '${cat === 'movie' ? 'movie' : 'tv'}'); setTimeout(openWatchMenu, 100);`;
+    
+    // Determine base TMDB type for info modal fetch (must be 'movie' or 'tv')
+    const baseType = item.media_type || (item.title ? 'movie' : 'tv');
+    
+    // Default action: Open modal then trigger watch menu (Handles 0 sources and Multiple sources)
+    let action = `event.stopPropagation(); openModal(${item.id}, '${baseType}'); setTimeout(openWatchMenu, 100);`;
+    
+    // If exactly 1 source exists, bypass modal and go straight to the link
     if (available.length === 1) {
         const title = encodeURIComponent(item.title || item.name);
         const url = available[0].url.replace(/{title}/g, title).replace(/{tmdb_id}/g, item.id);
-        action = `window.open('${url}', '_blank')`;
+        action = `event.stopPropagation(); window.open('${url}', '_blank');`;
     }
     
-    // Updated: Completely removed backdrop-blur. Purely relies on the glossy border and inset shadow for visibility.
     return `
     <div class="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-40 pointer-events-none flex items-center justify-center">
-        <button onclick="event.stopPropagation(); ${action}" class="w-14 h-14 rounded-full bg-white/5 border border-white/40 flex items-center justify-center text-white text-xl hover:bg-white/20 hover:border-pulse hover:scale-110 transition-all pointer-events-auto shadow-[inset_0_2px_10px_rgba(255,255,255,0.4),0_5px_15px_rgba(0,0,0,0.4)]">
+        <button onclick="${action}" class="w-14 h-14 rounded-full bg-white/5 border border-white/40 flex items-center justify-center text-white text-xl hover:bg-white/20 hover:border-pulse hover:scale-110 transition-all pointer-events-auto shadow-[inset_0_2px_10px_rgba(255,255,255,0.4),0_5px_15px_rgba(0,0,0,0.4)]">
             <i class="fas fa-play ml-1"></i>
         </button>
     </div>`;
@@ -3533,19 +3976,22 @@ function getLiquidHTML(item) {
     </div>
     `;
 }
-// Ensure this is inside generateSmartNotification when a notification triggers:
 function dispatchNotification(item, badge, msg) {
-    const newNotif = { id: Date.now(), item, badge, msg, read: false };
-    notifications.unshift(newNotif); // Save to array
-    saveNotifs(); // Persist to storage
+    // 1. DEDUPLICATION: Remove any existing notification for this EXACT item and badge to avoid spam
+    notifications = notifications.filter(n => !(n.item.id === item.id && n.badge === badge));
+    
+    // 2. Add timestamp for auto-clearing
+    const newNotif = { id: Date.now(), item, badge, msg, read: false, date: Date.now() };
+    notifications.unshift(newNotif); 
+    
+    // 3. HARD LIMIT: Never exceed 30 active notifications
+    if(notifications.length > 30) notifications.length = 30;
+    
+    saveNotifs();
     showToast(newNotif);
     updateHubUI();
 }
 
-// Update generateSmartNotification to use dispatchNotification:
-// ... (inside the random selection part)
-// dispatchNotification(checkItem, 'NEW EPISODE DETECTED', `Season ${lastEp.season_number}...`);
-// dispatchNotification(item, rule.badge, rule.msg);
 
 function setNotifTab(tab) {
     currentNotifTab = tab;
@@ -3598,6 +4044,207 @@ function updateHubUI() {
         </div>
     `).join('');
 }
+function handleCrownSelect(val) {
+    const item = state.db.find(i => i.id === state.active.id);
+    if (!item) return;
+    
+    const crownLevel = parseInt(val);
+    
+    // If crowning, dethrone the previous owner of this crown for this category
+    if (crownLevel > 0) {
+        state.db.forEach(i => {
+            if (i.type === item.type && i.crown === crownLevel) {
+                i.crown = 0; // Strip the crown
+            }
+        });
+    }
+    
+    item.crown = crownLevel;
+    save();
+    if (state.view === 'masterpieces') renderMasterpieces();
+}
+
+function setMpTab(tab) {
+    state.mpTab = tab;
+    ['crowned', 'perfect', 'ranked'].forEach(t => {
+        document.getElementById(`mpTab-${t}`).className = t === tab 
+            ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap"
+            : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
+    });
+    renderMasterpieces();
+}
+
+function renderMasterpieces() {
+    const container = document.getElementById('mpContainer');
+    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
+    const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish' };
+
+    // 1. Render the new Type Toggle Strip
+    let html = `
+        <div class="flex gap-4 mb-8 overflow-x-auto hide-scroll pb-2">
+            <button onclick="state.mpFilter='all'; renderMasterpieces()" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${state.mpFilter === 'all' ? 'bg-pulse text-white shadow-lg shadow-pulse/20' : 'bg-white/5 border border-white/10 text-gray-500 hover:text-white'}">All Types</button>
+            ${types.map(t => `
+                <button onclick="state.mpFilter='${t}'; renderMasterpieces()" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${state.mpFilter === t ? 'bg-pulse text-white shadow-lg shadow-pulse/20' : 'bg-white/5 border border-white/10 text-gray-500 hover:text-white'}">${typeNames[t]}</button>
+            `).join('')}
+        </div>
+    `;
+
+    let displayTypes = state.mpFilter === 'all' ? types : [state.mpFilter];
+
+    if (state.mpTab === 'crowned') {
+        html += displayTypes.map(type => {
+            const crowned = state.db.filter(i => i.type === type && i.crown > 0).sort((a,b) => a.crown - b.crown);
+            if(!crowned.length) return '';
+            return `
+                <div class="mb-16 animate-in fade-in duration-500">
+                    <h3 class="text-2xl font-black italic uppercase text-yellow-500/80 tracking-widest mb-8 border-b border-white/5 pb-4 flex items-center gap-4">
+                        <i class="fas fa-crown"></i> ${typeNames[type]} Royal Court
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                        ${crowned.map(i => getRankedCard(i, i.crown, true)).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">No crowned items in this category.</div>';
+        container.innerHTML = html;
+    } 
+    else if (state.mpTab === 'perfect') {
+        html += displayTypes.map(type => {
+            const perfect = state.db.filter(i => i.type === type && i.score === 5).sort((a,b) => b.imdb - a.imdb);
+            if(!perfect.length) return '';
+            return `
+                <div class="mb-16 animate-in fade-in duration-500">
+                    <h3 class="text-xl font-black italic uppercase text-white tracking-widest mb-6 border-b border-white/5 pb-2">${typeNames[type]} Masterpieces</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                        ${perfect.map(i => getRankedCard(i, null, false)).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">Achieve a 5★ rating to see perfect records.</div>';
+        container.innerHTML = html;
+    } 
+    else if (state.mpTab === 'ranked') {
+        const limit = state.mpLimit || 25;
+        const ranked = [...state.db]
+            .filter(i => i.score > 0 && (state.mpFilter === 'all' || i.type === state.mpFilter))
+            .sort((a,b) => b.score - a.score || b.imdb - a.imdb)
+            .slice(0, limit);
+
+        html += `
+            <div class="flex gap-4 mb-12 overflow-x-auto hide-scroll pb-2">
+                ${[3, 10, 25, 100].map(l => `
+                    <button onclick="state.mpLimit=${l}; renderMasterpieces()" class="px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${state.mpLimit === l ? 'bg-pulse text-white shadow-lg shadow-pulse/20' : 'bg-white/5 border border-white/10 text-gray-500 hover:text-white'}">Top ${l} Records</button>
+                `).join('')}
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 animate-in fade-in duration-500">
+                ${ranked.map((i, idx) => getRankedCard(i, idx + 1, false)).join('')}
+            </div>
+            ${ranked.length === 0 ? '<div class="col-span-full text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em]">No ranked data found.</div>' : ''}
+        `;
+        container.innerHTML = html;
+    }
+}
+
+function getRankedCard(i, rank, isCrownCard = false) {
+    let badgeHtml = '';
+    let borderShadow = 'border-white/5 shadow-xl';
+    
+    if (rank) {
+        const color = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-pulse';
+        if (isCrownCard && rank <= 3) {
+            borderShadow = `border-yellow-500/30 shadow-[0_10px_40px_rgba(255,215,0,0.15)]`;
+        }
+        
+        badgeHtml = `
+            <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between z-30 pointer-events-none">
+                <div class="text-6xl font-black italic tracking-tighter ${color} drop-shadow-[0_5px_10px_rgba(0,0,0,0.9)] opacity-90 group-hover:scale-110 transition-transform origin-bottom-left">
+                    #${rank}
+                </div>
+                <div class="text-[10px] font-black uppercase text-white text-right drop-shadow-md bg-dark/60 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10">
+                    ★ ${i.score}/5<br><span class="text-[8px] text-gray-400">${i.type}</span>
+                </div>
+            </div>
+        `;
+    } else {
+        // Just the normal score for Perfect 5s
+         badgeHtml = `
+            <div class="absolute top-3 right-3 z-30 pointer-events-none">
+                 <div class="text-[10px] font-black uppercase text-pulse bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+                    ★ ${i.score}/5
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+    <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+        <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border ${borderShadow} group-hover:border-pulse transition-all relative">
+            <img src="${IMG+i.poster}" class="w-full h-full object-cover bg-dark">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
+            ${badgeHtml}
+            ${getPlayHoverHTML(i)}
+        </div>
+        <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
+        <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
+    </div>
+    `;
+}
+
+// --- TITLE COPY ENGINE ---
+function copyModalTitle() {
+    const titleText = document.getElementById('mTitle').innerText;
+    if (!titleText) return;
+
+    navigator.clipboard.writeText(titleText).then(() => {
+        const btn = document.getElementById('copyTitleBtn');
+        const icon = btn.querySelector('i');
+        
+        // Visual Success Feedback
+        icon.className = 'fas fa-check text-[#22c55e]';
+        btn.classList.add('border-[#22c55e]', 'bg-[#22c55e]/10');
+        
+        // Trigger your existing beautiful notification
+        showNotification(`Copied "${titleText}" to Neural Clipboard!`);
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+            icon.className = 'fas fa-copy text-xs lg:text-base';
+            btn.classList.remove('border-[#22c55e]', 'bg-[#22c55e]/10');
+        }, 2000);
+    }).catch(err => {
+        showNotification("Neural link severed. Failed to copy.", true);
+    });
+}
+
+// --- MOBILE LONG PRESS LISTENER ---
+function setupLongPressCopy() {
+    const titleEl = document.getElementById('mTitle');
+    let pressTimer;
+
+    const startPress = (e) => {
+        // Only allow left clicks or touches
+        if (e.type === 'mousedown' && e.button !== 0) return;
+        
+        pressTimer = setTimeout(() => {
+            copyModalTitle();
+            // Optional: Trigger a tiny haptic vibration on mobile if supported
+            if (navigator.vibrate) navigator.vibrate(50);
+        }, 500); // 500ms trigger for long press
+    };
+
+    const cancelPress = () => {
+        clearTimeout(pressTimer);
+    };
+
+    titleEl.addEventListener('touchstart', startPress, { passive: true });
+    titleEl.addEventListener('touchend', cancelPress);
+    titleEl.addEventListener('touchcancel', cancelPress);
+    titleEl.addEventListener('touchmove', cancelPress); // Cancel if they drag their finger
+    titleEl.addEventListener('mousedown', startPress); // Works for desktop click-and-hold too
+    titleEl.addEventListener('mouseup', cancelPress);
+    titleEl.addEventListener('mouseleave', cancelPress);
+}
+
 // --- DATA DESTRUCTION: CUSTOM PURGE UI ---
 
         function clearLibrary() {
