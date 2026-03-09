@@ -1,4 +1,9 @@
-   const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js');
+    });
+}
+  const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
         const BASE = 'https://api.themoviedb.org/3';
         const IMG = 'https://image.tmdb.org/t/p/w500';
         const IMG_HD = 'https://image.tmdb.org/t/p/original';
