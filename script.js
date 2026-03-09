@@ -2480,12 +2480,14 @@ async function loadMoreDiscover() {
 
 
 // Add this function to reset Discovery
+// 1. Discover Page Reset
 function resetDiscoverFilters() {
     state.discoverFilters.genres = [];
+    document.getElementById('searchYear').value = '';
+    document.getElementById('searchSort').value = 'popularity.desc';
     renderGenrePills();
-    toggleDiscoverFilter('type', 'all');
+    toggleDiscoverFilter('type', 'all'); 
 }
-
 function toggleDiscoverGenre(target, genreId) {
     const idx = state.discoverFilters.genres.indexOf(genreId);
     if (idx > -1) state.discoverFilters.genres.splice(idx, 1);
@@ -2531,6 +2533,37 @@ function applyDiscoverLocalFilters() {
     
     applyLayoutToGrid();
 }
+//reset mylist
+// 2. My List Reset
+function resetListFilters() {
+    state.listFilters.genres = [];
+    state.listSearchQuery = '';
+    
+    const searchInput = document.getElementById('listSearchInput');
+    if(searchInput) searchInput.value = '';
+    
+    renderGenrePills();
+    toggleListFilter('type', 'all'); 
+}
+// 3. Rhythm Lab Reset
+function resetLabFilters() {
+    state.labFilters.genres = [];
+    state.labSearchQuery = '';
+    
+    // Clear the local text search
+    const searchInput = document.getElementById('labSearchInput');
+    if(searchInput) searchInput.value = '';
+    
+    // Reset Advanced Dropdowns
+    document.getElementById('labStatus').value = 'all';
+    document.getElementById('labYear').value = 'all';
+    document.getElementById('labImdb').value = 'all';
+    document.getElementById('labPersonal').value = 'all';
+    
+    renderGenrePills();
+    toggleLabFilter('type', 'all'); 
+}
+
 
       // water progress feature 
 function getLiquidHTML(item) {
