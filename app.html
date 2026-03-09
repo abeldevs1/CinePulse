@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Get CinePulse Elite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#020408] text-white flex flex-col items-center justify-center min-h-screen p-6 text-center">
+    
+    <div class="max-w-md w-full space-y-8">
+        <div class="w-24 h-24 bg-pulse/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-clapperboard text-pulse text-5xl"></i>
+        </div>
+        
+        <h1 class="text-3xl font-black italic uppercase">CinePulse Elite</h1>
+        <p class="text-gray-400 text-sm">Experience the full potential of your library with our standalone app. Faster, full-screen, and always ready.</p>
+
+        <button id="installAppBtn" class="w-full py-4 rounded-2xl bg-pulse text-white font-black uppercase tracking-widest hover:scale-105 transition-all">
+            Install App Now
+        </button>
+        
+        <a href="index.html" class="block text-gray-600 text-[10px] uppercase font-bold tracking-widest hover:text-white transition-all">Back to Library</a>
+    </div>
+
+    <script>
+        let deferredPrompt;
+        const btn = document.getElementById('installAppBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        btn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            } else {
+                alert("The app is already installed, or your browser doesn't support automatic installation. Use your browser's 'Add to Home Screen' menu.");
+            }
+        });
+    </script>
+</body>
+</html>

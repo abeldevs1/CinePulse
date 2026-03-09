@@ -3064,3 +3064,36 @@ function setupLongPressCopy() {
     }
 
         init();
+        
+
+        let deferredPrompt;
+const installRow = document.getElementById('pwa-install-row');
+const installBtn = document.getElementById('installBtn');
+
+// 1. Listen for the install availability
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Keep the browser from showing its own automated bar
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Only reveal our custom button if the app isn't already installed
+    if (installRow) installRow.classList.remove('hidden');
+});
+
+// 2. Handle the click
+installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    
+    if (outcome === 'accepted') {
+        installRow.classList.add('hidden'); // Hide after successful install
+    }
+    deferredPrompt = null;
+});
+
+// 3. Hide it if already running in standalone/app mode
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    if (installRow) installRow.classList.add('hidden');
+}

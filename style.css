@@ -1118,3 +1118,8 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
             width: 350px;
         }
     }
+    @media (max-width: 768px) {
+    #mobileInstallLink {
+        display: block !important;
+    }
+}
