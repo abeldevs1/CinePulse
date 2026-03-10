@@ -1123,3 +1123,150 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
         display: block !important;
     }
 }
+/* --- SAGA MATRIX: MEMORY CLUSTERS --- */
+.memory-cluster {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 2/3;
+    perspective: 1000px;
+}
+.memory-cluster img {
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.cluster-top { position: relative; z-index: 30; width: 100%; height: 100%; border: 1px solid rgba(255,255,255,0.1); }
+.cluster-mid { position: absolute; top: -8px; right: -8px; width: 100%; height: 100%; z-index: 20; opacity: 0.6; transform: scale(0.95); border: 1px solid rgba(255,255,255,0.05); }
+.cluster-back { position: absolute; top: -16px; right: -16px; width: 100%; height: 100%; z-index: 10; opacity: 0.3; transform: scale(0.9); border: 1px solid rgba(255,255,255,0.02); }
+
+/* Hover Expansion Animation */
+.group:hover .cluster-mid { transform: translate(12px, -12px) scale(0.95) rotate(2deg); opacity: 0.8; border-color: rgba(255,45,85,0.3); }
+.group:hover .cluster-back { transform: translate(24px, -24px) scale(0.9) rotate(4deg); opacity: 0.5; border-color: rgba(255,45,85,0.1); }
+
+
+/* --- SAGA MODAL FIXES --- */
+
+/* 1. The Photo Frame: Zero Stretch */
+.saga-backdrop-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important; /* Perfect crop, no stretch */
+    object-position: center 20%;
+}
+
+/* 2. Mobile Button Position Fix */
+/* --- SAGA CLOSE BUTTON MOBILE FIX --- */
+@media (max-width: 768px) {
+    /* Position the Close Button inside the top-right of the poster frame */
+    .saga-action-header .close-btn {
+        position: absolute !important;
+        top: 20px !important;    /* Safely inside the poster top-right */
+        right: 20px !important;
+        z-index: 100 !important;
+        background: rgba(0, 0, 0, 0.5) !important; /* Darker for better contrast on images */
+        backdrop-blur: 10px !important;
+        width: 44px !important; /* Slightly larger touch target for thumbs */
+        height: 44px !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+
+    /* Keep the other buttons (Toggle/Sync) at the bottom as discussed */
+    .action-buttons-wrap {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 90;
+        display: flex;
+        gap: 8px;
+        background: rgba(10, 12, 18, 0.9);
+        padding: 12px 20px;
+        border-radius: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        width: fit-content;
+        max-width: 90%;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    }
+}
+
+/* Ensure the Poster Frame never stretches */
+.saga-backdrop-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important; /* Perfect photo-frame crop */
+    object-position: center 20%;
+}
+
+/* Desktop spacing for close button */
+@media (min-width: 769px) {
+    .saga-action-header .close-btn {
+        position: absolute;
+        top: 30px;
+        right: 30px;
+    }
+}
+/* --- SAGA MODAL CLOSE BUTTON REFINEMENT --- */
+
+/* Desktop / PC Version */
+@media (min-width: 769px) {
+    .saga-close-btn {
+        position: fixed !important;
+        top: 60px !important;    /* Lowered slightly for better visual balance */
+        right: 40px !important;
+        z-index: 999 !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        backdrop-blur: 12px !important;
+        width: 54px !important;
+        height: 54px !important;
+        cursor: pointer !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    }
+
+    /* Cinematic Hover Effect */
+    .saga-close-btn:hover {
+        background: #ff2d55 !important;
+        transform: scale(1.1) rotate(90deg); /* Scales up and spins slightly */
+        border-color: #ff2d55 !important;
+        box-shadow: 0 0 25px rgba(255, 45, 85, 0.6);
+        color: white !important;
+    }
+}
+
+/* Mobile Version */
+@media (max-width: 768px) {
+    .saga-close-btn {
+        position: absolute !important;
+        top: 35px !important;    /* Lowered slightly to avoid status bar overlap */
+        right: 20px !important;
+        z-index: 999 !important;
+        background: rgba(0, 0, 0, 0.7) !important;
+        backdrop-blur: 15px !important;
+        width: 48px !important;
+        height: 48px !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: white !important;
+        /* Massive touch area for easy closing */
+        box-shadow: 0 0 0 15px transparent; 
+    }
+}
+
+/* Fix for Actor Banner Biography/Description */
+#pBio {
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* Limits description to 4 lines */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 100px; /* Safety cap */
+    line-height: 1.6;
+    transition: all 0.3s ease;
+}
+
+/* Optional: Expand on hover if you want users to read more */
+#pBio:hover {
+    -webkit-line-clamp: 12;
+    max-height: 300px;
+    overflow-y: auto;
+}
+

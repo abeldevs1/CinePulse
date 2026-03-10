@@ -2,42 +2,149 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Get CinePulse Elite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CinePulse Elite PWA Setup</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #020408; overflow: hidden; }
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+        .text-pulse { color: #ff2d55; }
+        .bg-pulse { background: #ff2d55; }
+        .shadow-pulse { box-shadow: 0 0 25px rgba(255,45,85,0.4); }
+        
+        /* Preloader */
+        #preloader { transition: opacity 0.8s ease; }
+        .loader { width: 100px; height: 100px; position: relative; perspective: 200px; margin: 0 auto 30px; }
+        .dot {
+            position: absolute; top: 50%; left: 50%;
+            border-radius: 100px; border: 20px outset #ff2d55;
+            transform-origin: 50% 50%;
+            animation: dot1 1.5s cubic-bezier(.49,.06,.43,.85) infinite;
+        }
+        .dot:nth-child(1) { width: 80px; height: 80px; margin: -40px 0 0 -40px; }
+        .dot:nth-child(2) { width: 100px; height: 100px; margin: -50px 0 0 -50px; border-width: 15px; border-color: #fff; animation-delay: 100ms; }
+        @keyframes dot1 {
+            0% { transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); }
+            50% { transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px); border-color: #ff2d55; }
+            100% { transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); }
+        }
+    </style>
 </head>
-<body class="bg-[#020408] text-white flex flex-col items-center justify-center min-h-screen p-6 text-center">
+<body class="text-white flex flex-col items-center justify-center min-h-screen p-6 relative">
+
+    <div id="preloader" class="fixed inset-0 z-50 bg-[#020408] flex flex-col items-center justify-center">
+        <div class="loader">
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        <div class="text-[10px] font-black uppercase tracking-[0.5em] text-pulse animate-pulse">Initializing Setup...</div>
+    </div>
+
+    <div class="absolute inset-0 z-0">
+        <div class="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-pulse/20 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#3b82f6]/10 rounded-full blur-[120px]"></div>
+    </div>
     
-    <div class="max-w-md w-full space-y-8">
-        <div class="w-24 h-24 bg-pulse/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
-            <i class="fas fa-clapperboard text-pulse text-5xl"></i>
+    <div class="liquid-glass max-w-md w-full p-10 rounded-[40px] text-center relative z-10 border-t border-white/10">
+        <div class="w-24 h-24 bg-pulse/10 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-pulse/20 shadow-pulse">
+            <i class="fas fa-satellite-dish text-pulse text-4xl"></i>
         </div>
         
-        <h1 class="text-3xl font-black italic uppercase">CinePulse Elite</h1>
-        <p class="text-gray-400 text-sm">Experience the full potential of your library with our standalone app. Faster, full-screen, and always ready.</p>
+        <h1 class="text-3xl font-black italic uppercase tracking-tighter mb-2">CinePulse <span class="text-pulse">Elite</span></h1>
+        <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-10">Neural Interface Setup</p>
 
-        <button id="installAppBtn" class="w-full py-4 rounded-2xl bg-pulse text-white font-black uppercase tracking-widest hover:scale-105 transition-all">
-            Install App Now
+        <div id="setupContext" class="bg-[#0a0c12] border border-white/5 rounded-2xl p-6 mb-8 text-left space-y-4">
+            </div>
+
+        <button id="installAppBtn" class="hidden w-full py-4 rounded-2xl bg-pulse text-white text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_10px_30px_rgba(255,45,85,0.3)] mb-6">
+            <i class="fas fa-download mr-2"></i> Install App Engine
         </button>
         
-        <a href="index.html" class="block text-gray-600 text-[10px] uppercase font-bold tracking-widest hover:text-white transition-all">Back to Library</a>
+        <a href="index.html" class="inline-block border-b border-white/20 pb-1 text-gray-500 text-[9px] uppercase font-black tracking-widest hover:text-white transition-all">
+            Return to Library
+        </a>
     </div>
 
     <script>
+        // Remove preloader smoothly
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const preloader = document.getElementById('preloader');
+                preloader.style.opacity = '0';
+                setTimeout(() => preloader.style.display = 'none', 800);
+            }, 1000);
+        });
+
         let deferredPrompt;
         const btn = document.getElementById('installAppBtn');
+        const contextBox = document.getElementById('setupContext');
+
+        // Platform Detection
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+        if (isStandalone) {
+            contextBox.innerHTML = `
+                <div class="flex items-center gap-4 text-[#22c55e]">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                    <div>
+                        <div class="text-[10px] font-black uppercase tracking-widest">System Active</div>
+                        <div class="text-[9px] text-gray-500 uppercase mt-1">CinePulse is running natively.</div>
+                    </div>
+                </div>
+            `;
+        } else if (isIOS) {
+            contextBox.innerHTML = `
+                <h3 class="text-[10px] text-pulse font-black uppercase tracking-[0.2em] mb-3 border-b border-white/5 pb-2">iOS Instructions</h3>
+                <ul class="text-[11px] text-gray-400 space-y-3 font-medium">
+                    <li class="flex items-center gap-3"><span class="w-6 h-6 bg-white/5 rounded flex items-center justify-center text-white"><i class="fas fa-share-square"></i></span> Tap the <b>Share</b> icon at the bottom.</li>
+                    <li class="flex items-center gap-3"><span class="w-6 h-6 bg-white/5 rounded flex items-center justify-center text-white"><i class="fas fa-plus-square"></i></span> Scroll down and tap <b>"Add to Home Screen"</b>.</li>
+                </ul>
+            `;
+        } else {
+            // Default Android/Desktop state before prompt is caught
+            contextBox.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin text-pulse text-2xl mb-3"></i>
+                    <p class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Scanning device compatibility...</p>
+                </div>
+            `;
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            
+            // Show the Android/Desktop install button
+            btn.classList.remove('hidden');
+            contextBox.innerHTML = `
+                <div class="flex items-start gap-4 text-white">
+                    <i class="fas fa-bolt text-pulse text-xl mt-1"></i>
+                    <div>
+                        <div class="text-[10px] font-black uppercase tracking-widest">Ready for Deployment</div>
+                        <div class="text-[10px] text-gray-400 leading-relaxed mt-2">Click below to install CinePulse natively on your device for full-screen access and background syncing.</div>
+                    </div>
+                </div>
+            `;
         });
 
         btn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    contextBox.innerHTML = `<div class="text-center text-[#22c55e] text-[10px] font-black uppercase tracking-widest"><i class="fas fa-check mb-2 text-xl"></i><br>Installation Successful</div>`;
+                    btn.classList.add('hidden');
+                }
                 deferredPrompt = null;
-            } else {
-                alert("The app is already installed, or your browser doesn't support automatic installation. Use your browser's 'Add to Home Screen' menu.");
             }
         });
     </script>

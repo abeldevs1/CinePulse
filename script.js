@@ -128,21 +128,23 @@ async function init() {
 
        const today = getTodayAPI();
 const [
-    trending, tv, anime, kdrama, turkish, 
-    upMovie, upTv, upAnime, upKdrama, upTurkish,
-    mGenres, tGenres
-] = await Promise.all([
+        trending, tv, anime, kdrama, turkish, asian, 
+        upMovie, upTv, upAnime, upKdrama, upTurkish, upAsian,
+        mGenres, tGenres
+    ]= await Promise.all([
     fetchAPI('/trending/all/week'),
     fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
     fetchAPI('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
     fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
     fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
+    fetchAPI('/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc'),
     
     fetchAPI('/movie/upcoming?region=US'),
     fetchAPI(`/discover/tv?first_air_date.gte=${today}&sort_by=popularity.desc&with_original_language=en`),
     fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`),
     fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=ko&sort_by=popularity.desc`),
     fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=tr&sort_by=popularity.desc`),
+    fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`),
 
     fetchAPI('/genre/movie/list'), fetchAPI('/genre/tv/list')
 ]);
@@ -158,6 +160,7 @@ renderRow('row-tv', tv.results, 'tv');
 renderRow('row-anime', anime.results, 'tv');
 renderRow('row-kdrama', kdrama.results, 'tv');
 renderRow('row-turkish', turkish.results, 'tv');
+renderRow('row-asian', asian.results, 'tv');
 
 // Render Upcoming
 renderRow('row-up-movies', upMovie.results, 'movie');
@@ -165,6 +168,7 @@ renderRow('row-up-tv', upTv.results, 'tv');
 renderRow('row-up-anime', upAnime.results, 'tv');
 renderRow('row-up-kdrama', upKdrama.results, 'tv');
 renderRow('row-up-turkish', upTurkish.results, 'tv');
+renderRow('row-up-asian', upAsian.results, 'tv');
 
 checkReminders(); // Fire reminder check on load
                 
@@ -177,7 +181,9 @@ checkReminders(); // Fire reminder check on load
                 renderSources();
                 setupLongPressCopy();
                 setInterval(nextHero, 10000);
-                setupModalSearch()
+                setupModalSearch();
+                loadCountries();
+
             } catch (e) { console.error("Neural init error", e); 
                 
        
@@ -214,6 +220,7 @@ function navigate(view) {
     const targetView = document.getElementById(`view-${view}`);
     targetView.classList.remove('hidden');
     
+    
     // Force DOM reflow to restart CSS animation
     void targetView.offsetWidth; 
     targetView.classList.add('page-transition-enter');
@@ -229,6 +236,7 @@ function navigate(view) {
     if(view === 'rhythmlab') runLab();
     if(view === 'sync') renderSync();
     if(view === 'masterpieces') renderMasterpieces();
+    if(view === 'sagamatrix') renderSagaMatrix();
 
     if(view === 'search') {
         const input = document.getElementById('mainSearch');
@@ -239,6 +247,7 @@ function navigate(view) {
         }
     }
     if(view === 'radar') renderRadar();
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(hideLoader, 300); 
 }  
@@ -485,11 +494,25 @@ async function openPersonModal(id) {
         fetchAPI(`/person/${id}/combined_credits`)
     ]);
 
-    // Reset and Filter Credits
-    personDisplayLimit = 8;
-    currentPersonCredits = credits.cast
-        .filter(c => c.poster_path)
-        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+//filters and credits 
+const talkShowKeywords = ['self', 'talk-show', 'host', 'guest'];
+
+currentPersonCredits = credits.cast
+    .filter(c => {
+        // 1. Must have a poster
+        if (!c.poster_path) return false;
+        
+        // 2. Filter out Talk Shows / "Self" appearances
+        const role = (c.character || '').toLowerCase();
+        const isSelf = talkShowKeywords.some(keyword => role.includes(keyword));
+        return !isSelf;
+    })
+    .sort((a, b) => {
+        // 3. Sort: Best works first (Popularity + Vote Count weighting)
+        const scoreA = (a.popularity || 0) * (a.vote_count || 1);
+        const scoreB = (b.popularity || 0) * (b.vote_count || 1);
+        return scoreB - scoreA;
+    });
 
     document.getElementById('pProfileImg').src = person.profile_path ? IMG_HD + person.profile_path : 'https://via.placeholder.com/500x800';
     document.getElementById('pName').innerText = person.name;
@@ -612,6 +635,7 @@ async function deepSearch(q) {
 }
 
 
+// Replace your existing applySearchFilters() with this
 async function applySearchFilters(append = false) {
     const actorBanner = document.getElementById('actorProfileBanner');
     const loadBtn = document.getElementById('discoverLoadContainer');
@@ -625,19 +649,53 @@ async function applySearchFilters(append = false) {
     }
     
     const year = document.getElementById('searchYear').value;
-    const genre = document.getElementById('searchGenre').value;
+    const country = document.getElementById('searchCountry').value; // Now capturing the Country
     const sort = document.getElementById('searchSort').value;
     
-    let path = `/discover/movie?sort_by=${sort}&page=${state.filterPage}`;
-    if(year) path += `&primary_release_year=${year}`;
-    if(genre) path += `&with_genres=${genre}`;
+    // Check which category pill is active so we search the right TMDB database
+    const activeType = state.discoverFilters.type;
+    const apiType = (activeType === 'tv' || activeType === 'anime' || activeType === 'kdrama' || activeType === 'turkish' || activeType === 'asian') ? 'tv' : 'movie';
     
-    const data = await fetchAPI(path);
-    renderGrid('searchGrid', data.results, 'movie', !append);
-    applyLayoutToGrid();
+   let path = `/discover/${apiType}?sort_by=${sort}&page=${state.filterPage}`;
     
-    if (data.page < data.total_pages) loadBtn.classList.remove('hidden');
-    else loadBtn.classList.add('hidden');
+    // THE ASIAN FILTER OVERRIDE FIX
+    if (activeType === 'asian') {
+        path += `&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
+    } else if (activeType === 'anime') {
+        path += `&with_genres=16&with_original_language=ja`;
+    } else if (activeType === 'kdrama') {
+        path += `&with_original_language=ko`;
+    } else if (activeType === 'turkish') {
+        path += `&with_original_language=tr`;
+    }
+    
+    // Apply Year (TMDB uses different parameters for Movies vs TV)
+    if(year) {
+        if (apiType === 'movie') path += `&primary_release_year=${year}`;
+        else path += `&first_air_date_year=${year}`;
+    }
+    
+    // Apply Country
+    if(country) {
+        path += `&with_origin_country=${country}`;
+    }
+
+    // Capture genres from the new pill system if any are active
+    if (state.discoverFilters.genres && state.discoverFilters.genres.length > 0) {
+        path += `&with_genres=${state.discoverFilters.genres.join(',')}`;
+    }
+    
+    try {
+        const data = await fetchAPI(path);
+        renderGrid('searchGrid', data.results, apiType, !append);
+        applyLayoutToGrid();
+        
+        if (data.page < data.total_pages) loadBtn.classList.remove('hidden');
+        else loadBtn.classList.add('hidden');
+    } catch (err) {
+        console.error("Neural filter error:", err);
+        document.getElementById('searchGrid').innerHTML = `<div class="col-span-full py-20 text-center text-pulse font-black uppercase tracking-widest">Filter Link Severed</div>`;
+    }
 }
 
         // Hero Slider
@@ -703,12 +761,89 @@ async function applySearchFilters(append = false) {
 
     state.active = { ...details, media_type: type };
     const local = state.db.find(i => i.id === id);
+const originalRenderMasterpieces = renderMasterpieces;
+renderMasterpieces = function() {
+    // Call the original, but intercept the 'crowned' tab HTML generation
+    if (state.mpTab !== 'crowned') {
+        originalRenderMasterpieces();
+        return;
+    }
+    
+    const container = document.getElementById('mpContainer');
+    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
+    const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish', asian: 'Asian Drama' };
+    
+    let html = `
+        <div class="flex gap-4 mb-8 overflow-x-auto hide-scroll pb-2">
+            <button onclick="state.mpFilter='all'; renderMasterpieces()" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${state.mpFilter === 'all' ? 'bg-pulse text-white shadow-lg shadow-pulse/20' : 'bg-white/5 border border-white/10 text-gray-500 hover:text-white'}">All Types</button>
+            ${types.map(t => `
+                <button onclick="state.mpFilter='${t}'; renderMasterpieces()" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${state.mpFilter === t ? 'bg-pulse text-white shadow-lg shadow-pulse/20' : 'bg-white/5 border border-white/10 text-gray-500 hover:text-white'}">${typeNames[t]}</button>
+            `).join('')}
+        </div>
+    `;
 
+    let displayTypes = state.mpFilter === 'all' ? types : [state.mpFilter];
+
+    html += displayTypes.map(type => {
+        const crowned = state.db.filter(i => i.type === type && i.crown > 0 && i.crown < 4).sort((a,b) => a.crown - b.crown);
+        const sovereigns = state.db.filter(i => i.type === type && i.crown === 4);
+        
+        if(!crowned.length && !sovereigns.length) return '';
+        
+        let sectionHtml = `
+            <div class="mb-16 animate-in fade-in duration-500">
+                <h3 class="text-xl md:text-2xl font-black italic uppercase text-yellow-500/80 tracking-widest mb-6 md:mb-8 border-b border-white/5 pb-4 flex items-center gap-4">
+                    <i class="fas fa-crown"></i> ${typeNames[type]} Royal Court
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6"> 
+                    ${crowned.map(i => getRankedCard(i, i.crown, true)).join('')}
+                </div>
+        `;
+        
+        // Group Sovereigns by Realm
+        if (sovereigns.length > 0) {
+             const realms = {};
+             sovereigns.forEach(s => {
+                 const rName = s.realm || 'Cinematic';
+                 if (!realms[rName]) realms[rName] = [];
+                 realms[rName].push(s);
+             });
+             
+             Object.keys(realms).sort().forEach(realmName => {
+                 sectionHtml += `
+                    <h4 class="text-sm font-black italic uppercase text-pulse tracking-widest mt-12 mb-6 flex items-center gap-3">
+                        <i class="fas fa-gem"></i> ${realmName} Sovereigns
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6"> 
+                        ${realms[realmName].map(i => getRankedCard(i, 4, true, realmName)).join('')}
+                    </div>
+                 `;
+             });
+        }
+        sectionHtml += `</div>`;
+        return sectionHtml;
+    }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">No crowned items in this category.</div>';
+    
+    container.innerHTML = html;
+};
     document.getElementById('mBackdrop').src = IMG_HD + (details.backdrop_path || details.poster_path);
     document.getElementById('mTitle').innerText = (details.title || details.name);
     document.getElementById('mOverview').innerText = details.overview || "Narrative archive encrypted.";
     document.getElementById('mYear').innerText = (details.release_date || details.first_air_date || '----').split('-')[0];
     document.getElementById('mRating').innerHTML = `<i class="fas fa-star text-pulse"></i> ${details.vote_average?.toFixed(1) || '0.0'}`;
+    // Country Tag Logic
+    const countryArr = details.origin_country || (details.production_countries ? details.production_countries.map(c => c.iso_3166_1) : []);
+    const cTag = document.getElementById('mCountry');
+    if (countryArr && countryArr.length > 0) {
+        cTag.innerText = countryArr[0];
+        cTag.classList.remove('hidden');
+    } else {
+        cTag.classList.add('hidden');
+    }
+    //type override 
+    const calculatedType = local ? local.type : determineCategory(details);
+    document.getElementById('mTypeOverride').value = calculatedType;
+
     // --- STATUS & COUNTDOWN ENGINE ---
     clearInterval(modalCountdownInterval);
     const mAirStatus = document.getElementById('mAirStatus');
@@ -897,9 +1032,9 @@ function updateStatus() {
     // NEW: Dynamically reveal the Episode Tracker and Remove Button instantly
     document.getElementById('mRemoveBtn').classList.remove('hidden');
     
-    if (existing.type !== 'movie') {
+   const total = item.number_of_episodes || 1;
+    if (existing.type !== 'movie' && total > 1) {
         document.getElementById('mProgressBox').classList.remove('hidden');
-        const total = item.number_of_episodes || 1;
         document.getElementById('mEpRange').max = total;
         document.getElementById('mEpRange').value = existing.ep || 0;
         updateEpUI(existing.ep || 0, total);
@@ -914,6 +1049,8 @@ function updateStatus() {
             renderList();
             savePrefs();
         }
+
+    
 function toggleSectionExpand(status) {
     state.listExpanded[status] = !state.listExpanded[status];
     renderList();
@@ -1177,7 +1314,7 @@ function runLab() {
     const container = document.getElementById('syncContainer');
     container.innerHTML = '<div class="col-span-full py-20 text-center text-pulse text-[10px] font-black uppercase tracking-[0.5em] animate-pulse">Initializing Neural Sync...</div>';
 
-    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
+    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
     let sectionsHTML = [];
     
     // FEATURE 1: Neural Exclusion (Get a Set of IDs the user already has)
@@ -1292,7 +1429,7 @@ function runLab() {
         let clickTimer = null; // Used to distinguish single vs double clicks
 
         function updateCounters() {
-            const types = ['all', 'movie', 'tv', 'anime', 'kdrama', 'turkish'];
+            const types = ['all', 'movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
             const html = types.map(t => {
                 const count = t === 'all' ? state.db.length : state.db.filter(i => i.type === t).length;
                 const label = t === 'all' ? 'All Data' : t;
@@ -1314,18 +1451,18 @@ function runLab() {
         }
 
         function handleCounterClick(e, type) {
-            // e.detail tells us how many times it was clicked (1 = single, 2 = double)
-            if (e.detail === 1) {
-                clickTimer = setTimeout(() => {
+                // e.detail tells us how many times it was clicked (1 = single, 2 = double)
+                if (e.detail === 1) {
+                    clickTimer = setTimeout(() => {
+                        if (type === 'all') navigate('rhythmlab');
+                        else openCategoryPage('trending', type); // Fixed: Added 'trending' argument
+                    }, 250); // Wait 250ms to ensure it's not a double-click
+                } else if (e.detail === 2) {
+                    clearTimeout(clickTimer); // Cancel single click action
                     if (type === 'all') navigate('rhythmlab');
-                    else openCategoryPage(type);
-                }, 250); // Wait 250ms to ensure it's not a double-click
-            } else if (e.detail === 2) {
-                clearTimeout(clickTimer); // Cancel single click action
-                if (type === 'all') navigate('rhythmlab');
-                else openRandomSuggestion(type);
+                    else openRandomSuggestion(type);
+                }
             }
-        }
 
         async function openCategoryPage(mode, type) {
                 state.catMode = mode; // 'trending' or 'upcoming'
@@ -1334,7 +1471,7 @@ function runLab() {
                 state.catPage = 1;
                 document.getElementById('catSearchInput').value = '';
                 
-                const titleMap = { 'movie': 'Movies', 'tv': 'Series', 'anime': 'Anime', 'kdrama': 'K-Drama', 'turkish': 'Turkish' };
+                const titleMap = { 'movie': 'Movies', 'tv': 'Series', 'anime': 'Anime', 'kdrama': 'K-Drama', 'turkish': 'Turkish', 'asian': 'Asian Drama' };
                 document.getElementById('catTitle').innerHTML = `${mode === 'upcoming' ? 'Upcoming ' : 'Trending '}<span class="text-pulse">${titleMap[type]}</span>`;
                 
                 // Hide Top Rated sort button if we are looking at upcoming
@@ -1370,15 +1507,19 @@ function runLab() {
                     if (type === 'anime') return `${base}&with_genres=16&with_original_language=ja`;
                     if (type === 'kdrama') return `${base}&with_original_language=ko`;
                     if (type === 'turkish') return `${base}&with_original_language=tr`;
+                    if (type === 'asian') return `${base}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`;
                 } else {
-                    // Your existing trending logic
-                    if (type === 'movie') return sort === 'trending' ? `/trending/movie/week?page=${page}` : `/movie/top_rated?page=${page}`;
-                    let base = `/discover/tv?page=${page}`;
-                    let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300'; 
-                    if (type === 'tv') return `${base}&sort_by=${sortParam}&with_original_language=en`;
-                    if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16&with_original_language=ja`;
-                    if (type === 'kdrama') return `${base}&sort_by=${sortParam}&with_original_language=ko`;
-                    if (type === 'turkish') return `${base}&sort_by=${sortParam}&with_original_language=tr`;
+                // Your existing trending logic
+                if (type === 'movie') return sort === 'trending' ? `/trending/movie/week?page=${page}` : `/movie/top_rated?page=${page}`;
+
+                let base = `/discover/tv?page=${page}`;
+                let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300'; 
+
+                if (type === 'tv') return `${base}&sort_by=${sortParam}&with_original_language=en`;
+                if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16&with_original_language=ja`;
+                if (type === 'kdrama') return `${base}&sort_by=${sortParam}&with_original_language=ko`;
+                if (type === 'turkish') return `${base}&sort_by=${sortParam}&with_original_language=tr`;
+                if (type === 'asian') return `${base}&sort_by=${sortParam}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
                 }
             }
 
@@ -1696,6 +1837,21 @@ function closeActorMode(e) {
               if (state.view === 'mylist') renderList();
               if (state.view === 'rhythmlab') runLab();
 }
+// Add this logic to your save routine
+async function saveWithSagaContext(item, type) {
+    // If it's a movie, fetch full details to see if it has a collection/saga ID
+    if (type === 'movie') {
+        const details = await fetchAPI(`/movie/${item.id}`);
+        if (details.belongs_to_collection) {
+            item.sagaId = details.belongs_to_collection.id;
+            item.sagaName = details.belongs_to_collection.name;
+        }
+    }
+    
+    // Standard save logic follows...
+    state.myList.push(item);
+    saveToLocalStorage();
+}
         function closeModal() { 
                 state.modalHistory = []; // Wipe history on full close
                 document.getElementById('mBackBtn').classList.add('hidden');
@@ -1737,10 +1893,12 @@ function exportData() {
 
     showNotification("Packaging Neural Data...");
 
+    // V3.0 Includes Neural Radar and Sagas natively
     const backupPackage = {
-        version: "2.0",
+        version: "3.0",
         db: state.db,
-        sources: sourcesDb
+        sources: sourcesDb,
+        reminders: state.reminders 
     };
 
     setTimeout(() => {
@@ -1755,7 +1913,6 @@ function exportData() {
     }, 500);
 }
 
-// --- Smart Merge Import ---
 function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -1767,23 +1924,28 @@ function importData(event) {
         try {
             const data = JSON.parse(e.target.result);
             
-            // 1. Merge Database (Update existing, add new)
+            // 1. Merge Database
             const importedDB = Array.isArray(data) ? data : (data.db || []);
             let updatedCount = 0;
             let newCount = 0;
 
-           importedDB.forEach(importedItem => {
-                const existingIdx = state.db.findIndex(existing => existing.id === importedItem.id);
+            importedDB.forEach(importedItem => {
+                const existingIdx = state.db.findIndex(ex => ex.id === importedItem.id);
                 if (existingIdx !== -1) {
-                    // SMART MERGE: Keep the highest Masterpiece ratings and progress
                     const ex = state.db[existingIdx];
                     ex.score = Math.max(ex.score || 0, importedItem.score || 0);
                     ex.crown = Math.max(ex.crown || 0, importedItem.crown || 0);
                     ex.ep = Math.max(ex.ep || 0, importedItem.ep || 0);
                     ex.status = importedItem.status || ex.status;
+                    
+                    // Pull in new Saga/Realm tags if old record lacks them
+                    if (importedItem.sagaId) ex.sagaId = importedItem.sagaId;
+                    if (importedItem.sagaName) ex.sagaName = importedItem.sagaName;
+                    if (importedItem.realm) ex.realm = importedItem.realm;
+                    
                     updatedCount++;
                 } else {
-                    state.db.push(importedItem); // Add new
+                    state.db.push(importedItem);
                     newCount++;
                 }
             });
@@ -1793,7 +1955,6 @@ function importData(event) {
                 Object.keys(data.sources).forEach(cat => {
                     if(!sourcesDb[cat]) sourcesDb[cat] = [];
                     data.sources[cat].forEach(src => {
-                        // Prevent exact duplicate URLs
                         if (!sourcesDb[cat].some(existing => existing.url === src.url)) {
                             sourcesDb[cat].push(src);
                         }
@@ -1803,8 +1964,18 @@ function importData(event) {
                 if(typeof renderSources === 'function') renderSources();
             }
 
+            // 3. Merge Neural Radar (Reminders)
+            if (data.reminders) {
+                data.reminders.forEach(r => {
+                    if (!state.reminders.find(ex => ex.id === r.id)) {
+                        state.reminders.push(r);
+                    }
+                });
+                localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
+            }
+
             save();
-            renderList();
+            if (state.view === 'mylist') renderList();
             updateCounters();
             
             showNotification(`Imported: ${newCount} New, ${updatedCount} Updated`);
@@ -1990,9 +2161,7 @@ function isSmartMatch(text, query) {
 }
 
 // Initialize Sources DB
-let sourcesDb = JSON.parse(localStorage.getItem('cp_elite_sources')) || {
-    movie: [], tv: [], anime: [], kdrama: [], turkish: []
-};
+let sourcesDb = JSON.parse(localStorage.getItem('cp_elite_sources')) || { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
 
 function renderSources() {
     const container = document.getElementById('sourceListContainer');
@@ -2232,7 +2401,43 @@ async function quickTrailer(event, id, type) {
         showNotification("Neural link severed. Failed to fetch trailer.", true);
     }
 }
+function renderSmartList() {
+    const container = document.getElementById('listGrid');
+    const grouped = {};
 
+    // Group items by Saga
+    state.myList.forEach(item => {
+        if (item.sagaId) {
+            if (!grouped[item.sagaId]) grouped[item.sagaId] = { isSaga: true, name: item.sagaName, items: [] };
+            grouped[item.sagaId].items.push(item);
+        } else {
+            grouped[item.id] = { isSaga: false, item: item };
+        }
+    });
+
+    container.innerHTML = Object.values(grouped).map(group => {
+        if (group.isSaga && group.items.length > 1) {
+            // RENDER MEMORY CLUSTER (STACK)
+            const sorted = group.items.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
+            return `
+                <div class="group cursor-pointer relative" onclick="openSaga(${group.items[0].sagaId})">
+                    <div class="memory-cluster mb-4">
+                        <img src="${IMG + sorted[0].poster_path}" class="cluster-top object-cover bg-dark">
+                        <img src="${IMG + sorted[1].poster_path}" class="cluster-mid object-cover bg-dark">
+                        <div class="absolute -top-2 -right-2 bg-pulse text-white text-[10px] font-black px-2 py-1 rounded-full z-40 shadow-lg">
+                            ${group.items.length}
+                        </div>
+                    </div>
+                    <div class="text-[10px] font-black uppercase tracking-widest text-center">${group.name}</div>
+                </div>
+            `;
+        } else {
+            // RENDER STANDARD SINGLE ITEM
+            const item = group.isSaga ? group.items[0] : group.item;
+            return renderSingleGridItem(item); // Use your existing item HTML generator
+        }
+    }).join('');
+}
 // --- DYNAMIC FILTERS ---
 function renderGenrePills() {
     const buildPills = (targetId, currentList, clickHandler) => {
@@ -2431,6 +2636,7 @@ async function fetchDiscoverData(append = false) {
     if (val === 'anime') path = `/discover/tv?with_genres=16&sort_by=popularity.desc&with_original_language=ja&page=${discoverPage}`;
     if (val === 'kdrama') path = `/discover/tv?with_original_language=ko&sort_by=popularity.desc&page=${discoverPage}`;
     if (val === 'turkish') path = `/discover/tv?with_original_language=tr&sort_by=popularity.desc&page=${discoverPage}`;
+    if (val === 'asian') path = `/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc&page=${discoverPage}`;
 
     const data = await fetchAPI(path);
     
@@ -2653,19 +2859,26 @@ function saveNotifs() {
 }
 // --- SMART CATEGORY PARSER ---
 function determineCategory(item) {
-    // 1. Check if we already have this item in our DB with a set type
+    if (item.forceType) return item.forceType; 
+    
     const local = state.db.find(i => i.id === item.id);
     if (local && local.type) return local.type;
 
-    // 2. Language & Genre Overrides (The "Explicit" Logic)
     const lang = item.original_language;
     const genres = item.genre_ids || (item.genres ? item.genres.map(g => g.id) : []);
+    const origin = item.origin_country || (item.production_countries ? item.production_countries.map(c => c.iso_3166_1) : []);
 
-    if (lang === 'ja' && genres.includes(16)) return 'anime'; // Japanese + Animation = Anime
-    if (lang === 'ko') return 'kdrama';                        // Korean = K-Drama
-    if (lang === 'tr') return 'turkish';                      // Turkish = Turkish
+    if (lang === 'ja' && genres.includes(16)) return 'anime';
+    if (lang === 'ko') return 'kdrama';
+    if (lang === 'tr') return 'turkish';
 
-    // 3. Fallback to standard TMDB types
+    // NEW ASIAN DRAMA LOGIC: China, Taiwan, Thailand, Philippines, Vietnam, OR Japanese Live-Action
+    const isAsianCountry = origin.some(c => ['CN', 'TW', 'TH', 'PH', 'VN'].includes(c));
+    const isAsianLang = ['zh', 'th', 'tl', 'vi'].includes(lang);
+    const isJpLiveAction = (lang === 'ja' || origin.includes('JP')) && !genres.includes(16);
+    
+    if (isAsianCountry || isAsianLang || isJpLiveAction) return 'asian';
+
     return item.title ? 'movie' : 'tv';
 }
 
@@ -2767,19 +2980,44 @@ function handleCrownSelect(val) {
     if (!item) return;
     
     const crownLevel = parseInt(val);
+    const realmBox = document.getElementById('mSovereignRealmBox');
     
-    // If crowning, dethrone the previous owner of this crown for this category
-    if (crownLevel > 0) {
+    // Clear dethroned 1-3 crowns
+    if (crownLevel > 0 && crownLevel < 4) {
         state.db.forEach(i => {
-            if (i.type === item.type && i.crown === crownLevel) {
-                i.crown = 0; // Strip the crown
-            }
+            if (i.type === item.type && i.crown === crownLevel) i.crown = 0; 
         });
+        realmBox.classList.add('hidden');
+    } else if (crownLevel === 4) {
+        // Populate the specific genres for THIS item
+        const select = document.getElementById('mSovereignRealmSelect');
+        const activeGenres = state.active.genres || [];
+        
+        if (activeGenres.length > 0) {
+            select.innerHTML = activeGenres.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
+            item.realm = item.realm || activeGenres[0].name; // Default to first genre
+            select.value = item.realm;
+        } else {
+            select.innerHTML = `<option value="Cinematic">Cinematic</option>`;
+            item.realm = "Cinematic";
+        }
+        realmBox.classList.remove('hidden');
+    } else {
+        realmBox.classList.add('hidden');
     }
     
     item.crown = crownLevel;
     save();
     if (state.view === 'masterpieces') renderMasterpieces();
+}
+
+function saveSovereignRealm(realmName) {
+    const item = state.db.find(i => i.id === state.active.id);
+    if (item) {
+        item.realm = realmName;
+        save();
+        if (state.view === 'masterpieces') renderMasterpieces();
+    }
 }
 
 function setMpTab(tab) {
@@ -2794,8 +3032,8 @@ function setMpTab(tab) {
 
 function renderMasterpieces() {
     const container = document.getElementById('mpContainer');
-    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish'];
-    const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish' };
+    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
+    const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish', asian: 'Asian Drama' };
 
     let html = `
         <div class="flex gap-4 mb-8 overflow-x-auto hide-scroll pb-2">
@@ -2808,11 +3046,16 @@ function renderMasterpieces() {
 
     let displayTypes = state.mpFilter === 'all' ? types : [state.mpFilter];
 
-    if (state.mpTab === 'crowned') {
+  if (state.mpTab === 'crowned') {
         html += displayTypes.map(type => {
-            const crowned = state.db.filter(i => i.type === type && i.crown > 0).sort((a,b) => a.crown - b.crown);
-            if(!crowned.length) return '';
-            return `
+            // Main Top 3
+            const crowned = state.db.filter(i => i.type === type && i.crown > 0 && i.crown < 4).sort((a,b) => a.crown - b.crown);
+            // Genre Sovereigns (Unlimited)
+            const sovereigns = state.db.filter(i => i.type === type && i.crown === 4);
+            
+            if(!crowned.length && !sovereigns.length) return '';
+            
+            let sectionHtml = `
                 <div class="mb-16 animate-in fade-in duration-500">
                     <h3 class="text-xl md:text-2xl font-black italic uppercase text-yellow-500/80 tracking-widest mb-6 md:mb-8 border-b border-white/5 pb-4 flex items-center gap-4">
                         <i class="fas fa-crown"></i> ${typeNames[type]} Royal Court
@@ -2820,11 +3063,24 @@ function renderMasterpieces() {
                     <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6"> 
                         ${crowned.map(i => getRankedCard(i, i.crown, true)).join('')}
                     </div>
-                </div>
             `;
+            
+            if (sovereigns.length > 0) {
+                 sectionHtml += `
+                    <h4 class="text-sm font-black italic uppercase text-pulse tracking-widest mt-12 mb-6 flex items-center gap-3">
+                        <i class="fas fa-gem"></i> Genre Sovereigns
+                    </h4>
+                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6"> 
+                        ${sovereigns.map(i => getRankedCard(i, 4, true)).join('')}
+                    </div>
+                 `;
+            }
+            
+            sectionHtml += `</div>`;
+            return sectionHtml;
         }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">No crowned items in this category.</div>';
         container.innerHTML = html;
-    } 
+    }
     else if (state.mpTab === 'perfect') {
         html += displayTypes.map(type => {
             const perfect = state.db.filter(i => i.type === type && i.score === 5).sort((a,b) => b.imdb - a.imdb);
@@ -2909,7 +3165,31 @@ function getRankedCard(i, rank, isCrownCard = false) {
 function getRankedCard(i, rank, isCrownCard = false) {
     let badgeHtml = '';
     let borderShadow = 'border-white/5 shadow-xl';
-    
+    const originalGetRankedCard = getRankedCard;
+getRankedCard = function(i, rank, isCrownCard = false, realmName = '') {
+    // If it's a Sovereign (4), override the badge UI to show the Realm
+    if (rank === 4) {
+        return `
+        <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+            <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-pulse/30 shadow-[0_10px_40px_rgba(255,45,85,0.15)] group-hover:border-pulse transition-all relative">
+                <img src="${IMG+i.poster}" class="w-full h-full object-cover bg-dark">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
+                
+                <div class="absolute bottom-4 left-4 right-4 z-30 pointer-events-none">
+                    <div class="text-[10px] font-black uppercase text-pulse bg-dark/80 backdrop-blur-md px-3 py-2 rounded-xl border border-pulse/50 text-center shadow-lg">
+                        💎 ${realmName || i.realm || 'Sovereign'}<br>
+                        <span class="text-[8px] text-white mt-1 block">★ ${i.score}/5</span>
+                    </div>
+                </div>
+                ${getPlayHoverHTML(i)}
+            </div>
+            <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
+            <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
+        </div>
+        `;
+    }
+    return originalGetRankedCard(i, rank, isCrownCard);
+};
     if (rank) {
         const color = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-pulse';
         if (isCrownCard && rank <= 3) {
@@ -2949,6 +3229,9 @@ function getRankedCard(i, rank, isCrownCard = false) {
         <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
     </div>
     `;
+    
+
+    
 }
 
 // --- TITLE COPY ENGINE ---
@@ -3046,6 +3329,403 @@ function setupLongPressCopy() {
             // 4. Close the modal
             closePurgeModal();
         }
+        
+
+
+ //manual type override 
+ function overrideType(newType) {
+    if (!state.active) return;
+    const idx = state.db.findIndex(i => i.id === state.active.id);
+    
+    if (idx !== -1) {
+        state.db[idx].type = newType;
+        save();
+    } else {
+        // If not in library yet, store the forceType to be used when they click '+ Add to List'
+        state.active.forceType = newType;
+    }
+    
+    showNotification(`Type overridden to ${newType.toUpperCase()}`);
+    
+    // Instantly hide/show the episode tracker based on the new logic
+  const maxEp = details.number_of_episodes || 1;
+    document.getElementById('mProgressBox').classList.toggle('hidden', calculatedType === 'movie' || !local || maxEp <= 1);
+    if(calculatedType !== 'movie' && local && maxEp > 1) {
+        // Fix for Season Mismatch: Recalculate based on real limits
+        document.getElementById('mEpRange').max = maxEp;
+        document.getElementById('mEpRange').value = local.ep || 0;
+        
+        state.activeSeasons = (details.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
+        let cumulative = 0;
+        state.activeSeasons.forEach(s => {
+            s.startEp = cumulative;
+            cumulative += s.episode_count;
+            // Cap it strictly at the total episodes so it doesn't overflow
+            s.endEp = Math.min(cumulative, maxEp); 
+        });
+        
+        updateEpUI(local.ep || 0, maxEp);
+        renderSeasonsUI(); 
+    }
+}
+ //country load
+// loadCountries() 
+async function loadCountries() {
+    // Curated top 15 media-producing regions for a premium, uncluttered UI
+    const topCountries = [
+        { iso: 'US', name: 'United States' },
+        { iso: 'GB', name: 'United Kingdom (UK)' },
+        { iso: 'KR', name: 'South Korea' },
+        { iso: 'JP', name: 'Japan' },
+        { iso: 'IN', name: 'India' },
+        { iso: 'CN', name: 'China' },
+        { iso: 'TH', name: 'Thailand' },
+        { iso: 'TW', name: 'Taiwan' },
+        { iso: 'PH', name: 'Philippines' },
+        { iso: 'TR', name: 'Turkey' },
+        { iso: 'FR', name: 'France' },
+        { iso: 'ES', name: 'Spain' },
+        { iso: 'IT', name: 'Italy' },
+        { iso: 'DE', name: 'Germany' },
+        { iso: 'BR', name: 'Brazil' }
+    ];
+
+    const select = document.getElementById('searchCountry');
+    if (select) {
+        // Sort them alphabetically just for a clean look, but keep US/UK at top if you prefer (currently alphabetical)
+        const sorted = topCountries.sort((a, b) => a.name.localeCompare(b.name));
+        const options = sorted.map(c => `<option value="${c.iso}">${c.name}</option>`).join('');
+        select.innerHTML = '<option value="">All Regions</option>' + options;
+    }
+}
+// --- SAGA MATRIX ENGINE (UPGRADED) ---
+const ELITE_SAGAS = [119, 86311, 531241, 1241, 404609, 3033]; // Defaults: LOTR, Avengers, Spider-Verse, Harry Potter, John Wick, Matrix
+let currentSagaTab = 'discover';
+let sagaSearchTimeout;
+
+function setSagaTab(tab) {
+    currentSagaTab = tab;
+    document.getElementById('sagaTab-discover').className = tab === 'discover' ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
+    document.getElementById('sagaTab-mylist').className = tab === 'mylist' ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
+    
+    if (tab === 'discover') renderSagaMatrix();
+    else renderMySagas();
+}
+
+// Dynamic Debounced Search
+function handleSagaSearch(query) {
+    clearTimeout(sagaSearchTimeout);
+    if (!query) return renderSagaMatrix();
+    sagaSearchTimeout = setTimeout(() => searchSagas(query), 500);
+}
+
+async function searchSagas(query) {
+    const grid = document.getElementById('sagaGrid');
+    grid.innerHTML = '<div class="page-loader"></div>';
+    
+    try {
+        const data = await fetchAPI(`/search/collection?query=${encodeURIComponent(query)}`);
+        if(!data.results.length) {
+            grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest">No Universes Found</div>`;
+            return;
+        }
+        
+        const sagas = await Promise.all(data.results.slice(0, 10).map(c => fetchAPI(`/collection/${c.id}`)));
+        renderSagaGridUI(sagas, grid, false);
+    } catch (e) {
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest">Search Link Severed</div>`;
+    }
+}
+
+async function renderSagaMatrix() {
+    const grid = document.getElementById('sagaGrid');
+    grid.innerHTML = '<div class="page-loader"></div>';
+
+    try {
+        const sagas = await Promise.all(ELITE_SAGAS.map(id => fetchAPI(`/collection/${id}`)));
+        renderSagaGridUI(sagas, grid, false);
+    } catch (err) {
+       grid.innerHTML = `<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest">Neural Link to Saga Matrix Severed</div>`;
+    }
+}
+
+function renderSagaGridUI(sagas, gridElement, isMyList) {
+    gridElement.innerHTML = sagas.filter(s => s && s.parts && s.parts.length > 0).map(saga => {
+        let overlayHtml = `<div class="absolute -top-3 -right-3 bg-pulse text-white text-[10px] font-black px-3 py-1.5 rounded-full z-40 shadow-[0_0_15px_rgba(255,45,85,0.6)]">${saga.parts.length} Parts</div>`;
+        
+        // Inject progress UI if we are in "My Sagas"
+        if (isMyList) {
+            const statusColor = saga.progress === 100 ? 'text-[#22c55e]' : (saga.progress > 0 ? 'text-[#f59e0b]' : 'text-gray-500');
+            const statusBg = saga.progress === 100 ? 'bg-[#22c55e]' : (saga.progress > 0 ? 'bg-[#f59e0b]' : 'bg-gray-500');
+            overlayHtml = `
+                <div class="absolute -top-3 -right-3 ${statusBg} text-white text-[10px] font-black px-3 py-1.5 rounded-full z-40 shadow-lg flex items-center gap-2">
+                    ${saga.progress}% <span class="hidden md:inline">Completed</span>
+                </div>
+                <div class="absolute bottom-2 left-2 right-2 bg-dark/90 backdrop-blur-md rounded-lg p-2 border border-white/10 z-40">
+                    <div class="flex justify-between text-[8px] font-black uppercase tracking-widest mb-1 ${statusColor}">
+                        <span>${saga.status}</span>
+                        <span>${saga.finished}/${saga.total}</span>
+                    </div>
+                    <div class="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+                        <div class="${statusBg} h-full transition-all duration-500" style="width: ${saga.progress}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        return `
+        <div class="group cursor-pointer mb-8 animate-in zoom-in duration-300" onclick="openSaga(${saga.id})">
+            <div class="memory-cluster mb-4 relative">
+                <img src="${saga.parts[0]?.poster_path ? IMG+saga.parts[0].poster_path : 'https://via.placeholder.com/300'}" class="cluster-top object-cover bg-dark">
+                ${saga.parts[1] ? `<img src="${IMG+saga.parts[1].poster_path}" class="cluster-mid object-cover bg-dark">` : ''}
+                ${saga.parts[2] ? `<img src="${IMG+saga.parts[2].poster_path}" class="cluster-back object-cover bg-dark">` : ''}
+                ${overlayHtml}
+            </div>
+            <div class="bg-dark/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 group-hover:border-pulse/50 transition-colors shadow-xl">
+                <div class="text-[10px] font-black uppercase text-white tracking-widest line-clamp-1">${saga.name}</div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+function renderMySagas() {
+    const grid = document.getElementById('sagaGrid');
+    const grouped = {};
+    
+    // Group local DB by sagaId
+    state.db.forEach(item => {
+        if (item.sagaId) {
+            if (!grouped[item.sagaId]) grouped[item.sagaId] = { id: item.sagaId, name: item.sagaName, parts: [] };
+            grouped[item.sagaId].parts.push(item);
+        }
+    });
+    
+    const mySagas = Object.values(grouped);
+    
+    if (!mySagas.length) {
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest italic">No synchronized sagas detected in your library.</div>`;
+        return;
+    }
+    
+    // Map local format to calculate progress
+    const formattedSagas = mySagas.map(s => {
+        const total = s.parts.length;
+        const finished = s.parts.filter(p => p.status === 'Finished').length;
+        const progress = Math.round((finished / total) * 100);
+        let status = progress === 100 ? 'Completed' : (progress > 0 ? 'In Progress' : 'Uncharted');
+
+        return {
+            id: s.id,
+            name: s.name,
+            parts: s.parts.sort((a,b) => a.year - b.year).map(p => ({ poster_path: p.poster })),
+            progress: progress,
+            status: status,
+            finished: finished,
+            total: total
+        };
+    });
+    
+    renderSagaGridUI(formattedSagas, grid, true);
+}
+
+// Global Core Function to Sync a Saga
+async function syncSagaData(cId, cName) {
+    try {
+        const col = await fetchAPI(`/collection/${cId}`);
+        let addedCount = 0;
+        
+        col.parts.forEach(part => {
+            if (!state.db.find(i => i.id === part.id)) {
+                state.db.push({
+                    id: part.id,
+                    title: part.title,
+                    poster: part.poster_path,
+                    type: 'movie',
+                    status: 'Plan to Watch', // Default status for auto-synced parts
+                    ep: 0,
+                    max_ep: 1,
+                    score: 0,
+                    crown: 0,
+                    imdb: part.vote_average,
+                    year: (part.release_date || '').split('-')[0],
+                    genres: part.genre_ids || [],
+                    added: Date.now(),
+                    sagaId: cId,
+                    sagaName: cName
+                });
+                addedCount++;
+            }
+        });
+        save();
+        showNotification(`Synced ${addedCount} new records from ${cName}!`);
+        if (state.view === 'sagamatrix') renderMySagas(); // Refresh UI if on Saga page
+        return true;
+    } catch (e) {
+        showNotification("Failed to synchronize universe.", true);
+        return false;
+    }
+}
+
+// Global Core Function to Delete a Saga
+function purgeSagaData(cId, cName) {
+    if (confirm(`Are you sure you want to eject the entire ${cName} from your library?`)) {
+        state.db = state.db.filter(i => i.sagaId !== cId);
+        save();
+        showNotification(`${cName} has been purged.`);
+        document.getElementById('sagaModal').classList.add('hidden');
+        if (state.view === 'sagamatrix') renderMySagas();
+    }
+}
+
+// Auto-Prompt Hook when updating a movie's status
+const originalUpdateStatusWithGlow = updateStatus;
+updateStatus = function() {
+    originalUpdateStatusWithGlow();
+    
+    if (state.active && state.active.belongs_to_collection) {
+        const cId = state.active.belongs_to_collection.id;
+        const cName = state.active.belongs_to_collection.name;
+        const sagaNavBtn = document.querySelector('button[onclick="setView(\'sagamatrix\')"]');
+        
+        if (sagaNavBtn) sagaNavBtn.classList.add('saga-glow-active');
+        
+        const localItem = state.db.find(i => i.id === state.active.id);
+        if(localItem) {
+            localItem.sagaId = cId;
+            localItem.sagaName = cName;
+            save();
+        }
+
+        const existingParts = state.db.filter(i => i.sagaId === cId).length;
+        
+        if (existingParts <= 1) {
+            document.getElementById('mSagaPromptText').innerHTML = `This title belongs to the <span class="text-pulse font-black">${cName}</span>. Track all associated records?`;
+            const confirmBtn = document.getElementById('mSagaPromptConfirm');
+            
+            confirmBtn.onclick = async () => {
+                confirmBtn.innerText = "Syncing...";
+                await syncSagaData(cId, cName);
+                document.getElementById('mSagaPromptBox').classList.add('hidden');
+                confirmBtn.innerText = "Track Entire Universe"; 
+            };
+            document.getElementById('mSagaPromptBox').classList.add('hidden');
+        }
+    }
+};
+
+async function openSaga(id) {
+    const saga = await fetchAPI(`/collection/${id}`);
+    const modal = document.getElementById('sagaModal');
+    
+    // Check local library ownership
+    const ownedParts = state.db.filter(i => i.sagaId === id);
+    const isFullySynced = ownedParts.length >= saga.parts.length;
+    const hasAnyParts = ownedParts.length > 0;
+
+    const parts = saga.parts.sort((a, b) => new Date(a.release_date) - new Date(b.release_date));
+
+    // Determine Action Buttons based on ownership
+    let actionButtons = '';
+    if (!isFullySynced) {
+        actionButtons += `<button onclick="syncSagaData(${id}, '${saga.name.replace(/'/g, "\\'")}')" class="bg-pulse text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-pulse/30 hover:scale-105 transition-all flex items-center gap-2"><i class="fas fa-plus"></i> Add All</button>`;
+    }
+    if (hasAnyParts) {
+        // NEW Finish All button
+        actionButtons += `<button onclick="markSagaFinished(${id})" class="bg-[#22c55e] text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 shadow-lg shadow-[#22c55e]/30"><i class="fas fa-check-double"></i> Finish All</button>`;
+        
+        actionButtons += `<button onclick="purgeSagaData(${id}, '${saga.name.replace(/'/g, "\\'")}')" class="bg-white/5 text-gray-400 hover:text-pulse border border-white/10 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-pulse transition-all flex items-center gap-2"><i class="fas fa-trash-alt"></i> Eject</button>`;
+    }
+
+modal.innerHTML = `
+        <div class="relative min-h-screen pb-32">
+            
+      
+            <button onclick="document.getElementById('sagaModal').classList.add('hidden')" class="saga-close-btn rounded-full flex items-center justify-center shadow-2xl">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+            <div class="relative w-full h-[35vh] md:h-[45vh] md:rounded-b-[40px] overflow-hidden mb-12 border-b border-white/10 shadow-2xl bg-dark">
+                <img src="${IMG_HD+saga.backdrop_path}" class="saga-backdrop-img">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/20 to-transparent"></div>
+                <h2 class="absolute bottom-6 left-6 md:left-12 text-3xl md:text-6xl font-black italic uppercase tracking-tighter text-white drop-shadow-2xl">
+                    ${saga.name}
+                </h2>
+            </div>
+
+            <div class="action-buttons-wrap px-6 md:px-12 mb-10 relative z-50">
+                <button onclick="toggleSagaCollapse()" class="text-[9px] font-bold text-gray-400 hover:text-white border border-white/10 px-4 py-2 rounded-xl uppercase tracking-widest bg-dark/50 backdrop-blur-md flex items-center gap-2 transition-all"><i class="fas fa-layer-group"></i> Toggle View</button>
+                ${actionButtons}
+            </div>
+
+            <div class="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-px before:bg-gradient-to-b before:from-pulse before:via-white/10 before:to-transparent">
+                ${parts.map((p, index) => {
+                    const localData = state.db.find(i => i.id === p.id);
+                    const isFinished = localData && localData.status === 'Finished';
+                    const statusIcon = isFinished ? '<i class="fas fa-check text-[#22c55e]"></i>' : (localData ? '<i class="fas fa-eye text-pulse"></i>' : '');
+                    const borderHighlight = localData ? (isFinished ? 'border-[#22c55e]/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-pulse/50 shadow-[0_0_15px_rgba(255,45,85,0.1)]') : 'border-white/5';
+
+                    return `
+                    <div class="saga-movie-card relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group transition-all duration-500 overflow-hidden" style="max-height: 500px; opacity:1;">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-dark ${localData ? (isFinished ? 'bg-[#22c55e]' : 'bg-pulse') : 'bg-gray-800'} text-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors">
+                            <span class="text-[10px] font-black">${statusIcon || (index + 1)}</span>
+                        </div>
+                        
+                        <div class="w-[calc(100%-4rem)] md:w-[calc(50%-3rem)] p-3 md:p-4 rounded-3xl border ${borderHighlight} bg-[#0a0c12]/80 backdrop-blur-md hover:border-pulse transition-all flex gap-4 cursor-pointer shadow-xl" onclick="document.getElementById('sagaModal').classList.add('hidden'); openModal(${p.id}, 'movie')">
+                            <div class="w-20 h-28 md:w-24 md:h-32 shrink-0 rounded-xl overflow-hidden border border-white/5">
+                                <img src="${IMG+p.poster_path}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="flex flex-col justify-center flex-1">
+                                <h4 class="text-[12px] md:text-sm font-black uppercase italic text-white line-clamp-2">${p.title}</h4>
+                                <div class="text-[9px] text-gray-500 font-bold tracking-widest mt-2 flex items-center justify-between w-full">
+                                    <div class="flex items-center gap-2">
+                                        <span class="bg-white/5 px-2 py-1 rounded text-white">${(p.release_date || '').split('-')[0]}</span>
+                                        <span class="text-pulse">★ ${p.vote_average ? p.vote_average.toFixed(1) : 'N/A'}</span>
+                                    </div>
+                                    ${localData ? `<span class="uppercase font-black ${isFinished ? 'text-[#22c55e]' : 'text-pulse'} text-[8px] bg-white/10 px-2 py-1 rounded tracking-tighter">${localData.status}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('')}
+            </div>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+}
+
+function toggleSagaCollapse() {
+    document.querySelectorAll('.saga-movie-card').forEach(el => {
+        if (el.style.maxHeight === '0px') {
+            el.style.maxHeight = '500px';
+            el.style.opacity = '1';
+            el.style.marginBottom = '2rem';
+        } else {
+            el.style.maxHeight = '0px';
+            el.style.opacity = '0';
+            el.style.marginBottom = '0';
+        }
+    });
+}
+function markSagaFinished(sagaId) {
+    let updated = 0;
+    state.db.forEach(item => {
+        if (item.sagaId === sagaId && item.status !== 'Finished') {
+            item.status = 'Finished';
+            updated++;
+        }
+    });
+    
+    if (updated > 0) {
+        save();
+        showNotification(`Universe Completed! ${updated} records updated.`);
+        document.getElementById('sagaModal').classList.add('hidden');
+        if (state.view === 'sagamatrix') renderMySagas();
+        if (state.view === 'mylist') renderList();
+    } else {
+        showNotification("All records in this Universe are already finished.");
+    }
+}
+
   // --- NOTIFICATION CLEANUP ROUTINE ---
     if (state.notifications && state.notifications.length > 0) {
         const now = Date.now();
@@ -3066,34 +3746,3 @@ function setupLongPressCopy() {
         init();
         
 
-        let deferredPrompt;
-const installRow = document.getElementById('pwa-install-row');
-const installBtn = document.getElementById('installBtn');
-
-// 1. Listen for the install availability
-window.addEventListener('beforeinstallprompt', (e) => {
-    // Keep the browser from showing its own automated bar
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    // Only reveal our custom button if the app isn't already installed
-    if (installRow) installRow.classList.remove('hidden');
-});
-
-// 2. Handle the click
-installBtn.addEventListener('click', async () => {
-    if (!deferredPrompt) return;
-    
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-        installRow.classList.add('hidden'); // Hide after successful install
-    }
-    deferredPrompt = null;
-});
-
-// 3. Hide it if already running in standalone/app mode
-if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-    if (installRow) installRow.classList.add('hidden');
-}
