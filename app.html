@@ -61,8 +61,17 @@
         <h1 class="text-3xl font-black italic uppercase tracking-tighter mb-2">CinePulse <span class="text-pulse">Elite</span></h1>
         <p class="text-gray-400 text-xs font-bold uppercase tracking-widest mb-10">Neural Interface Setup</p>
 
-        <div id="setupContext" class="bg-[#0a0c12] border border-white/5 rounded-2xl p-6 mb-8 text-left space-y-4">
+      <div id="setupContext" class="bg-[#0a0c12] border border-white/5 rounded-2xl p-6 mb-8 text-left space-y-4"></div>
+
+        <div id="downloadUI" class="hidden w-full space-y-3 mb-6">
+            <div class="flex justify-between text-[9px] font-black uppercase text-pulse tracking-widest">
+                <span id="dlText">Establishing Neural Link...</span>
+                <span id="dlPct">0%</span>
             </div>
+            <div class="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/10">
+                <div id="dlBar" class="h-full bg-pulse w-0 transition-all duration-300 shadow-[0_0_15px_rgba(255,45,85,0.8)]"></div>
+            </div>
+        </div>
 
         <button id="installAppBtn" class="hidden w-full py-4 rounded-2xl bg-pulse text-white text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-[0_10px_30px_rgba(255,45,85,0.3)] mb-6">
             <i class="fas fa-download mr-2"></i> Install App Engine
@@ -94,7 +103,7 @@
         if (isStandalone) {
             contextBox.innerHTML = `
                 <div class="flex items-center gap-4 text-[#22c55e]">
-                    <i class="fas fa-check-circle text-2xl"></i>
+                    <i class="fas fa-check-circle text-2xl shadow-[0_0_15px_rgba(34,197,94,0.4)] rounded-full"></i>
                     <div>
                         <div class="text-[10px] font-black uppercase tracking-widest">System Active</div>
                         <div class="text-[9px] text-gray-500 uppercase mt-1">CinePulse is running natively.</div>
@@ -104,13 +113,12 @@
         } else if (isIOS) {
             contextBox.innerHTML = `
                 <h3 class="text-[10px] text-pulse font-black uppercase tracking-[0.2em] mb-3 border-b border-white/5 pb-2">iOS Instructions</h3>
-                <ul class="text-[11px] text-gray-400 space-y-3 font-medium">
-                    <li class="flex items-center gap-3"><span class="w-6 h-6 bg-white/5 rounded flex items-center justify-center text-white"><i class="fas fa-share-square"></i></span> Tap the <b>Share</b> icon at the bottom.</li>
-                    <li class="flex items-center gap-3"><span class="w-6 h-6 bg-white/5 rounded flex items-center justify-center text-white"><i class="fas fa-plus-square"></i></span> Scroll down and tap <b>"Add to Home Screen"</b>.</li>
+                <ul class="text-[11px] text-gray-400 space-y-4 font-medium">
+                    <li class="flex items-center gap-3"><span class="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-pulse"><i class="fas fa-share-square"></i></span> Tap the <b>Share</b> icon at the bottom.</li>
+                    <li class="flex items-center gap-3"><span class="w-8 h-8 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center text-white"><i class="fas fa-plus-square"></i></span> Scroll down and tap <b>"Add to Home Screen"</b>.</li>
                 </ul>
             `;
         } else {
-            // Default Android/Desktop state before prompt is caught
             contextBox.innerHTML = `
                 <div class="text-center py-4">
                     <i class="fas fa-spinner fa-spin text-pulse text-2xl mb-3"></i>
@@ -123,11 +131,10 @@
             e.preventDefault();
             deferredPrompt = e;
             
-            // Show the Android/Desktop install button
             btn.classList.remove('hidden');
             contextBox.innerHTML = `
                 <div class="flex items-start gap-4 text-white">
-                    <i class="fas fa-bolt text-pulse text-xl mt-1"></i>
+                    <i class="fas fa-bolt text-pulse text-xl mt-1 drop-shadow-[0_0_10px_rgba(255,45,85,0.8)]"></i>
                     <div>
                         <div class="text-[10px] font-black uppercase tracking-widest">Ready for Deployment</div>
                         <div class="text-[10px] text-gray-400 leading-relaxed mt-2">Click below to install CinePulse natively on your device for full-screen access and background syncing.</div>
@@ -136,16 +143,57 @@
             `;
         });
 
-        btn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    contextBox.innerHTML = `<div class="text-center text-[#22c55e] text-[10px] font-black uppercase tracking-widest"><i class="fas fa-check mb-2 text-xl"></i><br>Installation Successful</div>`;
-                    btn.classList.add('hidden');
+        // The Simulated Download Engine
+        btn.addEventListener('click', () => {
+            if (!deferredPrompt) return;
+            
+            btn.classList.add('hidden');
+            const dlUI = document.getElementById('downloadUI');
+            dlUI.classList.remove('hidden');
+            
+            const bar = document.getElementById('dlBar');
+            const pct = document.getElementById('dlPct');
+            const txt = document.getElementById('dlText');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 12) + 4; // Random jumps
+                if (progress >= 100) progress = 100;
+                
+                bar.style.width = progress + '%';
+                pct.innerText = progress + '%';
+                
+                if (progress > 30) txt.innerText = "Downloading Core Assets...";
+                if (progress > 60) txt.innerText = "Injecting Source Engine...";
+                if (progress > 85) txt.innerText = "Finalizing Neural Link...";
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    txt.innerText = "Deployment Ready.";
+                    txt.className = "text-[#22c55e]";
+                    bar.className = "h-full bg-[#22c55e] w-full shadow-[0_0_15px_rgba(34,197,94,0.8)]";
+                    pct.className = "text-[#22c55e]";
+                    
+                    setTimeout(async () => {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            dlUI.classList.add('hidden');
+                            contextBox.innerHTML = `<div class="text-center text-[#22c55e] text-[10px] font-black uppercase tracking-widest py-4"><i class="fas fa-check-circle mb-3 text-4xl shadow-[0_0_20px_rgba(34,197,94,0.4)] rounded-full"></i><br>Installation Successful</div>`;
+                        } else {
+                            // If they cancel the OS prompt, reset UI
+                            btn.classList.remove('hidden');
+                            dlUI.classList.add('hidden');
+                            bar.style.width = '0%';
+                            txt.innerText = "Establishing Neural Link...";
+                            txt.className = "text-pulse";
+                            bar.className = "h-full bg-pulse w-0 transition-all duration-300 shadow-[0_0_15px_rgba(255,45,85,0.8)]";
+                            pct.className = "text-pulse";
+                        }
+                        deferredPrompt = null;
+                    }, 600);
                 }
-                deferredPrompt = null;
-            }
+            }, 300); // Ticks every 300ms
         });
     </script>
 </body>
