@@ -1435,3 +1435,26 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
     background: rgba(10, 12, 18, 0.9);
     border: 1px solid rgba(59, 130, 246, 0.5);
 }
+/* --- LAPTOP / SMALL SCREEN HEIGHT SCALING (DESKTOP) --- */
+@media (min-width: 1024px) and (max-height: 800px) {
+    /* Compact the sidebar header padding so the nav has more room */
+    #mainSidebar .p-8 {
+        padding: 1.5rem !important;
+    }
+    
+    /* Shrink the top padding on page views so content isn't pushed too far down */
+    .page-view {
+        padding-top: 6rem !important; 
+    }
+    
+    /* Scale down main headers slightly to save vertical space */
+    .page-view h2 {
+        font-size: 3.5rem !important;
+    }
+}
+
+/* Ensure invisible scrolling is smooth on PC trackpads */
+.hide-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
