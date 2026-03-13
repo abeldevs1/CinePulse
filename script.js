@@ -40,7 +40,19 @@ function hideLoader() {
         }, 250);
     }
 }
-
+// Smart Mobile Scroll Observer
+const navEl = document.getElementById('sidebarNav');
+if (navEl) {
+    navEl.addEventListener('scroll', () => {
+        // Check if user reached the right side (within 10px)
+        const isAtEnd = navEl.scrollLeft + navEl.clientWidth >= navEl.scrollWidth - 10;
+        if (isAtEnd) {
+            navEl.parentElement.classList.add('nav-at-end');
+        } else {
+            navEl.parentElement.classList.remove('nav-at-end');
+        }
+    }, { passive: true });
+}
 // Intercept fetchAPI to trigger the loader automatically
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
@@ -266,11 +278,10 @@ function setupSearchBehavior() {
     const drop = document.getElementById('searchDrop');
     const clearBtn = document.getElementById('clearSearch');
     
-    let searchTimeout; // Neural debounce timer
-    let hoverTimeout;  // Mouse leave delay
-    let idleTimeout;   // Inactivity auto-clear timer
+    let searchTimeout; 
+    let hoverTimeout;  
+    let idleTimeout;   
 
-    // --- Idle Auto-Clear Engine ---
     const resetIdleTimer = () => {
         clearTimeout(idleTimeout);
         if (input.value.trim()) {
@@ -279,23 +290,27 @@ function setupSearchBehavior() {
                 clearBtn.classList.add('hidden');
                 drop.classList.add('hidden');
                 bar.classList.remove('active');
+                document.body.classList.remove('search-active-mobile');
                 input.blur();
-            }, 15000); // Clears if away for 15 seconds
+            }, 15000); 
         }
     };
 
     input.onfocus = () => {
         bar.classList.add('active');
+        document.body.classList.add('search-active-mobile'); // Hides notifs on mobile
+        
         if (state.view !== 'search' && input.value.trim()) drop.classList.remove('hidden');
+        else drop.classList.add('hidden'); 
         resetIdleTimer();
     };
 
-    // --- Hover In & Out Logic ---
     bar.addEventListener('mouseleave', () => {
         hoverTimeout = setTimeout(() => {
             drop.classList.add('hidden');
             bar.classList.remove('active');
-        }, 400); // 400ms grace period to move mouse to dropdown
+            if (!input.matches(':focus')) document.body.classList.remove('search-active-mobile');
+        }, 400); 
     });
 
     bar.addEventListener('mouseenter', () => {
@@ -303,11 +318,11 @@ function setupSearchBehavior() {
         if (input.value.trim() && state.view !== 'search') {
             drop.classList.remove('hidden');
             bar.classList.add('active');
+            document.body.classList.add('search-active-mobile');
         }
         resetIdleTimer();
     });
 
-    // --- Handle Enter Key (Search & Clear) ---
     input.onkeydown = (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -315,11 +330,11 @@ function setupSearchBehavior() {
             if (q) {
                 drop.classList.add('hidden');
                 bar.classList.remove('active');
+                document.body.classList.remove('search-active-mobile');
                 input.blur(); 
                 navigate('search');
                 deepSearch(q);
                 
-                // Instantly auto-clear the input after execution
                 input.value = '';
                 clearBtn.classList.add('hidden');
                 clearTimeout(idleTimeout);
@@ -332,6 +347,7 @@ function setupSearchBehavior() {
         input.value = '';
         clearBtn.classList.add('hidden');
         drop.classList.add('hidden');
+        document.body.classList.remove('search-active-mobile');
         
         if (state.view === 'search') {
             document.getElementById('searchHeader').innerText = "Discover";
@@ -349,27 +365,25 @@ function setupSearchBehavior() {
         resetIdleTimer();
 
         if (state.view === 'search') {
-            drop.classList.add('hidden');
-            searchTimeout = setTimeout(() => {
-                deepSearch(q); 
-            }, 500); 
+            drop.classList.add('hidden'); 
+            searchTimeout = setTimeout(() => { deepSearch(q); }, 500); 
         } else {
             if(!q) { drop.classList.add('hidden'); return; }
             searchTimeout = setTimeout(async () => {
                 const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=${!prefs.safeMode}`);
-                renderDrop(data.results.slice(0, 8), q); 
+                if (state.view !== 'search') renderDrop(data.results.slice(0, 8), q); 
             }, 300);
         }
     };
 
-    
-    // Close dropdown when clicking strictly outside
     document.addEventListener('click', (e) => {
         if (!bar.contains(e.target) && e.target.id !== 'clearSearch') {
             drop.classList.add('hidden');
             bar.classList.remove('active');
+            document.body.classList.remove('search-active-mobile');
         }
     });
+
   //modal 
 const modalSearch = document.getElementById('modalSearch');
 if (modalSearch) {
@@ -456,19 +470,29 @@ function renderModalDrop(res, query) {
     let html = res.map(i => {
         const isPerson = i.media_type === 'person';
         const img = isPerson ? i.profile_path : i.poster_path;
-        // Direct routing from within the modal
+        const type = i.media_type || 'movie'; // Defaulting for the quickAdd call
+        
+        // Routing logic
         const call = isPerson 
             ? `closeModal(); openActor(${i.id}, '${i.name.replace(/'/g, "\\'")}')` 
-            : `openModal(${i.id}, '${i.media_type}')`; 
+            : `openModal(${i.id}, '${type}')`; 
         
         return `
             <div onmousedown="${call}" 
-                 class="flex items-center gap-4 p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all">
+                 class="flex items-center gap-4 p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all group relative">
+                
+                ${!isPerson ? `
+                    <button onmousedown="event.stopPropagation(); quickAdd(${i.id}, '${type}')" 
+                            class="w-8 h-8 flex items-center justify-center bg-dark/80 backdrop-blur-md border border-white/10 rounded-lg text-pulse hover:bg-pulse hover:text-white transition-all z-50">
+                        <i class="fas fa-plus text-[10px]"></i>
+                    </button>
+                ` : '<div class="w-8"></div>'}
+
                 <img src="${img ? IMG+img : 'https://via.placeholder.com/50'}" class="w-8 h-12 rounded-lg object-cover shadow-lg">
-                <div>
+                <div class="flex-1 min-w-0">
                     <div class="text-[9px] font-black uppercase text-white line-clamp-1">${i.title || i.name}</div>
                     <div class="text-[7px] text-gray-400 font-bold uppercase mt-1">
-                        ${isPerson ? 'Artist' : (i.media_type + ' • ' + (i.release_date || i.first_air_date || '').split('-')[0])}
+                        ${isPerson ? 'Artist' : (type + ' • ' + (i.release_date || i.first_air_date || '').split('-')[0])}
                     </div>
                 </div>
             </div>
@@ -477,14 +501,13 @@ function renderModalDrop(res, query) {
 
     html += `
         <div onmousedown="closeModal(); deepSearch('${query.replace(/'/g, "\\'")}')" 
-             class="p-3 text-center bg-pulse/20 hover:bg-pulse text-pulse hover:text-white cursor-pointer transition-all flex items-center justify-center gap-2 group">
+             class="p-3 text-center bg-pulse/20 hover:bg-pulse text-pulse hover:text-white cursor-pointer transition-all flex items-center justify-center gap-2">
             <span class="text-[9px] font-black uppercase tracking-widest">See all results</span>
         </div>
     `;
     
     drop.innerHTML = html;
 }
-
 
 
 function resetSearchMode() {
@@ -569,44 +592,84 @@ function closePersonModal() {
     document.body.style.overflow = 'auto';
 }
     
-// Add 'query' as the second parameter
-function renderDrop(res, query) { 
+function renderDrop(items, query) {
     const drop = document.getElementById('searchDrop');
-    if(!res.length) { drop.classList.add('hidden'); return; }
-    drop.classList.remove('hidden');
-    
-    let html = res.slice(0, 5).map(i => {
-        const isPerson = i.media_type === 'person';
-        const img = isPerson ? i.profile_path : i.poster_path;
-        const call = isPerson ? `openActor(${i.id}, '${i.name.replace(/'/g, "\\'")}')` : `openModal(${i.id}, '${i.media_type}')`;
-        
-        return `
-            <div onmousedown="${call}" 
-                 class="flex items-center gap-4 p-4 hover:bg-white/5 cursor-pointer border-b border-white/5 transition-all active:bg-pulse/20">
-                <img src="${img ? IMG+img : 'https://via.placeholder.com/50'}" class="w-10 h-14 rounded-xl object-cover shadow-lg">
-                <div>
-                    <div class="text-[10px] font-black uppercase text-white">${i.title || i.name}</div>
-                    <div class="text-[8px] text-gray-500 font-bold uppercase mt-1">
-                        ${isPerson ? 'Artist' : (i.media_type + ' • ' + (i.release_date || i.first_air_date || '').split('-')[0])}
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
+    if (!items || items.length === 0) {
+        drop.innerHTML = `<div class="p-4 text-[10px] font-bold text-gray-500 uppercase italic">No signals found for "${query}"</div>`;
+    } else {
+        drop.innerHTML = items.map(i => {
+            const title = i.title || i.name;
+            const year = (i.release_date || i.first_air_date || '').split('-')[0];
+            const type = determineCategory(i);
+            const tmdbType = i.media_type || (i.title ? 'movie' : 'tv');
+            const label = formatTypeLabel(type, tmdbType);
 
-    // Append the Show More button at the bottom
-    html += `
-        <div onmousedown="navigate('search'); deepSearch('${query.replace(/'/g, "\\'")}')" 
-             class="p-4 text-center bg-pulse/10 hover:bg-pulse text-pulse hover:text-white cursor-pointer transition-all border-t border-white/5 flex items-center justify-center gap-2 group">
-            <span class="text-[10px] font-black uppercase tracking-widest">Show all results for "${query}"</span>
-            <i class="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
-        </div>
-    `;
-    
-    drop.innerHTML = html;
+            return `
+                <div class="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 group relative" 
+                     onclick="openModal(${i.id}, '${tmdbType}')">
+                    <img src="${i.poster_path ? IMG + i.poster_path : 'https://via.placeholder.com/45x68?text=?'}" 
+                         class="w-10 h-14 object-cover rounded shadow-md">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-[11px] font-black uppercase truncate group-hover:text-pulse transition-colors">${title}</div>
+                        <div class="text-[8px] font-bold text-gray-500 uppercase mt-1 tracking-widest">
+                            ${label} • ${year || 'TBA'}
+                        </div>
+                    </div>
+                    <button onclick="event.stopPropagation(); quickAdd(${i.id}, '${tmdbType}')" 
+                            class="p-2 px-3 bg-pulse/10 hover:bg-pulse text-pulse hover:text-white rounded-lg transition-all border border-pulse/20">
+                        <i class="fas fa-plus text-[10px]"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+    drop.classList.remove('hidden');
 }
 
+// Logic for the Quick Add Button
+async function quickAdd(id, type) {
+    // Check if it already exists in the database
+    if (state.db.find(x => x.id === id)) {
+        showNotification("Item is already in your archive.", true);
+        return;
+    }
 
+    try {
+        const details = await fetchAPI(`/${type}/${id}`);
+        const category = determineCategory(details);
+        
+       // 3. Create the item with explicit status 'Plan to Watch'
+        const newItem = {
+            id: details.id,
+            title: details.title || details.name,
+            poster: details.poster_path,
+            type: determineCategory(details),
+            status: 'Plan to Watch', // ACCURATE MAPPING
+            ep: 0,
+            max_ep: details.number_of_episodes || 1,
+            score: 0,
+            crown: 0,
+            imdb: details.vote_average,
+            year: (details.release_date || details.first_air_date || '').split('-')[0],
+            genres: (details.genres || []).map(g => g.id),
+            added: Date.now()
+        };
+
+        state.db.push(newItem);
+        save(); // Persists to LocalStorage
+        updateCounters(); // Updates sidebar numbers
+        
+        // If we are in 'mylist' or 'lab', refresh the view to show the new item
+        if (state.view === 'mylist' || state.view === 'lab') {
+            renderList();
+            if (state.view === 'lab') runLab();
+        }
+
+        showNotification(`"${newItem.title}" added to Plan to Watch`);
+    } catch (err) {
+        showNotification("Signal lost. Could not add item.", true);
+    }
+}
 
 // Updated deepSearch to handle "all results" and spelling 
 async function deepSearch(q) {
@@ -766,19 +829,38 @@ async function applySearchFilters(append = false) {
         }
 
         // Modal Logic
-      async function openModal(id, type, isBack = false) {
-        let modalCountdownInterval;
-    // History Tracking
+async function openModal(id, type, isBack = false) {
+    let modalCountdownInterval;
     if (!isBack && state.active) {
         state.modalHistory.push({ id: state.active.id, type: state.active.media_type });
     }
     document.getElementById('mBackBtn').classList.toggle('hidden', state.modalHistory.length === 0);
 
-    const [details, credits, vids] = await Promise.all([
-        fetchAPI(`/${type}/${id}`),
-        fetchAPI(`/${type}/${id}/credits`),
-        fetchAPI(`/${type}/${id}/videos`)
-    ]);
+    let details, credits, vids;
+    
+    // Smart API Retry System (Prevents Asian Movies failing when assumed as TV)
+    try {
+        [details, credits, vids] = await Promise.all([
+            fetchAPI(`/${type}/${id}`),
+            fetchAPI(`/${type}/${id}/credits`),
+            fetchAPI(`/${type}/${id}/videos`)
+        ]);
+    } catch (error) {
+        console.warn(`Neural fetch failed as ${type}, attempting sub-type extraction...`);
+        const retryType = type === 'movie' ? 'tv' : 'movie';
+        try {
+            [details, credits, vids] = await Promise.all([
+                fetchAPI(`/${retryType}/${id}`),
+                fetchAPI(`/${retryType}/${id}/credits`),
+                fetchAPI(`/${retryType}/${id}/videos`)
+            ]);
+            type = retryType; // Successfully corrected the type
+        } catch (fatalError) {
+            console.error("Neural Fetch failed entirely.", fatalError);
+            showNotification("Data Archive Corrupted. Failed to fetch entity.", true);
+            return;
+        }
+    }
 
     state.active = { ...details, media_type: type };
     const local = state.db.find(i => i.id === id);
@@ -1032,11 +1114,20 @@ function updateStatus() {
         existing.status = status;
     } else {
         let cat = determineCategory(item);
+        
+        // Extract exact TMDB type and Origin Country
+        let tmdb_type = item.media_type || (item.title ? 'movie' : 'tv');
+        let country = (item.origin_country && item.origin_country.length > 0) 
+            ? item.origin_country[0] 
+            : ((item.production_countries && item.production_countries.length > 0) ? item.production_countries[0].iso_3166_1 : '');
+
         existing = {
             id: item.id,
             title: item.title || item.name,
             poster: item.poster_path,
             type: cat,
+            tmdb_type: tmdb_type,
+            country: country,
             status: status,
             ep: 0,
             max_ep: item.number_of_episodes || 1,
@@ -1050,14 +1141,14 @@ function updateStatus() {
         state.db.push(existing);
     }
     
-    save(); // Persists to localStorage
-    updateRatingCard(existing); // Instantly shows the rating/crown card if "Finished"
+    save(); 
+    updateRatingCard(existing); 
     
-    // NEW: Dynamically reveal the Episode Tracker and Remove Button instantly
     document.getElementById('mRemoveBtn').classList.remove('hidden');
     
-   const total = item.number_of_episodes || 1;
-    if (existing.type !== 'movie' && total > 1) {
+    const total = item.number_of_episodes || 1;
+    // Utilize tmdb_type to accurately show the episode tracker
+    if (existing.tmdb_type !== 'movie' && total > 1) {
         document.getElementById('mProgressBox').classList.remove('hidden');
         document.getElementById('mEpRange').max = total;
         document.getElementById('mEpRange').value = existing.ep || 0;
@@ -1067,7 +1158,7 @@ function updateStatus() {
     }
 }
         // List Rendering with Hierarchy
-        function toggleListView() {
+function toggleListView() {
             state.isGrid = !state.isGrid;
             document.getElementById('viewToggle').innerHTML = state.isGrid ? '<i class="fas fa-list"></i>' : '<i class="fas fa-th-large"></i>';
             renderList();
@@ -1102,10 +1193,14 @@ function renderList() {
         <div class="lib-section-title">
             ${status} <span class="text-white bg-pulse px-4 py-1.5 rounded-full text-[11px] shadow-lg shadow-pulse/40 ml-2">${items.length}</span>
         </div>
-        <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-4'}">
-            ${displayItems.map(i => state.isGrid ? `
+       <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-4'}">
+            ${displayItems.map(i => {
+                const actualType = i.tmdb_type || (i.type === 'movie' ? 'movie' : 'tv');
+                const displayLabel = formatTypeLabel(i.type, actualType);
+                const countryStr = i.country ? ` • ${i.country}` : '';
                 
-                <div class="lib-card-wrapper relative group cursor-pointer selectable-card ${isSelectMode ? 'select-mode-pulse' : ''}" data-id="${i.id}" onclick="handleCardClick(event, ${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+                return state.isGrid ? `
+              <div class="lib-card-wrapper relative group cursor-pointer selectable-card ${isSelectMode ? 'select-mode-pulse' : ''} ${selectedItems.has(i.id) ? 'card-selected' : ''}" data-id="${i.id}" onclick="handleCardClick(event, ${i.id}, '${actualType}')">
                     
                     <div class="card-checkbox ${selectedItems.has(i.id) ? 'selected' : ''} ${!isSelectMode ? 'hidden' : ''}">
                         <i class="fas fa-check"></i>
@@ -1119,12 +1214,12 @@ function renderList() {
                         ${getLiquidHTML(i)}
                     </div>
                     <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
-                    <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">${i.type} • ★ ${parseFloat(i.imdb).toFixed(1)}</div>
+                    <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">${displayLabel}${countryStr} • ★ ${parseFloat(i.imdb).toFixed(1)}</div>
                 </div>
 
             ` : `
 
-                <div class="lib-card-wrapper lib-card-row relative cursor-pointer group ${isSelectMode ? 'select-mode-pulse' : ''}" data-id="${i.id}" onclick="handleCardClick(event, ${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+               <div class="lib-card-wrapper lib-card-row relative cursor-pointer group selectable-card ${isSelectMode ? 'select-mode-pulse' : ''} ${selectedItems.has(i.id) ? 'card-selected' : ''}" data-id="${i.id}" onclick="handleCardClick(event, ${i.id}, '${actualType}')">
                     
                     <div class="card-checkbox ${selectedItems.has(i.id) ? 'selected' : ''} ${!isSelectMode ? 'hidden' : ''}">
                         <i class="fas fa-check"></i>
@@ -1138,7 +1233,8 @@ function renderList() {
                     <div class="flex-1 ml-4 md:ml-6">
                         <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${i.title}</div>
                         <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
-                            <span class="bg-white/5 px-2 py-1 rounded-md">${i.type}</span> 
+                            <span class="bg-white/5 px-2 py-1 rounded-md">${displayLabel}</span> 
+                            ${i.country ? `<span class="text-pulse border border-pulse/30 px-2 py-1 rounded-md bg-pulse/10">${i.country}</span>` : ''}
                             <span>${i.year}</span>
                         </div>
                     </div>
@@ -1148,7 +1244,7 @@ function renderList() {
                     </div>
                 </div>
 
-            `).join('')}
+            `}).join('')}
         </div>
         ${items.length > limit ? `
         <div class="mt-10 flex justify-center">
@@ -1309,23 +1405,22 @@ function runLab() {
     labGrid.className = state.labIsGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' : 'flex flex-col gap-4';
 
     // 4. Render the HTML
-    labGrid.innerHTML = filtered.map(item => {
-        // Determine the type string for the click handler
-        const mediaType = item.type === 'movie' ? 'movie' : 'tv';
+        labGrid.innerHTML = filtered.map(item => {
+        const actualType = item.tmdb_type || (item.type === 'movie' ? 'movie' : 'tv');
+        const displayLabel = formatTypeLabel(item.type, actualType);
+        const countryStr = item.country ? ` • ${item.country}` : '';
         
-        // Logic for "Select Mode" styling
         const isSelected = typeof selectedItems !== 'undefined' && selectedItems.has(item.id);
         const activeSelectClass = isSelectMode ? 'select-mode-pulse' : '';
         const checkboxHiddenClass = !isSelectMode ? 'hidden' : '';
         const checkboxSelectedClass = isSelected ? 'selected' : '';
 
-        // GRID VIEW
         if (state.labIsGrid) {
             return `
-            <div class="group cursor-pointer relative selectable-card ${activeSelectClass}" 
+           <div class="group cursor-pointer relative selectable-card ${activeSelectClass} ${isSelected ? 'card-selected' : ''}" 
                  data-id="${item.id}" 
                  data-type="${item.type}" 
-                 onclick="handleCardClick(event, ${item.id}, '${mediaType}')">
+                 onclick="handleCardClick(event, ${item.id}, '${actualType}')">
                 
                 <div class="card-checkbox ${checkboxSelectedClass} ${checkboxHiddenClass}">
                     <i class="fas fa-check"></i>
@@ -1336,11 +1431,11 @@ function runLab() {
                     <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10"></div>
                     
                     <div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase text-${item.type} border border-white/10 z-30">
-                        ${item.type}
+                        ${displayLabel}
                     </div>
                     
-                    <div class="absolute bottom-3 left-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase text-white border border-white/10 z-30">
-                        ${item.status}
+                    <div class="absolute bottom-3 left-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[8px] font-black uppercase text-white border border-white/10 z-30 flex gap-2">
+                        ${item.country ? `<span class="text-gray-400">${item.country}</span>` : ''} <span>${item.status}</span>
                     </div>
 
                     ${getPlayHoverHTML(item)}
@@ -1348,15 +1443,12 @@ function runLab() {
                 </div>
                 <div class="text-[9px] font-black uppercase line-clamp-1">${item.title}</div>
             </div>`;
-        } 
-        
-        // LIST VIEW
-        else {
+        } else {
             return `
-            <div class="lib-card-row cursor-pointer group selectable-card ${activeSelectClass}" 
+            <div class="lib-card-row cursor-pointer group selectable-card ${activeSelectClass} ${isSelected ? 'card-selected' : ''}" 
                  data-id="${item.id}" 
                  data-type="${item.type}" 
-                 onclick="handleCardClick(event, ${item.id}, '${mediaType}')">
+                 onclick="handleCardClick(event, ${item.id}, '${actualType}')">
                 
                 <div class="card-checkbox ${checkboxSelectedClass} ${checkboxHiddenClass}">
                     <i class="fas fa-check"></i>
@@ -1369,7 +1461,8 @@ function runLab() {
                 <div class="flex-1 ml-4 md:ml-6">
                     <div class="text-[14px] md:text-[16px] font-black uppercase italic group-hover:text-pulse transition-colors">${item.title}</div>
                     <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-3">
-                        <span class="bg-white/5 px-2 py-1 rounded-md">${item.type}</span> 
+                        <span class="bg-white/5 px-2 py-1 rounded-md">${displayLabel}</span> 
+                        ${item.country ? `<span class="text-pulse border border-pulse/30 px-2 py-1 rounded-md bg-pulse/10">${item.country}</span>` : ''}
                         <span>${item.year}</span>
                     </div>
                 </div>
@@ -1671,27 +1764,50 @@ function runLab() {
     `).join('');
 }
 
-   function renderGrid(id, items, forced, clear = true) {
+function renderGrid(id, items, forced, clear = true) {
     const container = document.getElementById(id);
     const html = items.map(i => {
         const type = forced || i.media_type || (i.title ? 'movie' : 'tv');
+        const actualType = i.media_type || (i.title ? 'movie' : 'tv');
+        const category = determineCategory(i);
+        const displayLabel = formatTypeLabel(category, actualType);
+        const isPerson = i.media_type === 'person';
+
         return `
-        <div class="group cursor-pointer relative" onclick="${i.media_type === 'person' ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${type}')`}">
+        <div class="group cursor-pointer relative" onclick="${isPerson ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${type}')`}">
+            
+            ${!isPerson ? `
+                <button onclick="event.stopPropagation(); quickAdd(${i.id}, '${type}')" 
+                        class="absolute top-10 left-3 w-11 h-11 bg-dark/90 backdrop-blur-xl border border-white/20 rounded-2xl text-pulse flex items-center justify-center z-40 opacity-0 group-hover:opacity-100 transition-all hover:bg-pulse hover:text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] active:scale-90">
+                    <i class="fas fa-plus text-sm"></i>
+                </button>
+            ` : ''}
+
+            <div class="text-[8px] font-black uppercase text-pulse mb-1">${displayLabel}</div>
+            
             <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
-                <img src="${i.poster_path || i.profile_path ? IMG + (i.poster_path || i.profile_path) : 'https://via.placeholder.com/300'}" class="w-full h-full object-cover bg-dark">
-                ${i.vote_average ? `<div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-pulse border border-white/10 z-30">★ ${i.vote_average.toFixed(1)}</div>` : ''}
+                <img src="${i.poster_path || i.profile_path ? IMG + (i.poster_path || i.profile_path) : 'https://via.placeholder.com/300'}" 
+                     class="w-full h-full object-cover bg-dark">
                 
-                ${i.media_type !== 'person' ? getPlayHoverHTML({...i, type: type}) : ''}
+                ${i.vote_average ? `
+                    <div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-pulse border border-white/10 z-30">
+                        ★ ${i.vote_average.toFixed(1)}
+                    </div>
+                ` : ''}
+                
+                ${!isPerson ? getPlayHoverHTML({...i, type: type}) : ''}
             </div>
+            
             <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
-            <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">${(i.release_date || i.first_air_date || '').split('-')[0] || 'N/A'}</div>
+            <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase">
+                ${(i.release_date || i.first_air_date || '').split('-')[0] || 'N/A'}
+            </div>
         </div>
     `}).join('');
     
     if (clear) container.innerHTML = html;
     else container.insertAdjacentHTML('beforeend', html);
 }
-
         function setupFilters() {
                 const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')];
                 const years = Array.from({length: 50}, (_, i) => 2026 - i);
@@ -2189,7 +2305,8 @@ function handleCardClick(event, id, type) {
         }
         
         updateSelectCount();
-        if (state.view === 'mylist') renderList(); // Re-render instantly updates visual checkmarks
+        if (state.view === 'mylist') renderList(); // Re-render My List
+        if (state.view === 'rhythmlab') runLab();  // Re-render Rhythm Lab
         return;
     }
     
@@ -2212,13 +2329,15 @@ function selectAllItems() {
     if (state.view === 'sagamatrix') renderMySagas();
 }
 // Custom click handler for Saga Matrix cards
+// Custom click handler for Saga Matrix cards
 function handleSagaCardClick(event, id) {
     if (isSelectMode) {
         event.preventDefault();
         event.stopPropagation();
         
-        if (selectedItems.has(id)) selectedItems.delete(id);
-        else selectedItems.add(id);
+        const stringId = String(id);
+        if (selectedItems.has(stringId)) selectedItems.delete(stringId);
+        else selectedItems.add(stringId);
         
         updateSelectCount();
         renderMySagas(); 
@@ -2253,6 +2372,48 @@ function deleteSelectedItems() {
     save();
     toggleSelectMode(); 
     showNotification(`${selectedItems.size} Entries Purged Successfully.`);
+}
+// --- EXPORT SELECTED ITEMS ENGINE ---
+function exportSelectedItems() {
+    if (selectedItems.size === 0) {
+        return showNotification("No items selected to export.", true);
+    }
+
+    showNotification("Packaging Selected Neural Data...");
+
+    let exportDb = [];
+    let exportSagas = [];
+
+    if (state.view === 'sagamatrix') {
+        // If in Saga Matrix, export the selected custom sagas
+        exportSagas = customSagas.filter(s => selectedItems.has(String(s.id)));
+        
+        // And automatically bundle all the library items that belong to those sagas!
+        exportDb = state.db.filter(item => selectedItems.has(String(item.sagaId)));
+    } else {
+        // If in standard Library/Lab view, just export the specific selected items
+        exportDb = state.db.filter(i => selectedItems.has(i.id));
+    }
+
+    // Create a specialized partial package
+    const backupPackage = {
+        version: "3.1-partial", // Tagged as partial so the import engine knows it's a curated list
+        db: exportDb,
+        customSagas: exportSagas
+    };
+
+    setTimeout(() => {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupPackage));
+        const node = document.createElement('a');
+        node.setAttribute("href", dataStr);
+        node.setAttribute("download", `cinepulse_selection_${Date.now()}.json`);
+        document.body.appendChild(node);
+        node.click();
+        node.remove();
+        
+        showNotification(`Exported ${selectedItems.size} selected entries successfully!`);
+        toggleSelectMode(); // Exit select mode cleanly after export
+    }, 500);
 }
 // --- MOBILE LONG-PRESS SELECTION ENGINE ---
 function setupLongPressSelection() {
@@ -3114,12 +3275,9 @@ function applyDiscoverLocalFilters() {
 
     // 2. Apply Filters
     let filtered = sourceData.filter(i => {
-        let type = i.media_type || (i.title ? 'movie' : 'tv');
-        if (type === 'tv') {
-            if (i.original_language === 'ko') type = 'kdrama';
-            else if (i.original_language === 'tr') type = 'turkish';
-            else if (i.original_language === 'ja' && i.genre_ids && i.genre_ids.includes(16)) type = 'anime';
-        }
+       
+
+      let type = determineCategory(i);
 
         let tMatch = state.discoverFilters.type === 'all' || type === state.discoverFilters.type;
         let gMatch = state.discoverFilters.genres.length === 0 || state.discoverFilters.genres.every(g => {
@@ -3260,6 +3418,7 @@ function saveNotifs() {
     localStorage.setItem('cp_elite_notifs_archived', JSON.stringify(archivedNotifs));
 }
 // --- SMART CATEGORY PARSER ---
+
 function determineCategory(item) {
     if (item.forceType) return item.forceType; 
     
@@ -3282,6 +3441,16 @@ function determineCategory(item) {
     if (isAsianCountry || isAsianLang || isJpLiveAction) return 'asian';
 
     return item.title ? 'movie' : 'tv';
+}
+// --- SMART TYPE FORMATTER ---
+function formatTypeLabel(baseType, tmdbType) {
+    if (baseType === 'movie') return 'MOVIE';
+    if (baseType === 'tv') return tmdbType === 'movie' ? 'TV MOVIE' : 'SERIES';
+    if (baseType === 'anime') return tmdbType === 'movie' ? 'ANIME MOVIE' : 'ANIME';
+    if (baseType === 'kdrama') return tmdbType === 'movie' ? 'K-DRAMA MOVIE' : 'K-DRAMA';
+    if (baseType === 'asian') return tmdbType === 'movie' ? 'ASIAN MOVIE' : 'ASIAN DRAMA';
+    if (baseType === 'turkish') return tmdbType === 'movie' ? 'TURKISH MOVIE' : 'TURKISH SERIES';
+    return baseType ? baseType.toUpperCase() : 'UNKNOWN';
 }
 
 
@@ -3808,25 +3977,7 @@ const EXTENDED_SAGAS = [
 let currentSagaTab = 'discover';
 let sagaSearchTimeout;
 
-function setSagaTab(tab) {
-    currentSagaTab = tab;
-    document.getElementById('sagaTab-discover').className = tab === 'discover' ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
-    document.getElementById('sagaTab-mylist').className = tab === 'mylist' ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
-    const originalSetSagaTab = setSagaTab;
-        setSagaTab = function(tab) {
-            originalSetSagaTab(tab);
-            const selectBtn = document.getElementById('sagaSelectBtn');
-            if (selectBtn) {
-                if (tab === 'mylist') selectBtn.classList.remove('hidden');
-                else selectBtn.classList.add('hidden');
-            }
-            // Turn off select mode if leaving the tab
-            if (isSelectMode && tab !== 'mylist') toggleSelectMode();
-        };
-    if (tab === 'discover') renderSagaMatrix();
-    else renderMySagas();
-    updateSelectButtonVisibility(tab);
-}
+
 
 // Dynamic Debounced Search
 function handleSagaSearch(query) {
@@ -3995,6 +4146,7 @@ function renderMySagas() {
             status: progress === 100 ? 'Completed' : (progress > 0 ? 'In Progress' : 'Custom Realm'),
             finished: watchedCount, total: total, isCustom: true
         };
+        
     });
 
     const combinedSagas = [...formattedSagas, ...customFormatted];
@@ -4573,25 +4725,39 @@ function renderInlineResults(results, label) {
 }
 
 
-// Override setSagaTab to handle the Forge View
+// Unified Saga Tab Handler
 function setSagaTab(tab) {
     currentSagaTab = tab;
     const tabs = ['discover', 'mylist', 'forge'];
+    
+    // 1. Update Tab Button Styles
     tabs.forEach(t => {
         const btn = document.getElementById(`sagaTab-${t}`);
         if(btn) {
             btn.className = t === tab 
                 ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" 
-                : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
+                : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap border-l border-white/10 ml-2 pl-6";
         }
     });
     
+    // 2. Toggle View Containers
     document.getElementById('sagaGrid').classList.toggle('hidden', tab === 'forge');
-    document.getElementById('sagaSearchInput').parentElement.classList.toggle('hidden', tab === 'forge');
+    document.getElementById('sagaActionBar').classList.toggle('hidden', tab === 'forge');
     document.getElementById('sagaForgeContainer').classList.toggle('hidden', tab !== 'forge');
 
+    // 3. Toggle Select Button Visibility
+    const selectBtn = document.getElementById('sagaSelectBtn');
+    if (selectBtn) {
+        if (tab === 'mylist') selectBtn.classList.remove('hidden');
+        else selectBtn.classList.add('hidden');
+    }
+
+    // Turn off select mode if leaving the My Sagas tab
+    if (isSelectMode && tab !== 'mylist') toggleSelectMode();
+
+    // 4. Render Appropriate View
     if (tab === 'discover') renderSagaMatrix();
-    else if (tab === 'mylist') renderMySagas(); // Now includes Custom Sagas!
+    else if (tab === 'mylist') renderMySagas();
     else initForge();
 }
 
@@ -5041,8 +5207,8 @@ function updateSelectButtonVisibility(tabName) {
     const selectBtn = document.getElementById('sagaSelectBtn');
     const separator = document.getElementById('sagaSelectSeparator');
 
-    if (tabName === 'mylist') {
-        // Remove 'hidden' and ensure it uses flex alignment
+    // Allow the select button in both My List and Saga Matrix
+    if (tabName === 'mylist' || tabName === 'sagamatrix') {
         selectBtn.classList.remove('hidden');
         separator.classList.remove('hidden');
     } else {

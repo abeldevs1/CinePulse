@@ -54,15 +54,13 @@
  <aside id="mainSidebar" class="fixed left-0 top-0 h-full w-20 hover:w-64 bg-[#0a0c12]/95 backdrop-blur-2xl border-r border-white/5 z-[100] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group peer overflow-hidden">
         
         <div class="p-8 flex items-center">
-            <span class="text-pulse text-3xl font-black italic tracking-tighter shrink-0">C</span>
-            <span class="text-white text-3xl font-black italic tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute left-[3.5rem] whitespace-nowrap">PULSE</span>
+                <span class="text-pulse text-3xl font-black italic tracking-tighter shrink-0">C</span>
+                <span class="text-white text-3xl font-black italic tracking-tighter opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute left-[3.5rem] whitespace-nowrap">PULSE</span>
         </div>
         
-        <div class="scroll-indicator-hint lg:hidden">
-            <i class="fas fa-arrows-alt-h"></i> Swipe Nav
-        </div>
-        
-        <nav class="flex-1 space-y-1 mt-4 w-64 overflow-y-auto overflow-x-hidden hide-scroll pb-6">
+      
+        <div class="nav-container relative flex-1 overflow-hidden">
+        <nav id="sidebarNav" class="flex-1 space-y-1 mt-4 w-64 overflow-y-auto overflow-x-hidden hide-scroll pb-6">
             <button onclick="navigate('home')" class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all active">
                 <i class="fas fa-home text-xl w-6 text-center shrink-0"></i> 
                 <span class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Home</span>
@@ -107,7 +105,8 @@
                 </a>
             </div>
         </nav>
-        
+        <div class="nav-edge-mask pointer-events-none lg:hidden"></div>
+        </div>
         <div id="clock" class="p-8 text-[10px] font-black text-gray-600 tracking-[0.3em] opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden lg:block whitespace-nowrap">00:00:00</div>
     </aside>
 
@@ -120,7 +119,7 @@
                 type="text"
                 id="mainSearch"
                 placeholder="Search the Cinematics..."
-                class="glass-search w-full py-3 sm:py-4 pl-10 sm:pl-12 pr-10 text-xs outline-none text-white placeholder:text-gray-500 rounded-full" />
+                class="glass-search w-full py-3 sm:py-4 pl-10 sm:pl-12 pr-10 text-xs outline-none text-white placeholder:text-gray-500 rounded-full autocomplete="off/>
 
             <button
                 id="clearSearch"
@@ -361,20 +360,21 @@
     <button onclick="setSagaTab('forge')" id="sagaTab-forge" class="px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap border-l border-white/10 ml-2 pl-6">
         <i class="fas fa-hammer"></i> Universe Forge
     </button>
-
-    <div id="sagaSelectSeparator" class="hidden w-px h-6 bg-white/10 mx-2"></div>
-
-<button onclick="toggleSelectMode()" id="sagaSelectBtn" class="hidden px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-[#3b82f6] border border-[#3b82f6]/30 bg-[#3b82f6]/10 hover:bg-[#3b82f6]/20 whitespace-nowrap shadow-lg shadow-[#3b82f6]/20">
-    <i class="fas fa-check-square mr-2"></i> Select
-</button>
 </div>
         
     </div>
     
-   <div class="relative max-w-2xl mb-12">
-        <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-white/40"></i>
-        <input type="text" id="sagaSearchInput" oninput="handleSagaSearch(this.value)" placeholder="Search for a Universe or Trilogy..." class="w-full bg-white/5 border border-white/10 p-5 pl-12 rounded-2xl text-[10px] font-black uppercase outline-none tracking-widest text-white placeholder:text-white/30 focus:border-pulse transition-all">
+   <div id="sagaActionBar" class="flex flex-col md:flex-row gap-4 mb-12 w-full max-w-4xl">
+        <div class="relative flex-1">
+            <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-white/40"></i>
+            <input type="text" id="sagaSearchInput" oninput="handleSagaSearch(this.value)" placeholder="Search for a Universe or Trilogy..." class="w-full bg-white/5 border border-white/10 p-5 pl-12 rounded-2xl text-[10px] font-black uppercase outline-none tracking-widest text-white placeholder:text-white/30 focus:border-pulse transition-all">
+        </div>
+        <button onclick="toggleSelectMode()" id="sagaSelectBtn" class="hidden px-8 py-5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-[#3b82f6] border border-[#3b82f6]/30 bg-[#3b82f6]/10 hover:bg-[#3b82f6]/20 whitespace-nowrap shadow-lg shadow-[#3b82f6]/20 flex items-center justify-center gap-2 shrink-0">
+            <i class="fas fa-check-square"></i> Select
+        </button>
     </div>
+
+   
 
     <div id="sagaGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mt-10"></div>
     <div id="sagaForgeContainer" class="hidden animate-in fade-in duration-500 w-full mt-6">
@@ -574,7 +574,7 @@
 <div class="flex flex-col lg:flex-row gap-4 mb-6">
     <div class="local-search-wrapper w-full lg:flex-1">
         <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-white/40"></i>
-        <input type="text" id="labSearchInput" oninput="handleLocalSearch('lab', this.value)" placeholder="Search Neural Records..." 
+        <input type="text" id="labSearchInput" oninput="handleLocalSearch('lab', this.value)" autocomplete="off" placeholder="Search Neural Records... " 
                class="local-search-input w-full h-full p-5 pl-12 rounded-2xl text-[10px] font-black uppercase outline-none tracking-widest placeholder:text-white/30">
     </div>
 
@@ -791,7 +791,7 @@
             
             <i class="fas fa-search absolute left-[15px] top-1/2 -translate-y-1/2 text-white/70 text-[12px] pointer-events-none"></i>
             
-            <input type="text" id="modalSearch" placeholder="SEARCH..." 
+            <input type="text" id="modalSearch"  autocomplete="off" placeholder="SEARCH..." 
                    class="w-full bg-transparent py-3 pl-12 pr-4 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-white/40 outline-none opacity-0 md:opacity-100 transition-opacity duration-300">
             
             <button id="closeModalSearch" class="hidden absolute right-3 text-white/50 hover:text-pulse transition-colors">
@@ -1158,17 +1158,24 @@
     </div>
 </div>
 
-<div id="multiSelectBar" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-[#0a0c12]/95 border border-[#3b82f6]/50 backdrop-blur-xl px-6 md:px-10 py-4 rounded-[30px] shadow-[0_10px_40px_rgba(59,130,246,0.3)] z- flex items-center gap-6 transition-all duration-300 translate-y-32 opacity-0 pointer-events-none">
+<div id="multiSelectBar" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-[#0a0c12]/95 border border-[#3b82f6]/50 backdrop-blur-xl px-6 md:px-10 py-4 rounded-[30px] shadow-[0_10px_40px_rgba(59,130,246,0.3)] z-[400] flex items-center gap-6 transition-all duration-300 translate-y-32 opacity-0 pointer-events-none">
     <div class="text-[10px] md:text-xs font-black uppercase text-[#3b82f6] tracking-widest whitespace-nowrap">
         <span id="selectedCount">0</span> Selected
     </div>
     <div class="w-px h-8 bg-white/10"></div>
+    
     <button onclick="selectAllItems()" class="text-white hover:text-[#3b82f6] transition-colors text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
         <i class="fas fa-check-double"></i> <span class="hidden md:inline">Select All</span>
     </button>
+    
+    <button onclick="exportSelectedItems()" class="text-[#22c55e] hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+        <i class="fas fa-file-export"></i> <span class="hidden md:inline">Export</span>
+    </button>
+
     <button onclick="deleteSelectedItems()" class="text-pulse hover:text-white transition-colors text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
         <i class="fas fa-trash"></i> <span class="hidden md:inline">Delete</span>
     </button>
+    
     <div class="w-px h-8 bg-white/10"></div>
     <button onclick="toggleSelectMode()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors">
         <i class="fas fa-times"></i>
