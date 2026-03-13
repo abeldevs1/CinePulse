@@ -202,6 +202,7 @@ checkReminders(); // Fire reminder check on load
                 loadCountries();
                 updateSafeModeUI();
                 setupLongPressSelection();
+                
             } catch (e) { console.error("Neural init error", e); 
                 
        
@@ -251,6 +252,7 @@ function navigate(view) {
 
     // Run view specific logic
     if(view === 'mylist') renderList();
+    if(view === 'upcoming') loadUpcomingPage(); 
     if(view === 'rhythmlab') runLab();
     if(view === 'sync') renderSync();
     if(view === 'masterpieces') renderMasterpieces();
@@ -627,48 +629,68 @@ function renderDrop(items, query) {
 }
 
 // Logic for the Quick Add Button
-async function quickAdd(id, type) {
-    // Check if it already exists in the database
-    if (state.db.find(x => x.id === id)) {
-        showNotification("Item is already in your archive.", true);
-        return;
+function quickWatch(event, id, cat, title, year) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const availableSources = sourcesDb[cat] || [];
+    const safeTitle = encodeURIComponent(title);
+    const safeYear = year;
+    const tmdbType = (cat === 'tv' || cat === 'anime' || cat === 'kdrama' || cat === 'turkish' || cat === 'asian') ? 'tv' : 'movie';
+
+    // 1. BUILT-IN PLAYER SECTION
+    let html = `
+        <div class="mb-6 border-b border-white/10 pb-6">
+            <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
+                <i class="fas fa-play"></i> Neural Stream (Built-in)
+            </h4>
+            <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${safeTitle}')"
+                    class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
+                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
+            </button>
+        </div>
+        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2">
+            <i class="fas fa-external-link-alt"></i> External Sources
+        </h4>
+    `;
+
+    // 2. EXTERNAL SOURCES SECTION
+    if (availableSources.length === 0) {
+        html += `
+            <div class="text-center py-4 space-y-3 bg-dark/50 rounded-xl border border-white/5">
+                <p class="text-[9px] text-gray-500 uppercase font-bold px-4 leading-relaxed">
+                    No custom external links configured for <span class="text-${cat}">${cat}</span>.
+                </p>
+                <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" 
+                        class="px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] uppercase font-black hover:bg-white/10 transition-all w-full">
+                    Configure Sources
+                </button>
+            </div>
+        `;
+    } else {
+        html += `<div class="space-y-2 max-h-[30vh] overflow-y-auto hide-scroll pr-1">`;
+        html += availableSources.map(src => {
+            const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
+            let domain = 'Link';
+            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
+            
+            return `
+                <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
+                   class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
+                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
+                    <div class="flex-1">
+                        <div class="text-[10px] font-black uppercase text-white group-hover:text-${cat} line-clamp-1">${src.name}</div>
+                        <div class="text-[7px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
+                    </div>
+                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${cat} transition-all text-[10px]"></i>
+                </a>
+            `;
+        }).join('');
+        html += `</div>`;
     }
-
-    try {
-        const details = await fetchAPI(`/${type}/${id}`);
-        const category = determineCategory(details);
-        
-       // 3. Create the item with explicit status 'Plan to Watch'
-        const newItem = {
-            id: details.id,
-            title: details.title || details.name,
-            poster: details.poster_path,
-            type: determineCategory(details),
-            status: 'Plan to Watch', // ACCURATE MAPPING
-            ep: 0,
-            max_ep: details.number_of_episodes || 1,
-            score: 0,
-            crown: 0,
-            imdb: details.vote_average,
-            year: (details.release_date || details.first_air_date || '').split('-')[0],
-            genres: (details.genres || []).map(g => g.id),
-            added: Date.now()
-        };
-
-        state.db.push(newItem);
-        save(); // Persists to LocalStorage
-        updateCounters(); // Updates sidebar numbers
-        
-        // If we are in 'mylist' or 'lab', refresh the view to show the new item
-        if (state.view === 'mylist' || state.view === 'lab') {
-            renderList();
-            if (state.view === 'lab') runLab();
-        }
-
-        showNotification(`"${newItem.title}" added to Plan to Watch`);
-    } catch (err) {
-        showNotification("Signal lost. Could not add item.", true);
-    }
+    
+    document.getElementById('watchSourceList').innerHTML = html;
+    document.getElementById('watchModal').classList.remove('hidden');
 }
 
 // Updated deepSearch to handle "all results" and spelling 
@@ -1316,11 +1338,13 @@ function toggleReminder() {
     }
     localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
     if (state.view === 'radar') renderRadar();
+    if (state.view === 'upcoming') renderUpcomingRadar(); 
 }
 
 function renderRadar() {
     const grid = document.getElementById('radarGrid');
     const empty = document.getElementById('radarEmptyState');
+    
     
     // Automatically prune items that have been added to the main library
     const dbIds = new Set(state.db.map(i => i.id));
@@ -2103,8 +2127,144 @@ function exportData() {
         node.remove();
         showNotification("Export Complete!");
     }, 500);
+}// --- UPCOMING / RADAR LOGIC ---
+let upcomingSearchTimer;
+
+async function loadUpcomingPage() {
+    // 1. Render Tracked Radar immediately
+    renderUpcomingRadar();
+
+    const today = new Date().toISOString().split('T')[0];
+    let future = new Date();
+    future.setMonth(future.getMonth() + 6);
+    const futureDate = future.toISOString().split('T')[0];
+
+    document.getElementById('upcomingRecommendationsGrid').innerHTML = '<div class="page-loader"></div>';
+    document.getElementById('upcomingMainGrid').innerHTML = '<div class="page-loader"></div>';
+
+    try {
+        const anticipatedRes = await fetch(`${BASE}/discover/movie?api_key=${API_KEY}&primary_release_date.gte=${today}&primary_release_date.lte=${futureDate}&sort_by=popularity.desc`);
+        const anticipatedData = await anticipatedRes.json();
+        
+        renderGrid('upcomingRecommendationsGrid', anticipatedData.results.slice(0, 10), 'movie', true);
+
+        const mainRes = await fetch(`${BASE}/movie/upcoming?api_key=${API_KEY}`);
+        const mainData = await mainRes.json();
+        
+        const topIds = anticipatedData.results.slice(0, 10).map(m => m.id);
+        const filteredMain = mainData.results.filter(m => !topIds.includes(m.id));
+        
+        renderGrid('upcomingMainGrid', filteredMain.slice(0, 18), 'movie', true);
+    } catch (err) {
+        console.error("Neural fetch failed for Upcoming page.", err);
+    }
 }
 
+// 2. Render Tracked Radar directly on the Upcoming page
+function renderUpcomingRadar() {
+    const section = document.getElementById('upcomingRadarSection');
+    const grid = document.getElementById('upcomingRadarGrid');
+    
+    // Auto-clean: remove items that are already tracked in the main DB
+    const dbIds = new Set(state.db.map(i => i.id));
+    state.reminders = state.reminders.filter(r => !dbIds.has(r.id));
+    localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
+
+    if (!state.reminders || state.reminders.length === 0) {
+        section.classList.add('hidden');
+        return;
+    }
+
+    section.classList.remove('hidden');
+
+    grid.innerHTML = state.reminders.map(r => {
+        const diff = new Date(r.date).getTime() - new Date().getTime();
+        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+        const isOut = days <= 0;
+        
+        const urgencyColor = isOut ? 'text-[#22c55e]' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
+        const urgencyBorder = isOut ? 'border-[#22c55e]/50' : (days <= 7 ? 'border-[#f59e0b]/50' : 'border-pulse/50');
+        const urgencyShadow = isOut ? 'shadow-[#22c55e]/10' : (days <= 7 ? 'shadow-[#f59e0b]/10' : 'shadow-pulse/10');
+        const dayText = isOut ? 'AVAILABLE NOW' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`);
+
+        return `
+        <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border ${urgencyBorder} hover:border-pulse transition-all cursor-pointer group shadow-xl ${urgencyShadow}" onclick="openModal(${r.id}, '${r.type}')">
+            <div class="w-20 h-28 shrink-0 rounded-2xl overflow-hidden shadow-lg border border-white/5 relative">
+                <img src="${r.poster ? IMG + r.poster : 'https://via.placeholder.com/150'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                ${getPlayHoverHTML({...r, type: r.type})}
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-[8px] font-black uppercase tracking-widest text-white bg-white/10 px-2 py-0.5 rounded border border-white/5">${r.type}</span>
+                    <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">${(r.date || '').split('-')[0] || 'TBA'}</span>
+                </div>
+                <h4 class="text-xs md:text-sm font-black italic uppercase text-white truncate group-hover:text-pulse transition-colors mb-3">${r.title}</h4>
+                <div class="inline-block border border-white/10 bg-black/40 px-3 py-1.5 rounded-lg backdrop-blur-md">
+                    <span class="text-[9px] font-black uppercase tracking-widest ${urgencyColor} flex items-center gap-2">
+                        <i class="fas fa-stopwatch"></i> ${dayText}
+                    </span>
+                </div>
+            </div>
+            <button onclick="event.stopPropagation(); state.active = {id: ${r.id}}; toggleReminder();" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0">
+                <i class="fas fa-trash-alt text-[10px]"></i>
+            </button>
+        </div>
+        `;
+    }).join('');
+}
+
+// 3. Dynamic Search Execution
+// 3. Dynamic Search Execution
+async function handleUpcomingSearch(query) {
+    const clearBtn = document.getElementById('clearUpcomingSearch');
+    const searchSection = document.getElementById('upcomingSearchResultsSection');
+    const defaultContent = document.getElementById('upcomingDefaultContent');
+    const searchGrid = document.getElementById('upcomingSearchGrid');
+
+    if (!query.trim()) {
+        clearBtn.classList.add('hidden');
+        searchSection.classList.add('hidden');
+        defaultContent.classList.remove('hidden');
+        return;
+    }
+
+    clearBtn.classList.remove('hidden');
+    searchSection.classList.remove('hidden');
+    defaultContent.classList.add('hidden');
+    searchGrid.innerHTML = '<div class="col-span-full py-10 page-loader"></div>';
+
+    clearTimeout(upcomingSearchTimer);
+    upcomingSearchTimer = setTimeout(async () => {
+        try {
+            const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(query)}&include_adult=${!prefs.safeMode}`);
+            
+            // Get today's date in YYYY-MM-DD format for strict comparison
+            const todayStr = new Date().toISOString().split('T')[0];
+            
+            // Filter: Must be a movie/tv AND release date must be in the future
+            let results = data.results.filter(i => {
+                if (i.media_type !== 'movie' && i.media_type !== 'tv') return false;
+                const dateStr = i.release_date || i.first_air_date;
+                if (!dateStr) return false; // Remove items with missing dates
+                return dateStr > todayStr;  // Keep ONLY future releases
+            });
+            
+            if (results.length === 0) {
+                searchGrid.innerHTML = '<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest text-[10px] italic">No future releases found for this query.</div>';
+                return;
+            }
+            
+            renderGrid('upcomingSearchGrid', results, false, true);
+        } catch (err) {
+            searchGrid.innerHTML = '<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest text-[10px]">Neural Link Severed</div>';
+        }
+    }, 500);
+}
+
+function clearUpcomingSearch() {
+    document.getElementById('upcomingSearchInput').value = '';
+    handleUpcomingSearch('');
+}
 // ADVANCED I/O MODAL LOGIC
 function openAdvancedIO(mode) {
     const modal = document.getElementById('advancedIOModal');
@@ -2823,121 +2983,143 @@ function quickWatch(event, id, cat, title, year) {
     const availableSources = sourcesDb[cat] || [];
     const safeTitle = encodeURIComponent(title);
     const safeYear = year;
+    const tmdbType = (cat === 'tv' || cat === 'anime' || cat === 'kdrama' || cat === 'turkish' || cat === 'asian') ? 'tv' : 'movie';
 
-    // IF NO SOURCES: Show Explicit "Add Source" Redirect
+    // 1. BUILT-IN PLAYER SECTION
+    let html = `
+        <div class="mb-6 border-b border-white/10 pb-6">
+            <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
+                <i class="fas fa-play"></i> Neural Stream (Built-in)
+            </h4>
+            <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
+                    class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
+                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
+            </button>
+        </div>
+        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2">
+            <i class="fas fa-external-link-alt"></i> External Sources
+        </h4>
+    `;
+
+    // 2. EXTERNAL SOURCES SECTION
     if (availableSources.length === 0) {
-        document.getElementById('watchSourceList').innerHTML = `
-            <div class="text-center py-8 space-y-4">
-                <div class="w-16 h-16 bg-${cat}/10 text-${cat} rounded-full flex items-center justify-center mx-auto mb-4 border border-${cat}/20">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
-                </div>
-                <p class="text-[12px] text-white uppercase font-black tracking-widest">No ${cat} Sources Found</p>
-                <p class="text-[9px] text-gray-500 uppercase font-bold px-6 leading-relaxed">
-                    You haven't added any sources for the <span class="text-${cat}">${cat}</span> category yet.
+        html += `
+            <div class="text-center py-4 space-y-3 bg-dark/50 rounded-xl border border-white/5">
+                <p class="text-[9px] text-gray-500 uppercase font-bold px-4 leading-relaxed">
+                    No custom external links configured for <span class="text-${cat}">${cat}</span>.
                 </p>
                 <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" 
-                        class="mt-4 px-8 py-3 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] uppercase font-black hover:bg-white/10 transition-all w-full">
-                    Configure ${cat} Sources
+                        class="px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] uppercase font-black hover:bg-white/10 transition-all w-full">
+                    Configure Sources
                 </button>
-            </div>`;
-        document.getElementById('watchModal').classList.remove('hidden');
-        return;
-    }
-
-    // IF 1 SOURCE: Launch Explicitly and bypass modal
-    if (availableSources.length === 1) {
-        const url = availableSources[0].url
-            .replace(/{title}/g, safeTitle)
-            .replace(/{tmdb_id}/g, id)
-            .replace(/{year}/g, safeYear);
-        window.open(url, '_blank');
-        return;
-    }
-
-    // IF MULTIPLE SOURCES: Show Selection List
-    document.getElementById('watchSourceList').innerHTML = `
-        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 ml-1">Select ${cat} Source</div>
-        ${availableSources.map(src => {
-            const finalUrl = src.url
-                .replace(/{title}/g, safeTitle)
-                .replace(/{tmdb_id}/g, id)
-                .replace(/{year}/g, safeYear);
-            const domain = new URL(src.url.replace(/{.*?}/g, '')).hostname;
+            </div>
+        `;
+    } else if (availableSources.length === 1) {
+        // Exactly ONE external source -> Show a single, distinct button for it
+        const src = availableSources[0];
+        const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
+        let domain = 'Link';
+        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
+        
+        html += `
+            <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
+               class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
+                <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-md grayscale group-hover:grayscale-0 transition-all">
+                <div class="flex-1">
+                    <div class="text-[10px] font-black uppercase text-white group-hover:text-${cat} line-clamp-1">Launch ${src.name}</div>
+                    <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">Direct External Link</div>
+                </div>
+                <i class="fas fa-external-link-alt text-gray-700 group-hover:text-${cat} transition-all text-[10px]"></i>
+            </a>
+        `;
+    } else {
+        // MULTIPLE sources -> Show the scrolling list picker
+        html += `<div class="space-y-2 max-h-[30vh] overflow-y-auto hide-scroll pr-1">`;
+        html += availableSources.map(src => {
+            const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
+            let domain = 'Link';
+            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
             
             return `
                 <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
-                   class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-${cat} hover:bg-${cat}/10 transition-all group mb-3">
-                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-lg grayscale group-hover:grayscale-0 transition-all">
+                   class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
+                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
                     <div class="flex-1">
-                        <div class="text-[11px] font-black uppercase text-white group-hover:text-${cat}">${src.name}</div>
-                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
+                        <div class="text-[10px] font-black uppercase text-white group-hover:text-${cat} line-clamp-1">${src.name}</div>
+                        <div class="text-[7px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
                     </div>
-                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${cat} transition-all"></i>
+                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${cat} transition-all text-[10px]"></i>
                 </a>
             `;
-        }).join('')}
-    `;
+        }).join('');
+        html += `</div>`;
+    }
     
+    document.getElementById('watchSourceList').innerHTML = html;
     document.getElementById('watchModal').classList.remove('hidden');
 }
 function openWatchMenu() {
     if (!state.active) return;
     
-    // Explicitly determine type
     const type = determineCategory(state.active);
+    const tmdbType = state.active.media_type || (state.active.title ? 'movie' : 'tv');
     const availableSources = sourcesDb[type] || [];
-
-    const title = encodeURIComponent(state.active.title || state.active.name);
+    const title = (state.active.title || state.active.name);
+    const safeTitleUrl = encodeURIComponent(title);
     const tmdbId = state.active.id;
     const year = (state.active.release_date || state.active.first_air_date || '').split('-')[0];
 
-    // IF NO SOURCES: Show Explicit "Add Source" Redirect
+    // 1. BUILT-IN PLAYER SECTION
+    let html = `
+        <div class="mb-6 border-b border-white/10 pb-6">
+            <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
+                <i class="fas fa-play"></i> Built-in Neural Player
+            </h4>
+            <button onclick="launchInternalPlayer(${tmdbId}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
+                    class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
+                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
+            </button>
+        </div>
+    `;
+
+    // 2. EXTERNAL CUSTOM SOURCES SECTION
+    html += `<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2"><i class="fas fa-external-link-alt"></i> External Custom Sources</h4>`;
+
     if (availableSources.length === 0) {
-        document.getElementById('watchSourceList').innerHTML = `
-            <div class="text-center py-8 space-y-4">
-                <div class="w-16 h-16 bg-${type}/10 text-${type} rounded-full flex items-center justify-center mx-auto mb-4 border border-${type}/20">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
-                </div>
-                <p class="text-[12px] text-white uppercase font-black tracking-widest">No ${type} Sources Found</p>
-                <p class="text-[9px] text-gray-500 uppercase font-bold px-6 leading-relaxed">
-                    You haven't added any sources for the <span class="text-${type}">${type}</span> category yet.
+        html += `
+            <div class="text-center py-4 space-y-3 bg-dark/50 rounded-xl border border-white/5">
+                <p class="text-[9px] text-gray-500 uppercase font-bold px-4 leading-relaxed">
+                    No custom external links configured for <span class="text-${type}">${type}</span>.
                 </p>
                 <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" 
-                        class="mt-4 px-8 py-3 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] uppercase font-black hover:bg-white/10 transition-all w-full">
-                    Configure ${type} Sources
+                        class="px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] uppercase font-black hover:bg-white/10 transition-all">
+                    Configure Sources
                 </button>
-            </div>`;
-        document.getElementById('watchModal').classList.remove('hidden');
-        return;
-    }
-
-    // IF 1 SOURCE: Launch Explicitly
-    if (availableSources.length === 1) {
-        const url = availableSources[0].url.replace(/{title}/g, title).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
-        window.open(url, '_blank');
-        return;
-    }
-
-    // IF MULTIPLE: Show Selection List
-    document.getElementById('watchSourceList').innerHTML = `
-        <div class="text-[9px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 ml-1">Select ${type} Source</div>
-        ${availableSources.map(src => {
-            const finalUrl = src.url.replace(/{title}/g, title).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
-            const domain = new URL(src.url.replace(/{.*?}/g, '')).hostname;
+            </div>
+        `;
+    } else {
+        html += `<div class="space-y-2 max-h-[30vh] overflow-y-auto hide-scroll pr-1">`;
+        html += availableSources.map(src => {
+            const finalUrl = src.url.replace(/{title}/g, safeTitleUrl).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
+            let domain = 'Link';
+            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
+            
             return `
                 <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
-                   class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-${type} hover:bg-${type}/10 transition-all group mb-3">
-                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-lg grayscale group-hover:grayscale-0 transition-all">
+                   class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${type} hover:bg-${type}/10 transition-all group">
+                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
                     <div class="flex-1">
-                        <div class="text-[11px] font-black uppercase text-white group-hover:text-${type}">${src.name}</div>
-                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
+                        <div class="text-[10px] font-black uppercase text-white group-hover:text-${type} line-clamp-1">${src.name}</div>
+                        <div class="text-[7px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
                     </div>
-                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${type} transition-all"></i>
+                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${type} transition-all text-[10px]"></i>
                 </a>
             `;
-        }).join('')}
-    `;
-    
+        }).join('');
+        html += `</div>`;
+    }
+
+    document.getElementById('watchSourceList').innerHTML = html;
     document.getElementById('watchModal').classList.remove('hidden');
 }
 
@@ -5236,3 +5418,162 @@ function updateSelectButtonVisibility(tabName) {
         init();
         
 
+// --- BUILT-IN NEURAL PLAYER ENGINE ---
+
+const EMBED_SERVERS = [
+    { 
+        id: 'vidsrccc', 
+        name: 'Neural Alpha (VidSrc CC)', 
+        build: (t, id, s, e) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` 
+    },
+    { 
+        id: 'autoembed', 
+        name: 'Eastern Relay (AutoEmbed)', // Historically strong for K-Drama and Asian cinema
+        build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}` 
+    },
+    { 
+        id: 'multiembed', 
+        name: 'Nexus Stream (MultiEmbed)', // Excellent fallback aggregator
+        build: (t, id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1${t==='tv'?`&s=${s}&e=${e}`:''}` 
+    },
+    { 
+        id: 'vidsrcme', 
+        name: 'Neural Beta (VidSrc ME)', // Classic, highly reliable backup
+        build: (t, id, s, e) => `https://vidsrc.me/embed/${t}?tmdb=${id}${t==='tv'?`&season=${s}&episode=${e}`:''}` 
+    },
+    { 
+        id: 'smashy', 
+        name: 'Smashy Proxy', // Good global coverage, slightly different UI
+        build: (t, id, s, e) => `https://embed.smashystream.com/playere.php?tmdb=${id}${t==='tv'?`&season=${s}&episode=${e}`:''}` 
+    }
+];
+
+let playerState = {
+    tmdbId: null, tmdbType: null, title: '',
+    season: 1, episode: 1, serverIdx: 0,
+    activeItemData: null // Stores TMDB API data passed from the modal
+};
+
+// --- WATCH OPTIONS MODAL LOGIC ---
+function openWatchOptions(id, type, title) {
+    const modal = document.getElementById('watchOptionsModal');
+    const titleEl = document.getElementById('watchOptionsTitle');
+    const btnInternal = document.getElementById('btnInternalPlayer');
+    const linkJustWatch = document.getElementById('linkJustWatch');
+    const linkTMDB = document.getElementById('linkTMDB');
+
+    // Decode safe strings just in case
+    const displayTitle = decodeURIComponent(title);
+    titleEl.innerText = displayTitle;
+    
+    // 1. Setup Internal Player Route
+    const safeTitle = encodeURIComponent(displayTitle);
+    btnInternal.onclick = () => {
+        window.location.href = `player.html?id=${id}&type=${type}&title=${safeTitle}`;
+    };
+
+    // 2. Setup External Fallback Links
+    linkJustWatch.href = `https://www.justwatch.com/us/search?q=${safeTitle}`;
+    linkTMDB.href = `https://www.themoviedb.org/${type}/${id}`;
+
+    // Show Modal
+    modal.classList.remove('hidden');
+    // Tiny delay to ensure CSS transition triggers
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.firstElementChild.classList.remove('scale-95');
+    }, 10);
+}
+
+function closeWatchOptions() {
+    const modal = document.getElementById('watchOptionsModal');
+    modal.classList.add('opacity-0');
+    modal.firstElementChild.classList.add('scale-95');
+    
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+// Close modal if clicking outside the box
+document.getElementById('watchOptionsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeWatchOptions();
+});
+
+function launchInternalPlayer(id, tmdbType, title) {
+    // Hide the watch source modal before navigating away
+    document.getElementById('watchModal').classList.add('hidden');
+    
+    // URL encode the title safely
+    const safeTitle = encodeURIComponent(title);
+    
+    // Redirect to the newly separated player page
+    window.location.href = `player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+}
+
+
+function renderPlayerEpisodes(seasonNum) {
+    playerState.season = parseInt(seasonNum);
+    const validSeasons = playerState.activeItemData.seasons.filter(s => s.season_number > 0);
+    const targetSeason = validSeasons.find(s => s.season_number === playerState.season);
+    
+    const grid = document.getElementById('playerEpGrid');
+    if (!targetSeason) return grid.innerHTML = '';
+
+    let html = '';
+    for (let i = 1; i <= targetSeason.episode_count; i++) {
+        const isActive = (playerState.episode === i);
+        const btnClass = isActive 
+            ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.5)]' 
+            : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white';
+            
+        html += `<button onclick="switchPlayerEpisode(${i})" class="w-full aspect-square rounded-xl border flex items-center justify-center text-[11px] font-black transition-all ${btnClass}">${i}</button>`;
+    }
+    grid.innerHTML = html;
+}
+
+
+
+function highlightActiveServer() {
+    document.querySelectorAll('.player-srv-btn').forEach((btn, idx) => {
+        if (idx === playerState.serverIdx) {
+            btn.classList.add('bg-pulse/20', 'border-pulse/50', 'text-pulse');
+            btn.classList.remove('bg-white/5', 'border-white/10', 'text-gray-400');
+        } else {
+            btn.classList.remove('bg-pulse/20', 'border-pulse/50', 'text-pulse');
+            btn.classList.add('bg-white/5', 'border-white/10', 'text-gray-400');
+        }
+    });
+}
+
+
+
+
+function syncProgressToLibrary() {
+    // Calculates absolute episode number and saves it so the "Liquid" UI stays updated
+    if (playerState.tmdbType !== 'tv') return;
+    
+    let absoluteEp = 0;
+    const validSeasons = playerState.activeItemData.seasons.filter(s => s.season_number > 0);
+    
+    for (let s of validSeasons) {
+        if (s.season_number < playerState.season) {
+            absoluteEp += s.episode_count;
+        } else if (s.season_number === playerState.season) {
+            absoluteEp += playerState.episode;
+            break;
+        }
+    }
+
+    const idx = state.db.findIndex(i => i.id === playerState.tmdbId);
+    if (idx !== -1) {
+        state.db[idx].ep = absoluteEp;
+        state.db[idx].status = 'Watching'; // Auto-mark as watching
+        save();
+    }
+}
+
+function closePlayerAndReturn() {
+    document.getElementById('neuralIframe').src = ""; // Stop video playback
+    navigate('home'); // Or navigate('mylist') if you want. Home is safest.
+}

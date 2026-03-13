@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CinePulse | Neural Stream</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: { pulse: '#ff2d55', dark: '#020408' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020408; color: #f3f4f6; overflow-x: hidden; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        
+        /* Unique Feature: Neural Ambilight Glow */
+        .neural-glow {
+            position: relative;
+        }
+        .neural-glow::before {
+            content: '';
+            position: absolute;
+            inset: -15px;
+            background: radial-gradient(circle, rgba(255,45,85,0.15) 0%, transparent 70%);
+            z-index: -1;
+            filter: blur(20px);
+            animation: pulse-glow 4s ease-in-out infinite alternate;
+        }
+        @keyframes pulse-glow {
+            0% { opacity: 0.5; transform: scale(0.98); }
+            100% { opacity: 1; transform: scale(1.02); }
+        }
+
+        /* Unique Feature: Theater Isolation Mode */
+        body.theater-mode header,
+        body.theater-mode #sidePanel {
+            display: none !important;
+        }
+        body.theater-mode #playerContainer {
+            width: 100vw;
+            height: 100vh;
+            max-width: none;
+            margin: 0;
+            border-radius: 0;
+            border: none;
+            z-index: 9999;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding: 0;
+        }
+        body.theater-mode .neural-glow::before {
+            display: none;
+        }
+    </style>
+</head>
+<body class="antialiased select-none h-screen flex flex-col">
+
+    <header class="w-full px-6 py-4 flex items-center justify-between border-b border-white/5 bg-[#0a0c12]/90 backdrop-blur-md z-50 shrink-0">
+        <div class="flex items-center gap-6">
+            <button onclick="goBack()" class="w-10 h-10 bg-white/5 rounded-full border border-white/10 flex items-center justify-center hover:bg-pulse transition-all group">
+                <i class="fas fa-arrow-left text-gray-500 group-hover:text-white transition-all"></i>
+            </button>
+            <div>
+                <h2 id="playerTitle" class="text-xl md:text-3xl font-black italic uppercase tracking-tighter text-white line-clamp-1">Initializing Stream...</h2>
+                <div class="flex items-center gap-3 mt-1">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#22c55e] opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-[#22c55e]"></span>
+                    </span>
+                    <p id="playerSubtitle" class="text-[9px] text-gray-400 uppercase tracking-[0.3em] font-bold">Connecting to Neural Network</p>
+                </div>
+            </div>
+        </div>
+        
+        <button onclick="toggleTheaterMode()" class="bg-pulse/10 text-pulse border border-pulse/30 px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pulse hover:text-white transition-all flex items-center gap-2">
+            <i class="fas fa-expand-arrows-alt"></i> <span class="hidden md:inline">Deep Focus</span>
+        </button>
+    </header>
+
+    <main class="flex-1 flex flex-col lg:flex-row gap-6 p-4 lg:p-8 overflow-hidden h-full">
+        
+        <div class="flex-1 flex flex-col items-center justify-center relative neural-glow">
+            <div id="playerContainer" class="w-full max-w-6xl aspect-video bg-black rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] transition-all duration-500 relative">
+                <iframe 
+                    id="neuralIframe" 
+                    class="w-full h-full border-none absolute inset-0" 
+                    allowfullscreen="true" 
+                    webkitallowfullscreen="true" 
+                    mozallowfullscreen="true"
+                    referrerpolicy="origin"
+                    sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                </iframe>
+            </div>
+            
+            <button id="exitTheaterBtn" onclick="toggleTheaterMode()" class="hidden fixed top-6 right-6 z-[10000] bg-dark/80 backdrop-blur border border-white/10 text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-pulse transition-all shadow-2xl">
+                <i class="fas fa-compress-arrows-alt"></i>
+            </button>
+        </div>
+
+        <aside id="sidePanel" class="w-full lg:w-[350px] shrink-0 flex flex-col gap-6 h-full overflow-y-auto hide-scroll pb-10">
+            
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-6">
+                <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] mb-4 flex items-center justify-between">
+                    <span>Active Relays</span>
+                    <i class="fas fa-network-wired text-pulse"></i>
+                </h4>
+                <div id="playerServerList" class="flex flex-col gap-2">
+                    </div>
+            </div>
+
+            <div id="playerEpSection" class="bg-white/5 border border-white/10 rounded-3xl p-6 flex-1 hidden flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-[10px] font-black uppercase text-[#3b82f6] tracking-[0.2em] flex items-center gap-2">
+                        <i class="fas fa-list"></i> Episode Matrix
+                    </h4>
+                    <select id="playerSeasonSelect" onchange="renderEpisodes(this.value)" class="bg-dark border border-white/10 px-3 py-1.5 rounded-lg text-[9px] font-black uppercase outline-none focus:border-[#3b82f6] text-white shadow-lg"></select>
+                </div>
+                <div id="playerEpGrid" class="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2 overflow-y-auto hide-scroll pb-2">
+                    </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script src="player.js"></script>
+</body>
+</html>
