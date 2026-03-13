@@ -1179,6 +1179,62 @@ function updateStatus() {
         document.getElementById('mProgressBox').classList.add('hidden');
     }
 }
+
+// --- QUICK ADD ENGINE ---
+async function quickAdd(id, type) {
+    showLoader();
+    try {
+        // 1. Check if it already exists to prevent duplicates
+        let existing = state.db.find(i => i.id === id);
+        if (existing) {
+            showNotification("Entity already exists in your library.", true);
+            hideLoader();
+            return;
+        }
+
+        // 2. Fetch full details to build a complete record
+        const details = await fetchAPI(`/${type}/${id}`);
+
+        // 3. Parse categories and origin data exactly like the main status updater
+        let cat = determineCategory(details);
+        let tmdb_type = details.media_type || type;
+        let country = (details.origin_country && details.origin_country.length > 0) 
+            ? details.origin_country[0] 
+            : ((details.production_countries && details.production_countries.length > 0) ? details.production_countries[0].iso_3166_1 : '');
+
+        // 4. Construct the Neural Record
+        const newItem = {
+            id: details.id,
+            title: details.title || details.name,
+            poster: details.poster_path,
+            type: cat,
+            tmdb_type: tmdb_type,
+            country: country,
+            status: 'Plan to Watch', // Default quick-add status
+            ep: 0,
+            max_ep: details.number_of_episodes || 1,
+            score: 0,
+            crown: 0,
+            imdb: details.vote_average,
+            year: (details.release_date || details.first_air_date || '').split('-')[0],
+            genres: (details.genres || []).map(g => g.id),
+            added: Date.now()
+        };
+
+        // 5. Save and refresh the UI silently
+        state.db.push(newItem);
+        save(); // Triggers UI counter updates and list re-renders automatically
+        
+        showNotification(`Added "${newItem.title}" to Plan to Watch!`);
+
+    } catch (error) {
+        console.error("Quick Add failed:", error);
+        showNotification("Neural link severed. Failed to add entity.", true);
+    }
+    hideLoader();
+}
+
+
         // List Rendering with Hierarchy
 function toggleListView() {
             state.isGrid = !state.isGrid;
