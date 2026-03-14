@@ -3271,7 +3271,7 @@ function openWatchMenu() {
             try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
             
             return `
-               <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
+               <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${tmdbId}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${type} hover:bg-${type}/10 transition-all group">
                     <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
                     <div class="flex-1">
@@ -3292,23 +3292,31 @@ function openWatchMenu() {
 async function quickTrailer(event, id, type) {
     event.preventDefault();
     event.stopPropagation();
-    
-    showNotification("Locating Neural Trailer...");
+    showNotification("Locating Neural Video...");
     
     try {
-        const apiType = (type === 'tv' || type === 'anime' || type === 'kdrama' || type === 'turkish') ? 'tv' : 'movie';
+        const apiType = (type === 'tv' || type === 'anime' || type === 'kdrama' || type === 'turkish' || type === 'asian') ? 'tv' : 'movie';
         const vids = await fetchAPI(`/${apiType}/${id}/videos`);
         
-        // Find official trailer, or fallback to the first available video clip
-        const tr = vids.results.find(v => v.type === 'Trailer') || vids.results[0]; 
+        // Fallback sequence: Trailer -> Teaser -> Clip -> Featurette
+        const order = ['Trailer', 'Teaser', 'Clip', 'Featurette'];
+        let tr = null;
+        
+        for (let o of order) {
+            tr = vids.results.find(v => v.type === o);
+            if (tr) break;
+        }
+        
+        // Absolute fallback: Just play the first video they have
+        if (!tr && vids.results.length > 0) tr = vids.results[0]; 
         
         if (tr) {
             window.open(`https://youtube.com/watch?v=${tr.key}`, '_blank');
         } else {
-            showNotification("No trailer found in Neural Archives.", true);
+            showNotification("No video archives found for this entity.", true);
         }
     } catch (err) {
-        showNotification("Neural link severed. Failed to fetch trailer.", true);
+        showNotification("Neural link severed. Failed to fetch video.", true);
     }
 }
 function renderSmartList() {

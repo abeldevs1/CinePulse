@@ -3,18 +3,42 @@ const BASE = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p/w500';
 const IMG_HD = 'https://image.tmdb.org/t/p/original';
 
-// Reliable Servers Only with Normal Names
-const SERVERS = [
-    { name: 'Server 1 (VidSrc)', build: (t, id, s, e) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` },
-    { name: 'Server 2 (AutoEmbed)', build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}` },
-    { name: 'Server 3 (VidSrc ME)', build: (t, id, s, e) => `https://vidsrc.me/embed/${t}?tmdb=${id}${t==='tv'?`&season=${s}&episode=${e}`:''}` },
-    { name: 'Server 4 (Smashy)', build: (t, id, s, e) => `https://embed.smashystream.com/playere.php?tmdb=${id}${t==='tv'?`&season=${s}&episode=${e}`:''}` }
-];
-
-let state = {
-    id: null, type: null, season: 1, episode: 1, serverIdx: 0, data: null
+// They automatically source K-Drama, Turkish, and Anime based on the TMDB ID.
+const SERVERS = {
+    default: [
+        { name: 'Nexus Stream', build: (t, id, s, e) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` },
+        { name: 'Alpha Relay', build: (t, id, s, e) => `https://vidsrc.me/embed/${t}?tmdb=${id}${t==='tv'?`&season=${s}&episode=${e}`:''}` },
+        { name: 'Omega Core', build: (t, id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1${t==='tv'?`&s=${s}&e=${e}`:''}` }
+    ],
+    kdrama: [
+        // AutoEmbed generally has a much faster update rate for Asian Dramas
+        { name: 'Eastern Hub 2', build: (t, id, s, e) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` },
+        { name: 'Eastern Hub 1', build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}` },
+        
+    ],
+    turkish: [
+        { name: 'Eurasia Stream', build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}` },
+        { name: 'Global Relay', build: (t, id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1${t==='tv'?`&s=${s}&e=${e}`:''}` }
+    ],
+    anime: [
+        // For Anime, we pass the absolute episode and the Sub/Dub mode.
+        // Note: VidSrc handles anime via TMDB ID, but usually defaults to Sub.
+        { name: 'Anime Core (Sub/Dub)', build: (t, id, s, e, abs, mode) => {
+            // If you find a dedicated anime embed later, you would use 'abs' and 'mode' here.
+            // Example: return \`https://your-anime-site.net/embed?id=\${id}&ep=\${abs}&lang=\${mode}\`;
+            
+            // For now, we route to aggregators that support TMDB Anime mapping.
+            return `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}`;
+        }},
+        { name: 'Anime Fallback', build: (t, id, s, e, abs, mode) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` }
+    ]
 };
 
+let state = {
+    id: null, type: null, category: 'default', 
+    season: 1, episode: 1, absoluteEp: 1, 
+    serverIdx: 0, audioMode: 'sub', data: null
+};
 // Start
 async function initPlayer() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -27,7 +51,6 @@ async function initPlayer() {
     }
 
     try {
-        // Fetch Movie/TV Details + Cast + Recs all at once
         const [details, credits, recs] = await Promise.all([
             fetch(`${BASE}/${state.type}/${state.id}?api_key=${API_KEY}`).then(r => r.json()),
             fetch(`${BASE}/${state.type}/${state.id}/credits?api_key=${API_KEY}`).then(r => r.json()),
@@ -35,6 +58,8 @@ async function initPlayer() {
         ]);
 
         state.data = details;
+        state.category = detectCategory(details);
+        
         buildUI(details, credits.cast, recs.results);
         buildServers();
         
@@ -44,7 +69,6 @@ async function initPlayer() {
 
         updateStream();
 
-        // Hide Preloader
         setTimeout(() => {
             const preloader = document.getElementById('preloader');
             preloader.style.opacity = '0';
@@ -55,6 +79,25 @@ async function initPlayer() {
         console.error(err);
         document.getElementById('headerTitle').innerText = "Failed to load data.";
     }
+}
+
+function detectCategory(details) {
+    const lang = details.original_language;
+    const genres = details.genres ? details.genres.map(g => g.id) : [];
+    
+    if (lang === 'ja' && genres.includes(16)) return 'anime';
+    if (lang === 'ko') return 'kdrama';
+    if (lang === 'tr') return 'turkish';
+    return 'default';
+}
+function calculateAbsoluteEpisode(season, episode) {
+    if (!state.data || !state.data.seasons) return episode;
+    let abs = 0;
+    const validSeasons = state.data.seasons.filter(s => s.season_number > 0 && s.season_number < season);
+    for (let s of validSeasons) {
+        abs += s.episode_count;
+    }
+    return abs + episode;
 }
 
 // Update DOM Text and Images
@@ -106,7 +149,15 @@ function buildUI(details, cast, recs) {
 // Server Buttons
 function buildServers() {
     const container = document.getElementById('serverList');
-    container.innerHTML = SERVERS.map((srv, idx) => `
+    const activeServers = SERVERS[state.category] || SERVERS['default'];
+    
+    // Toggle Anime Controls
+    const animeControls = document.getElementById('animeControls');
+    if (animeControls) {
+        animeControls.classList.toggle('hidden', state.category !== 'anime');
+    }
+
+    container.innerHTML = activeServers.map((srv, idx) => `
         <button onclick="switchServer(${idx})" class="srv-btn px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all ${idx === state.serverIdx ? 'bg-pulse text-white border-pulse shadow-lg' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}">
             <i class="fas fa-play-circle mr-2"></i> ${srv.name}
         </button>
@@ -118,6 +169,8 @@ function switchServer(idx) {
     buildServers();
     updateStream();
 }
+
+
 
 // Episode Grid
 function buildSeasons() {
@@ -153,15 +206,37 @@ function renderEpisodes(seasonNum) {
 
 function switchEpisode(epNum) {
     state.episode = parseInt(epNum);
+    state.absoluteEp = calculateAbsoluteEpisode(state.season, state.episode);
     renderEpisodes(state.season);
     updateStream();
 }
-
-// Update Iframe
+// --- UPDATED STREAM ROUTING ---
 function updateStream() {
-    const srv = SERVERS[state.serverIdx];
-    const url = srv.build(state.type, state.id, state.season, state.episode);
+    // 1. Get the correct server list based on detected category
+    const serverList = SERVERS[state.category] || SERVERS['default'];
+    
+    // 2. Failsafe if serverIdx is out of bounds
+    if (state.serverIdx >= serverList.length) state.serverIdx = 0;
+    const srv = serverList[state.serverIdx];
+    
+    // 3. Ensure absolute episode is calculated for anime logic
+    state.absoluteEp = calculateAbsoluteEpisode(state.season, state.episode);
+    
+    // 4. Build the URL passing the Sub/Dub state
+    const url = srv.build(state.type, state.id, state.season, state.episode, state.absoluteEp, state.audioMode);
+    
+    // 5. Inject into Iframe
     document.getElementById('neuralIframe').src = url;
+}
+
+// Ensure the UI buttons actually trigger the update
+function setAudioMode(mode) {
+    state.audioMode = mode;
+    document.getElementById('btnSub').className = mode === 'sub' ? "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white" : "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white";
+    document.getElementById('btnDub').className = mode === 'dub' ? "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white" : "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white";
+    
+    // Refresh the iframe when audio mode changes
+    updateStream();
 }
 
 // Top Nav Actions

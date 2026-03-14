@@ -7,6 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/ios-filled/50/ff2d55/clapperboard.png">
+
     <script>
         tailwind.config = {
             theme: {
@@ -34,7 +36,7 @@
 
     <div id="preloader" class="fixed inset-0 z-[9999] bg-[#020408] flex flex-col items-center justify-center">
         <div class="spinner mb-4"></div>
-        <div class="text-[10px] font-black tracking-[0.3em] uppercase text-gray-500">Initializing Player</div>
+        <div class="text-[10px] font-black tracking-[0.3em] uppercase text-gray-500">Loading Player</div>
     </div>
 
     <header class="fixed top-0 w-full z-[100] glass-nav px-4 md:px-8 py-4 flex items-center justify-between gap-4 shadow-xl">
@@ -69,16 +71,26 @@
         <div id="iframeContainer" class="relative z-20 w-full max-w-6xl aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.8)]">
             <div class="iframe-loader spinner"></div>
             <iframe 
-                id="neuralIframe" 
-                class="w-full h-full border-none absolute inset-0" 
-                allowfullscreen="true" 
-                sandbox="allow-scripts allow-same-origin allow-forms"
-                referrerpolicy="origin">
-            </iframe>
+    id="neuralIframe" 
+    class="w-full h-full border-none absolute inset-0" 
+    allowfullscreen="true" 
+    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox"
+    referrerpolicy="origin">
+</iframe>
+
+</div>
         </div>
     </div>
 
     <div class="max-w-7xl mx-auto px-4 md:px-8 -mt-6 relative z-30 space-y-8">
+
+        <div id="animeControls" class="hidden mb-6 pb-4 border-b border-white/10 flex items-center justify-between">
+            <h4 class="text-[10px] font-black uppercase text-[#a855f7] tracking-widest"><i class="fas fa-language mr-2"></i> Audio Format</h4>
+            <div class="flex bg-dark border border-white/10 rounded-lg p-1">
+                <button id="btnSub" onclick="setAudioMode('sub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white">Sub</button>
+                <button id="btnDub" onclick="setAudioMode('dub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white">Dub</button>
+            </div>
+        </div>
         
         <div class="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 backdrop-blur-xl shadow-xl">
             <h4 class="text-[10px] font-black uppercase text-gray-500 tracking-widest mb-4"><i class="fas fa-server mr-2"></i> Select Server</h4>
