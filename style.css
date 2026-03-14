@@ -161,20 +161,27 @@
     aside .p-8, #clock { display: none !important; }
     /* --- BOTTOM NAVIGATION REVOLUTION (SWIPEABLE) --- */
 nav {
-    flex-direction: row !important;
-    margin-top: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
-    justify-content: flex-start !important; /* Align left for scrolling */
-    align-items: center !important;
-    display: flex !important;
-    overflow-x: auto !important; /* Enable horizontal scroll */
-    scroll-snap-type: x mandatory !important;
-    scroll-behavior: smooth !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 0 10px !important;
-    gap: 8px !important;
-}
+        flex-direction: row !important;
+        margin-top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        justify-content: flex-start !important; 
+        align-items: center !important;
+        display: flex !important;
+        overflow-x: auto !important; 
+        
+        /* --- CRITICAL FIXES FOR PREMIUM FEEL --- */
+        overflow-y: hidden !important; 
+        touch-action: pan-x !important; /* Forces the browser to ONLY accept horizontal swipes */
+        overscroll-behavior-y: none !important; /* Stops the elastic bounce on the Y axis */
+        /* --------------------------------------- */
+        
+        scroll-snap-type: x mandatory !important;
+        scroll-behavior: smooth !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 0 10px !important;
+        gap: 8px !important;
+    }
 nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
 
 .nav-btn {

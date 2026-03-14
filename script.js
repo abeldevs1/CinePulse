@@ -1,3 +1,47 @@
+const secureEncode = (str) => btoa(str).split('').reverse().join('');
+const secureDecode = (str) => atob(str.split('').reverse().join(''));
+
+window.addEventListener('popstate', (e) => {
+    // 1. Intercept Back Button for Modals
+    const modal = document.getElementById('modal');
+    const personModal = document.getElementById('personModal');
+    
+    if (personModal && !personModal.classList.contains('hidden')) {
+        closePersonModal(true);
+        return; // Stop routing
+    } else if (modal && !modal.classList.contains('hidden')) {
+        closeModal(true);
+        return; // Stop routing
+    }
+
+    // 2. Normal URL Hash Routing
+    const hash = window.location.hash.substring(2);
+    if (hash) {
+        try {
+            const view = secureDecode(hash);
+            if (document.getElementById(`view-${view}`)) navigate(view, true);
+        } catch(e) { navigate('home', true); }
+    } else {
+        navigate('home', true);
+    }
+});
+// 1. Framebusting (Anti-Clickjacking): Prevents site from being embedded in an invisible iframe
+if (window.top !== window.self) {
+    window.top.location = window.self.location;
+}
+
+// 2. Self-XSS Warning for DevTools
+console.log("%cSTOP!", "color: red; font-size: 50px; font-weight: 900; text-shadow: 2px 2px 0px black;");
+console.log("%cThis is a browser feature intended for developers. If someone told you to copy-paste something here to enable a feature, it is a scam and will give them access to your CinePulse Neural Database.", "color: white; font-size: 14px;");
+
+// 3. String Sanitizer (To wrap around user inputs/searches before rendering)
+function sanitize(str) {
+    if (!str) return '';
+    const temp = document.createElement('div');
+    temp.textContent = str;
+    return temp.innerHTML;
+}
+
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js');
@@ -169,8 +213,32 @@ const [
 state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
 const allGenres = [...mGenres.genres, ...tGenres.genres];
 state.genres = Array.from(new Map(allGenres.map(g => [g.id, g])).values());
+state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
+
 
 renderHero();
+renderContinueWatching(); // NEW: Render Continue Watching on load
+
+// --- NEW: Intercept URL on Load ---
+const hash = window.location.hash.substring(2);
+if (hash) {
+    try {
+        const decodedView = secureDecode(hash);
+        if (document.getElementById(`view-${decodedView}`)) {
+            navigate(decodedView, true);
+        } else {
+            navigate('home', true);
+        }
+    } catch(e) {
+        navigate('home', true);
+    }
+} else {
+    navigate('home', true);
+}
+
+renderHero();
+
+
 // Render Trending
 renderRow('row-movies', trending.results.filter(i => i.media_type === 'movie'), 'movie');
 renderRow('row-tv', tv.results, 'tv');
@@ -202,6 +270,7 @@ checkReminders(); // Fire reminder check on load
                 loadCountries();
                 updateSafeModeUI();
                 setupLongPressSelection();
+                getContinueWatchingHTML();
                 
             } catch (e) { console.error("Neural init error", e); 
                 
@@ -213,24 +282,50 @@ checkReminders(); // Fire reminder check on load
             const res = await fetch(`${BASE}${path}${path.includes('?')?'&':'?'}api_key=${API_KEY}`);
             return res.json();
         }
+        // --- URL ROUTING (Handles returning from Player) ---
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const openId = urlParams.get('open');
+    const openType = urlParams.get('type');
+    const searchQuery = urlParams.get('search');
+    
+
+    if (openId && openType) {
+        // Clean the URL silently so it doesn't get stuck in a loop if refreshed
+        window.history.replaceState({}, document.title, window.location.pathname);
+        // Wait half a second for the app to finish initializing, then open the modal
+        setTimeout(() => openModal(openId, openType), 500);
+    } else if (searchQuery) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        document.getElementById('mainSearch').value = searchQuery;
+        setTimeout(() => {
+            navigate('search');
+            deepSearch(searchQuery);
+        }, 500);
+    }
+});
         // api helper 
 function getTodayAPI() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
         // Navigation
-function navigate(view) {
+function navigate(view, skipHistory = false) {
     showLoader(); 
     state.view = view;
     
-    // Temporarily disable hover pointer events to force sidebar collapse
+    // --- NEW: Update Encrypted URL Hash ---
+    if (!skipHistory) {
+        window.history.pushState(null, null, `#/${secureEncode(view)}`);
+    }
+    // --------------------------------------
+
     const sidebar = document.getElementById('mainSidebar');
     if (sidebar) {
         sidebar.classList.add('pointer-events-none');
         setTimeout(() => sidebar.classList.remove('pointer-events-none'), 600);
     }
 
-    // Handle Page Transitions
     document.querySelectorAll('.page-view').forEach(v => {
         v.classList.add('hidden');
         v.classList.remove('page-transition-enter');
@@ -238,9 +333,6 @@ function navigate(view) {
 
     const targetView = document.getElementById(`view-${view}`);
     targetView.classList.remove('hidden');
-    
-    
-    // Force DOM reflow to restart CSS animation
     void targetView.offsetWidth; 
     targetView.classList.add('page-transition-enter');
 
@@ -270,7 +362,7 @@ function navigate(view) {
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(hideLoader, 300); 
-}  
+}
 
         // Search Behavior
 // --- UPDATED SEARCH & MODAL LOGIC ---
@@ -589,15 +681,12 @@ function renderPersonWorks() {
     loadMoreBox.classList.toggle('hidden', personDisplayLimit >= currentPersonCredits.length);
 }
 
-function closePersonModal() {
-    document.getElementById('personModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
-}
+
     
 function renderDrop(items, query) {
     const drop = document.getElementById('searchDrop');
     if (!items || items.length === 0) {
-        drop.innerHTML = `<div class="p-4 text-[10px] font-bold text-gray-500 uppercase italic">No signals found for "${query}"</div>`;
+        drop.innerHTML = `<div class="p-4 text-[10px] font-bold text-gray-500 uppercase italic">No signals found for "${sanitize(query)}"</div>`;
     } else {
         drop.innerHTML = items.map(i => {
             const title = i.title || i.name;
@@ -642,11 +731,11 @@ function quickWatch(event, id, cat, title, year) {
     let html = `
         <div class="mb-6 border-b border-white/10 pb-6">
             <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
-                <i class="fas fa-play"></i> Neural Stream (Built-in)
+                <i class="fas fa-play"></i> Built-in Player
             </h4>
             <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${safeTitle}')"
                     class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
+                <i class="fas fa-broadcast-tower"></i> Watch Now
             </button>
         </div>
         <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2">
@@ -675,7 +764,7 @@ function quickWatch(event, id, cat, title, year) {
             try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
             
             return `
-                <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
+                <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
                     <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
                     <div class="flex-1">
@@ -810,7 +899,9 @@ async function applySearchFilters(append = false) {
             slider.innerHTML = state.hero.map((item, i) => `
                 <div class="hero-item absolute inset-0 transition-opacity duration-1000 ${i === 0 ? 'opacity-100' : 'opacity-0'}">
                     <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover ">
+                    
                 </div>
+                
             `).join('');
             updateHeroContent();
         }
@@ -834,6 +925,9 @@ async function applySearchFilters(append = false) {
             hTitle.style.setProperty('--title-size', `${size}rem`);
             
             document.getElementById('heroInfoBtn').onclick = () => openModal(item.id, item.media_type);
+            //watch
+            const watchBtn = document.getElementById('heroWatchBtn');
+            if (watchBtn) watchBtn.onclick = () => openWatchOptions(item.id, item.media_type, encodeURIComponent(title));
             
             // Fetch trailer for hero
             fetchAPI(`/${item.media_type}/${item.id}/videos`).then(v => {
@@ -853,9 +947,17 @@ async function applySearchFilters(append = false) {
         // Modal Logic
 async function openModal(id, type, isBack = false) {
     let modalCountdownInterval;
-    if (!isBack && state.active) {
-        state.modalHistory.push({ id: state.active.id, type: state.active.media_type });
+   // Push history state so the Back Button works safely
+    if (!isBack) {
+        if (!document.getElementById('modal').classList.contains('hidden')) {
+            window.history.replaceState({ modalOpen: true }, '', window.location.hash);
+        } else {
+            window.history.pushState({ modalOpen: true }, '', window.location.hash);
+        }
+        if (state.active) state.modalHistory.push({ id: state.active.id, type: state.active.media_type });
     }
+    
+ 
     document.getElementById('mBackBtn').classList.toggle('hidden', state.modalHistory.length === 0);
 
     let details, credits, vids;
@@ -2098,14 +2200,13 @@ function closeActorMode(e) {
             const d = new Date();
             document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
         }, 1000); }
-
-        function save() { 
-            localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); 
-                 updateCounters(); 
+function save() { 
+    localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); 
+    updateCounters(); 
+    renderContinueWatching(); // <-- NEW: Updates UI live when you watch an episode
     
-        // Instantly re-render the active view if data changes
-              if (state.view === 'mylist') renderList();
-              if (state.view === 'rhythmlab') runLab();
+    if (state.view === 'mylist') renderList();
+    if (state.view === 'rhythmlab') runLab();
 }
 // Add this logic to your save routine
 async function saveWithSagaContext(item, type) {
@@ -2122,12 +2223,21 @@ async function saveWithSagaContext(item, type) {
     state.myList.push(item);
     saveToLocalStorage();
 }
-        function closeModal() { 
-                state.modalHistory = []; // Wipe history on full close
-                document.getElementById('mBackBtn').classList.add('hidden');
-                document.getElementById('modal').classList.add('hidden'); 
-                document.body.style.overflow = 'auto'; 
-            }
+      function closeModal(fromPopState = false) { 
+    state.modalHistory = []; // Wipe history on full close
+    document.getElementById('mBackBtn').classList.add('hidden');
+    document.getElementById('modal').classList.add('hidden'); 
+    document.body.style.overflow = 'auto'; 
+    
+    // If closed manually via X button, reverse the history to clean the stack
+    if (!fromPopState) window.history.back();
+}
+
+function closePersonModal(fromPopState = false) {
+    document.getElementById('personModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    if (!fromPopState) window.history.back();
+}
         function removeItem() { state.db = state.db.filter(i => i.id !== state.active.id); save(); closeModal(); }
         function modalGoBack() {
             if (state.modalHistory.length > 0) {
@@ -3045,7 +3155,7 @@ function quickWatch(event, id, cat, title, year) {
     let html = `
         <div class="mb-6 border-b border-white/10 pb-6">
             <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
-                <i class="fas fa-play"></i> Neural Stream (Built-in)
+                <i class="fas fa-play"></i> Built-in Player
             </h4>
             <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
                     class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
@@ -3078,7 +3188,7 @@ function quickWatch(event, id, cat, title, year) {
         try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
         
         html += `
-            <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
+            <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
                 <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-md grayscale group-hover:grayscale-0 transition-all">
                 <div class="flex-1">
@@ -3097,7 +3207,7 @@ function quickWatch(event, id, cat, title, year) {
             try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
             
             return `
-                <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
+               <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
                     <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
                     <div class="flex-1">
@@ -3129,11 +3239,11 @@ function openWatchMenu() {
     let html = `
         <div class="mb-6 border-b border-white/10 pb-6">
             <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
-                <i class="fas fa-play"></i> Built-in Neural Player
+                <i class="fas fa-play"></i> Built-in Player
             </h4>
             <button onclick="launchInternalPlayer(${tmdbId}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
                     class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
+                <i class="fas fa-broadcast-tower"></i> watch here 
             </button>
         </div>
     `;
@@ -3161,7 +3271,7 @@ function openWatchMenu() {
             try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
             
             return `
-                <a href="${finalUrl}" target="_blank" onclick="document.getElementById('watchModal').classList.add('hidden')" 
+               <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${type} hover:bg-${type}/10 transition-all group">
                     <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
                     <div class="flex-1">
@@ -5470,9 +5580,88 @@ function updateSelectButtonVisibility(tabName) {
         // Save the cleaned-up state back to local storage
         save();
     }
+function getContinueWatchingHTML() {
+    // Filter the database for items currently being watched
+    const watchingList = state.db.filter(item => item.status === 'Watching').sort((a, b) => b.added - a.added);
+    
+    if (watchingList.length === 0) return ''; // Don't show the section if it's empty
 
+    let html = `
+    <div class="mb-12 mt-6">
+        <h2 class="text-xs md:text-sm font-black uppercase tracking-[0.2em] text-white mb-4 border-l-4 border-pulse pl-3 flex items-center gap-2">
+            <i class="fas fa-play-circle text-pulse"></i> Continue Watching
+        </h2>
+        <div class="flex gap-4 overflow-x-auto hide-scroll pb-4 px-1">
+    `;
+
+    watchingList.forEach(item => {
+        // Use the tmdb_type safely. Default to movie if missing.
+        const type = item.tmdb_type || (item.type === 'Series' || item.type === 'Anime' ? 'tv' : 'movie');
+        
+        html += `
+        <div onclick="window.location.href='player.html?id=${item.id}&type=${type}'" class="relative w-48 sm:w-56 shrink-0 group cursor-pointer">
+            <div class="aspect-video rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg group-hover:shadow-[0_0_20px_rgba(255,45,85,0.3)] transition-all bg-dark">
+                <img src="${IMG}${item.poster}" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity">
+                
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
+                    <div class="w-12 h-12 rounded-full bg-pulse/90 flex items-center justify-center text-white shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
+                        <i class="fas fa-play ml-1"></i>
+                    </div>
+                </div>
+
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-3 pt-8">
+                    <div class="text-[10px] font-black uppercase text-white line-clamp-1 drop-shadow-md">${item.title}</div>
+                    <div class="text-[8px] font-bold tracking-widest text-pulse uppercase mt-1">
+                        ${type === 'tv' ? `EPISODE ${item.ep} / ${item.max_ep}` : 'MOVIE'}
+                    </div>
+                </div>
+                
+                ${type === 'tv' && item.max_ep > 0 ? `
+                <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+                    <div class="h-full bg-pulse" style="width: ${(item.ep / item.max_ep) * 100}%"></div>
+                </div>` : ''}
+            </div>
+        </div>
+        `;
+    });
+
+    html += `</div></div>`;
+    return html;
+}
+
+    function renderContinueWatching() {
+    const wrapper = document.getElementById('homeContinueWatchingWrapper');
+    if (wrapper) {
+        const html = getContinueWatchingHTML();
+        wrapper.innerHTML = html;
+        wrapper.classList.toggle('hidden', !html);
+    }
+}
+// --- AUTO-MARK ENGINE FOR CONTINUE WATCHING ---
+async function autoMarkWatching(id, type) {
+    let existing = state.db.find(i => i.id === id);
+    if (existing) {
+        if (existing.status !== 'Finished') existing.status = 'Watching';
+    } else {
+        // If not in library, instantly fetch and add it silently
+        try {
+            const data = await fetchAPI(`/${type}/${id}`);
+            let cat = determineCategory(data);
+            state.db.push({
+                id: data.id, title: data.title || data.name, poster: data.poster_path,
+                type: cat, tmdb_type: type, status: 'Watching', ep: 0, max_ep: data.number_of_episodes || 1, 
+                score: 0, crown: 0, imdb: data.vote_average, year: (data.release_date || data.first_air_date || '').split('-')[0], 
+                genres: (data.genres || []).map(g => g.id), added: Date.now()
+            });
+        } catch(e) { return; }
+    }
+    save(); // Triggers renderContinueWatching instantly
+}
         init();
         
+
+
+
 
 // --- BUILT-IN NEURAL PLAYER ENGINE ---
 
@@ -5557,16 +5746,14 @@ document.getElementById('watchOptionsModal').addEventListener('click', function(
 });
 
 function launchInternalPlayer(id, tmdbType, title) {
-    // Hide the watch source modal before navigating away
     document.getElementById('watchModal').classList.add('hidden');
-    
-    // URL encode the title safely
     const safeTitle = encodeURIComponent(title);
     
-    // Redirect to the newly separated player page
+    // TRIGER NEURAL AUTO-MARK
+    autoMarkWatching(id, tmdbType);
+
     window.location.href = `player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
 }
-
 
 function renderPlayerEpisodes(seasonNum) {
     playerState.season = parseInt(seasonNum);

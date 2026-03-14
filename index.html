@@ -198,15 +198,20 @@
                 
                 <div class="absolute inset-x-0 bottom-32 px-12 lg:px-24 flex flex-col items-start max-w-6xl">
                     <h1 id="heroTitle" class="liquid-glass slider-title mb-10"></h1>
-                    <div class="flex items-center gap-6">
-                        <button id="heroInfoBtn" class="bg-pulse text-white px-10 py-4 rounded-xl fo"px-10 lg:px-20 space-y-32 pb-32nt-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-pulse/20">More Info</button>
-                        <button id="heroTrailerBtn" class="bg-white/10 backdrop-blur-md border border-white/10 text-white px-10 py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all">Watch Trailer</button>
-                    </div>
+                    <div class="flex items-center gap-4 lg:gap-6 flex-wrap">
+    <button id="heroWatchBtn" class="bg-[#22c55e] text-white px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-[#22c55e]/20 flex items-center gap-2">
+        <i class="fas fa-play"></i> Watch Now
+    </button>
+    <button id="heroInfoBtn" class="bg-pulse text-white px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-pulse/20">More Info</button>
+    <button id="heroTrailerBtn" class="bg-white/10 backdrop-blur-md border border-white/10 text-white px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all">Watch Trailer</button>
+</div>
                 </div>
             </div>
 
             <!-- Global Type Counters -->
             <div id="homeCounters" class="grid grid-cols-2 md:grid-cols-5 gap-6 px-10 lg:px-20 -mt-16 relative z-20 mb-32"></div>
+            <div id="homeContinueWatchingWrapper" class="px-10 lg:px-20 relative z-20"></div>
+
 <div class="px-10 lg:px-20 space-y-32 pb-32">
     <section>
         <h2 onclick="openCategoryPage('trending', 'movie')" class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">Trending Movies <i class="fas fa-chevron-right text-[10px]"></i><div class="h-px flex-1 bg-white/5"></div></h2>
@@ -825,6 +830,9 @@
                 <i class="fas fa-arrow-left"></i>
             </button>
             <button id="mBackBtn" ...></button>
+            <button onclick="closeModal(); navigate('home')" class="fixed top-6 right-20 lg:top-10 lg:right-28 z-[160] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all shadow-xl" title="Return to Home">
+                <i class="fas fa-home"></i>
+            </button>
             
 <div id="modalSearchWrapper" class="fixed top-6 left-6 lg:top-10 lg:left-28 z-[160] transition-all duration-500 ease-in-out">
     
