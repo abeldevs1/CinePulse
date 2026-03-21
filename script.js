@@ -1123,10 +1123,10 @@ renderMasterpieces = function() {
         const updateTimer = () => {
             const diff = target - new Date().getTime();
             if (diff < 0) {
-                cTimer.innerHTML = '<span class="text-[#22c55e] animate-pulse">AVAILABLE NOW</span>';
-                clearInterval(modalCountdownInterval);
-                return;
-            }
+                    cTimer.innerHTML = '<span class="text-[#22c55e]">AVAILABLE NOW</span>';
+                    clearInterval(modalCountdownInterval);
+                    return;
+                }
             const d = Math.floor(diff / (1000 * 60 * 60 * 24));
             const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -1157,33 +1157,33 @@ renderMasterpieces = function() {
     const tr = vids.results.find(v => v.type === 'Trailer');
     document.getElementById('mTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
 
-    document.getElementById('mStatus').value = local ? local.status : '';
+document.getElementById('mStatus').value = local ? local.status : '';
     populateSagaDropdown(local ? local.sagaId : null);
     document.getElementById('mProgressBox').classList.toggle('hidden', type !== 'tv' || !local);
     
-    if(type === 'tv' && local) {
+    // 1. BUG FIX: Force clear previous season state so it never bleeds over
+    state.activeSeasons = [];
+    document.getElementById('mSeasonsList').innerHTML = '';
+
+    // 2. BUG FIX: Always calculate seasons for TV shows so they are ready when added
+    if (type !== 'movie') {
         const total = details.number_of_episodes || 1;
-        document.getElementById('mEpRange').max = total;
-        document.getElementById('mEpRange').value = local.ep || 0;
-        updateEpUI(local.ep || 0, total);
+        
+        state.activeSeasons = (details.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
+        let cumulative = 0;
+        state.activeSeasons.forEach(s => {
+            s.startEp = cumulative;
+            cumulative += s.episode_count;
+            s.endEp = cumulative;
+        });
+
+        if (local) {
+            document.getElementById('mEpRange').max = total;
+            document.getElementById('mEpRange').value = local.ep || 0;
+            updateEpUI(local.ep || 0, total);
+            renderSeasonsUI(); // Initialize season bubbles
+        }
     }
-    if(type === 'tv' && local) {
-    const total = details.number_of_episodes || 1;
-    document.getElementById('mEpRange').max = total;
-    document.getElementById('mEpRange').value = local.ep || 0;
-    
-    // Process Seasons
-    state.activeSeasons = (details.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
-    let cumulative = 0;
-    state.activeSeasons.forEach(s => {
-        s.startEp = cumulative;
-        cumulative += s.episode_count;
-        s.endEp = cumulative;
-    });
-    
-    updateEpUI(local.ep || 0, total);
-    renderSeasonsUI(); // Initialize season bubbles
-}
 
     updateRatingCard(local);
 
@@ -1207,19 +1207,25 @@ renderMasterpieces = function() {
         }
 
         function setupStarLogic() {
-            const stars = document.querySelectorAll('#starRating i');
-            stars.forEach(s => {
-                s.onclick = () => {
-                    const val = parseInt(s.dataset.val);
-                    const idx = state.db.findIndex(i => i.id === state.active.id);
-                    if(idx !== -1) {
-                        state.db[idx].score = val;
-                        save();
-                        setStars(val);
-                    }
-                };
-            });
-        }
+                const stars = document.querySelectorAll('#starRating i');
+                stars.forEach(s => {
+                    s.onclick = () => {
+                        const val = parseInt(s.dataset.val);
+                        const idx = state.db.findIndex(i => i.id === state.active.id);
+                        if(idx !== -1) {
+                            state.db[idx].score = val;
+                            save();
+                            setStars(val);
+                            
+                            // FIX: Live-sync the Saga Modal if it is open in the background
+                            const sagaModal = document.getElementById('sagaModal');
+                            if (sagaModal && !sagaModal.classList.contains('hidden') && currentSagaViewContext) {
+                                openSaga(currentSagaViewContext.id); 
+                            }
+                        }
+                    };
+                });
+            }
 
         function setStars(n) {
             document.querySelectorAll('#starRating i').forEach((s, i) => {
@@ -1270,15 +1276,21 @@ function updateStatus() {
     
     document.getElementById('mRemoveBtn').classList.remove('hidden');
     
-    const total = item.number_of_episodes || 1;
+const total = item.number_of_episodes || 1;
     // Utilize tmdb_type to accurately show the episode tracker
     if (existing.tmdb_type !== 'movie' && total > 1) {
         document.getElementById('mProgressBox').classList.remove('hidden');
         document.getElementById('mEpRange').max = total;
         document.getElementById('mEpRange').value = existing.ep || 0;
         updateEpUI(existing.ep || 0, total);
+        renderSeasonsUI(); // <--- BUG FIX: Added this so bubbles show up instantly
     } else {
         document.getElementById('mProgressBox').classList.add('hidden');
+    }
+  
+    const sagaModal = document.getElementById('sagaModal');
+    if (sagaModal && !sagaModal.classList.contains('hidden') && currentSagaViewContext) {
+        openSaga(currentSagaViewContext.id); 
     }
 }
 
@@ -1479,17 +1491,21 @@ function toggleReminder() {
         showNotification(`Removed ${item.title || item.name} from Radar.`);
     } else {
         let releaseDate = item.release_date;
+        let isEpisodic = false;
+        let nextSeason = null;
+        let nextEp = null;
+
         if (item.media_type !== 'movie' && item.next_episode_to_air) {
             releaseDate = item.next_episode_to_air.air_date;
+            nextSeason = item.next_episode_to_air.season_number;
+            nextEp = item.next_episode_to_air.episode_number;
+            isEpisodic = true;
         }
         
         state.reminders.push({
-            id: item.id,
-            title: item.title || item.name,
-            poster: item.poster_path,
-            type: item.media_type,
-            date: releaseDate,
-            added: Date.now()
+            id: item.id, title: item.title || item.name, poster: item.poster_path,
+            type: item.media_type, date: releaseDate, added: Date.now(),
+            isEpisodic: isEpisodic, nextSeason: nextSeason, nextEp: nextEp
         });
         updateRemindBtnUI(true);
         showNotification(`Tracking ${item.title || item.name} on Neural Radar!`);
@@ -1525,7 +1541,7 @@ function renderRadar() {
     grid.innerHTML = state.reminders.map(r => {
         const diff = new Date(r.date).getTime() - new Date().getTime();
         const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        const urgency = days <= 1 ? 'text-[#22c55e] animate-pulse' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
+        const urgency = days <= 1 ? 'text-[#22c55e]' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
         const dayText = days < 0 ? 'AVAILABLE NOW' : (days === 0 ? 'TODAY' : `IN ${days} DAYS`);
 
         return `
@@ -1659,7 +1675,8 @@ function runLab() {
     updateCounters();
 }
         // Sync Engine Logic
-        async function renderSync() {
+    // Sync Engine Logic
+async function renderSync() {
     const container = document.getElementById('syncContainer');
     container.innerHTML = '<div class="col-span-full py-20 text-center text-pulse text-[10px] font-black uppercase tracking-[0.5em] animate-pulse">Initializing Neural Sync...</div>';
 
@@ -1671,7 +1688,7 @@ function runLab() {
 
     // Calculate Neural Match % based on user's highest rated genres
     const calculateMatch = (itemGenres) => {
-        if (!itemGenres || !itemGenres.length) return Math.floor(Math.random() * 20) + 70; // fallback
+        if (!itemGenres || !itemGenres.length) return Math.floor(Math.random() * 20) + 70;
         const userGenres = state.db.filter(i => i.score >= 4).flatMap(i => i.genres);
         if (!userGenres.length) return Math.floor(Math.random() * 20) + 70;
         
@@ -1681,57 +1698,59 @@ function runLab() {
     };
 
     for (let type of types) {
-        // FEATURE 2: Elite Seeding (Only seed from items scored 4+ or currently watching)
+        // FEATURE 2: Elite Seeding
         const anchors = state.db.filter(i => i.type === type && (i.score >= 4 || i.status === 'Watching'));
         if(!anchors.length) continue;
         
         const seed = anchors[Math.floor(Math.random() * anchors.length)];
         const apiType = (type === 'movie' ? 'movie' : 'tv');
-        const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
         
-        // Apply Neural Exclusion
-        let recommendations = data.results.filter(i => !dbIds.has(i.id));
-        if (recommendations.length === 0) continue; 
+        try {
+            const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
+            let recommendations = data.results.filter(i => !dbIds.has(i.id));
+            if (recommendations.length === 0) continue; 
 
-        // FEATURE 3: Context UI Text
-        let contextText = seed.crown > 0 ? `Because you crowned 👑 ${seed.title}` :
-                          seed.score >= 4 ? `Because you rated ${seed.title} ★ ${seed.score}/5` :
-                          `Since you are watching ${seed.title}`;
+            // FEATURE 3: Context UI Text
+            let contextText = seed.crown > 0 ? `Because you crowned 👑 ${seed.title}` :
+                              seed.score >= 4 ? `Because you rated ${seed.title} ★ ${seed.score}/5` :
+                              `Since you are watching ${seed.title}`;
 
-        let rowHtml = `
-            <section class="animate-in fade-in duration-500">
-                <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-8 italic flex items-center gap-4">
-                    <span class="w-2 h-2 bg-pulse rounded-full shadow-[0_0_10px_#ff2d55]"></span>
-                    ${contextText} <div class="h-px flex-1 bg-white/5"></div>
-                </h3>
-                <div class="flex gap-8 overflow-x-auto hide-scroll pb-6">
-                    ${recommendations.slice(0, 10).map(i => {
-                        // FEATURE 4: Neural Match Percentages
-                        let matchPct = calculateMatch(i.genre_ids);
-                        let matchColor = matchPct >= 90 ? 'text-[#22c55e]' : matchPct >= 80 ? 'text-[#f59e0b]' : 'text-pulse';
-                        
-                        return `
-                        <div class="flex-none w-44 group cursor-pointer relative" onclick="openModal(${i.id}, '${apiType}')">
-                            <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
-                                <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10 opacity-80"></div>
-                                
-                                <div class="absolute top-3 left-3 bg-dark/80 backdrop-blur-md px-2 py-1 rounded-md text-[8px] font-black uppercase border border-white/10 z-30 flex items-center gap-1 ${matchColor}">
-                                    <i class="fas fa-brain"></i> ${matchPct}% Match
+            let rowHtml = `
+                <section class="animate-in fade-in duration-500">
+                    <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6 md:mb-8 italic flex items-center gap-4">
+                        <span class="w-2 h-2 bg-pulse rounded-full shadow-[0_0_10px_#ff2d55]"></span>
+                        ${contextText} <div class="h-px flex-1 bg-white/5"></div>
+                    </h3>
+                    <div class="flex gap-4 md:gap-8 overflow-x-auto hide-scroll pb-6 -mx-6 px-6 md:mx-0 md:px-1">
+                        ${recommendations.slice(0, 10).map(i => {
+                            let matchPct = calculateMatch(i.genre_ids);
+                            let matchColor = matchPct >= 90 ? 'text-[#22c55e]' : matchPct >= 80 ? 'text-[#f59e0b]' : 'text-pulse';
+                            
+                            return `
+                            <div class="flex-none w-32 md:w-44 group cursor-pointer relative" onclick="openModal(${i.id}, '${apiType}')">
+                                <div class="aspect-[2/3] rounded-[20px] md:rounded-[24px] overflow-hidden mb-3 md:mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
+                                    <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10 opacity-80"></div>
+                                    
+                                    <div class="absolute top-2 left-2 md:top-3 md:left-3 bg-dark/80 backdrop-blur-md px-2 py-1 rounded-md text-[7px] md:text-[8px] font-black uppercase border border-white/10 z-30 flex items-center gap-1 ${matchColor}">
+                                        <i class="fas fa-brain"></i> ${matchPct}% Match
+                                    </div>
+                                    
+                                    ${getPlayHoverHTML({...i, type: type})}
                                 </div>
-                                
-                                ${getPlayHoverHTML({...i, type: type})}
+                                <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
                             </div>
-                            <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
-                        </div>
-                    `}).join('')}
-                </div>
-            </section>
-        `;
-        sectionsHTML.push(rowHtml);
+                        `}).join('')}
+                    </div>
+                </section>
+            `;
+            sectionsHTML.push(rowHtml);
+        } catch(e) {
+            console.error("Failed to fetch recs for sync", e);
+        }
     }
 
-    // FEATURE 5: The "Sync Engine Mix" (Advanced Intersection)
+    // FEATURE 5: The "Sync Engine Mix"
     if (state.db.length > 5) {
         let allGenres = state.db.filter(i => i.score >= 4).flatMap(i => i.genres);
         let counts = {};
@@ -1739,32 +1758,36 @@ function runLab() {
         let topGenres = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 3);
         
         if (topGenres.length >= 2) {
-            const mixData = await fetchAPI(`/discover/movie?with_genres=${topGenres.join(',')}&sort_by=vote_average.desc&vote_count.gte=500`);
-            let mixRecs = mixData.results.filter(i => !dbIds.has(i.id)).slice(0, 10);
-            
-            if (mixRecs.length > 0) {
-                sectionsHTML.push(`
-                    <section class="animate-in fade-in duration-500">
-                        <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-pulse mb-8 italic flex items-center gap-4">
-                            <i class="fas fa-dna"></i> Neural Intersection Mix <div class="h-px flex-1 bg-white/5 shadow-[0_0_10px_#ff2d55]"></div>
-                        </h3>
-                        <div class="flex gap-8 overflow-x-auto hide-scroll pb-6">
-                            ${mixRecs.map(i => `
-                                <div class="flex-none w-44 group cursor-pointer relative" onclick="openModal(${i.id}, 'movie')">
-                                    <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-pulse/30 shadow-[0_0_20px_rgba(255,45,85,0.15)] group-hover:border-pulse transition-all relative">
-                                        <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
-                                        <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10"></div>
-                                        <div class="absolute top-3 left-3 bg-pulse/20 text-pulse px-2 py-1 rounded-md text-[8px] font-black uppercase border border-pulse/30 z-30">
-                                            99% Match
+            try {
+                const mixData = await fetchAPI(`/discover/movie?with_genres=${topGenres.join(',')}&sort_by=vote_average.desc&vote_count.gte=500`);
+                let mixRecs = mixData.results.filter(i => !dbIds.has(i.id)).slice(0, 10);
+                
+                if (mixRecs.length > 0) {
+                    sectionsHTML.push(`
+                        <section class="animate-in fade-in duration-500">
+                            <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-pulse mb-6 md:mb-8 italic flex items-center gap-4">
+                                <i class="fas fa-dna"></i> Neural Intersection Mix <div class="h-px flex-1 bg-white/5 shadow-[0_0_10px_#ff2d55]"></div>
+                            </h3>
+                            <div class="flex gap-4 md:gap-8 overflow-x-auto hide-scroll pb-6 -mx-6 px-6 md:mx-0 md:px-1">
+                                ${mixRecs.map(i => `
+                                    <div class="flex-none w-32 md:w-44 group cursor-pointer relative" onclick="openModal(${i.id}, 'movie')">
+                                        <div class="aspect-[2/3] rounded-[20px] md:rounded-[24px] overflow-hidden mb-3 md:mb-4 border border-pulse/30 shadow-[0_0_20px_rgba(255,45,85,0.15)] group-hover:border-pulse transition-all relative">
+                                            <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
+                                            <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10"></div>
+                                            <div class="absolute top-2 left-2 md:top-3 md:left-3 bg-pulse/20 text-pulse px-2 py-1 rounded-md text-[7px] md:text-[8px] font-black uppercase border border-pulse/30 z-30">
+                                                99% Match
+                                            </div>
+                                            ${getPlayHoverHTML({...i, type: 'movie'})}
                                         </div>
-                                        ${getPlayHoverHTML({...i, type: 'movie'})}
+                                        <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
                                     </div>
-                                    <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </section>
-                `);
+                                `).join('')}
+                            </div>
+                        </section>
+                    `);
+                }
+            } catch(e) {
+                console.error("Failed to fetch mix", e);
             }
         }
     }
@@ -2108,7 +2131,7 @@ function adjustProgress(dir) {
     syncProgress(curr + dir);
 }
  async function openActor(id, name) {
-    closeModal();
+    closeModal(true);
     navigate('search');
     state.searchMode = 'actor'; 
     
@@ -2328,58 +2351,114 @@ async function loadUpcomingPage() {
 
 // 2. Render Tracked Radar directly on the Upcoming page
 function renderUpcomingRadar() {
-    const section = document.getElementById('upcomingRadarSection');
-    const grid = document.getElementById('upcomingRadarGrid');
+    const radarSection = document.getElementById('upcomingRadarSection');
+    const radarGrid = document.getElementById('upcomingRadarGrid');
+    const epSection = document.getElementById('upcomingEpisodicSection');
+    const epGrid = document.getElementById('upcomingEpisodicGrid');
     
-    // Auto-clean: remove items that are already tracked in the main DB
+    // FIX: Protect Episodic items from being auto-cleaned if they are in the DB
     const dbIds = new Set(state.db.map(i => i.id));
-    state.reminders = state.reminders.filter(r => !dbIds.has(r.id));
+    state.reminders = state.reminders.filter(r => r.isEpisodic || !dbIds.has(r.id));
     localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
 
-    if (!state.reminders || state.reminders.length === 0) {
-        section.classList.add('hidden');
-        return;
+    // Split reminders
+    const standardReminders = state.reminders.filter(r => !r.isEpisodic);
+    const episodicReminders = state.reminders.filter(r => r.isEpisodic);
+
+    // 1. Render Episodic (TV Shows)
+    if (episodicReminders.length === 0) {
+        epSection.classList.add('hidden');
+    } else {
+        epSection.classList.remove('hidden');
+        epGrid.innerHTML = episodicReminders.map(r => {
+            const diff = new Date(r.date).getTime() - new Date().getTime();
+            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            const dayText = days <= 0 ? 'AVAILABLE NOW' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`);
+            
+            // FIX: Advanced Dynamic Progress Bar Integration
+            const localData = state.db.find(i => i.id === r.id);
+            let progressHtml = '';
+            let currentEpText = 'Waiting';
+
+            if (localData) {
+                const max = localData.max_ep || 1;
+                const ep = localData.ep || 0;
+                const pct = Math.min(100, Math.round((ep / max) * 100));
+                currentEpText = `Watched: ${ep}/${max}`;
+                progressHtml = `
+                <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
+                    <div class="bg-[#a855f7] h-full transition-all duration-500" style="width: ${pct}%"></div>
+                </div>`;
+            }
+
+            return `
+            <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border border-[#a855f7]/30 hover:border-[#a855f7] transition-all cursor-pointer shadow-[0_10px_30px_rgba(168,85,247,0.1)]" onclick="openModal(${r.id}, '${r.type}')">
+                <div class="w-16 h-24 shrink-0 rounded-xl overflow-hidden border border-white/5 relative">
+                    <img src="${IMG + r.poster}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-black italic uppercase text-white truncate mb-1">${r.title}</h4>
+                    <div class="flex flex-col bg-white/5 px-3 py-2 rounded-lg mb-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-[8px] text-gray-400 font-black uppercase tracking-widest">${currentEpText}</span>
+                            <i class="fas fa-arrow-right text-[8px] text-gray-600 mx-2"></i>
+                           <span class="text-[9px] text-[#a855f7] font-black uppercase tracking-widest">Next: S${r.nextSeason} E${r.nextEp}</span>
+                           
+                        </div>
+                        ${progressHtml}
+                    </div>
+                    <div class="text-[9px] font-black uppercase tracking-widest text-[#22c55e]"><i class="fas fa-clock"></i> ${dayText}</div>
+                </div>
+                <button onclick="event.stopPropagation(); state.active = {id: ${r.id}}; toggleReminder();" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0">
+                    <i class="fas fa-trash-alt text-[10px]"></i>
+                </button>
+            </div>
+            `;
+        }).join('');
     }
 
-    section.classList.remove('hidden');
+    // 2. Render Standard Radar (Movies/Unreleased Shows)
+    if (standardReminders.length === 0) {
+        radarSection.classList.add('hidden');
+    } else {
+        radarSection.classList.remove('hidden');
+        radarGrid.innerHTML = standardReminders.map(r => {
+            const diff = new Date(r.date).getTime() - new Date().getTime();
+            const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            const isOut = days <= 0;
+            
+            const urgencyColor = isOut ? 'text-[#22c55e]' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
+            const urgencyBorder = isOut ? 'border-[#22c55e]/50' : (days <= 7 ? 'border-[#f59e0b]/50' : 'border-pulse/50');
+            const urgencyShadow = isOut ? 'shadow-[#22c55e]/10' : (days <= 7 ? 'shadow-[#f59e0b]/10' : 'shadow-pulse/10');
+            const dayText = isOut ? 'AVAILABLE NOW' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`);
 
-    grid.innerHTML = state.reminders.map(r => {
-        const diff = new Date(r.date).getTime() - new Date().getTime();
-        const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        const isOut = days <= 0;
-        
-        const urgencyColor = isOut ? 'text-[#22c55e]' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
-        const urgencyBorder = isOut ? 'border-[#22c55e]/50' : (days <= 7 ? 'border-[#f59e0b]/50' : 'border-pulse/50');
-        const urgencyShadow = isOut ? 'shadow-[#22c55e]/10' : (days <= 7 ? 'shadow-[#f59e0b]/10' : 'shadow-pulse/10');
-        const dayText = isOut ? 'AVAILABLE NOW' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`);
-
-        return `
-        <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border ${urgencyBorder} hover:border-pulse transition-all cursor-pointer group shadow-xl ${urgencyShadow}" onclick="openModal(${r.id}, '${r.type}')">
-            <div class="w-20 h-28 shrink-0 rounded-2xl overflow-hidden shadow-lg border border-white/5 relative">
-                <img src="${r.poster ? IMG + r.poster : 'https://via.placeholder.com/150'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                ${getPlayHoverHTML({...r, type: r.type})}
-            </div>
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-[8px] font-black uppercase tracking-widest text-white bg-white/10 px-2 py-0.5 rounded border border-white/5">${r.type}</span>
-                    <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">${(r.date || '').split('-')[0] || 'TBA'}</span>
+            return `
+            <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border ${urgencyBorder} hover:border-pulse transition-all cursor-pointer group shadow-xl ${urgencyShadow}" onclick="openModal(${r.id}, '${r.type}')">
+                <div class="w-20 h-28 shrink-0 rounded-2xl overflow-hidden shadow-lg border border-white/5 relative">
+                    <img src="${r.poster ? IMG + r.poster : 'https://via.placeholder.com/150'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    ${getPlayHoverHTML({...r, type: r.type})}
                 </div>
-                <h4 class="text-xs md:text-sm font-black italic uppercase text-white truncate group-hover:text-pulse transition-colors mb-3">${r.title}</h4>
-                <div class="inline-block border border-white/10 bg-black/40 px-3 py-1.5 rounded-lg backdrop-blur-md">
-                    <span class="text-[9px] font-black uppercase tracking-widest ${urgencyColor} flex items-center gap-2">
-                        <i class="fas fa-stopwatch"></i> ${dayText}
-                    </span>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-[8px] font-black uppercase tracking-widest text-white bg-white/10 px-2 py-0.5 rounded border border-white/5">${r.type}</span>
+                        <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">${(r.date || '').split('-')[0] || 'TBA'}</span>
+                    </div>
+                    <h4 class="text-xs md:text-sm font-black italic uppercase text-white truncate group-hover:text-pulse transition-colors mb-3">${r.title}</h4>
+                    <div class="inline-block border border-white/10 bg-black/40 px-3 py-1.5 rounded-lg backdrop-blur-md">
+                        <span class="text-[9px] font-black uppercase tracking-widest ${urgencyColor} flex items-center gap-2">
+                            <i class="fas fa-stopwatch"></i> ${dayText}
+                        </span>
+                    </div>
                 </div>
+                <button onclick="event.stopPropagation(); state.active = {id: ${r.id}}; toggleReminder();" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0">
+                    <i class="fas fa-trash-alt text-[10px]"></i>
+                </button>
             </div>
-            <button onclick="event.stopPropagation(); state.active = {id: ${r.id}}; toggleReminder();" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0">
-                <i class="fas fa-trash-alt text-[10px]"></i>
-            </button>
-        </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+    }
 }
 
-// 3. Dynamic Search Execution
 // 3. Dynamic Search Execution
 async function handleUpcomingSearch(query) {
     const clearBtn = document.getElementById('clearUpcomingSearch');
@@ -4260,7 +4339,7 @@ function setupLongPressCopy() {
 
 
  //manual type override 
- function overrideType(newType) {
+function overrideType(newType) {
     if (!state.active) return;
     const idx = state.db.findIndex(i => i.id === state.active.id);
     
@@ -4275,14 +4354,19 @@ function setupLongPressCopy() {
     showNotification(`Type overridden to ${newType.toUpperCase()}`);
     
     // Instantly hide/show the episode tracker based on the new logic
-  const maxEp = details.number_of_episodes || 1;
+    const maxEp = state.active.number_of_episodes || 1;
+    const local = state.db.find(i => i.id === state.active.id);
+    const calculatedType = newType; // Use the new type being passed in
+
     document.getElementById('mProgressBox').classList.toggle('hidden', calculatedType === 'movie' || !local || maxEp <= 1);
+    
     if(calculatedType !== 'movie' && local && maxEp > 1) {
         // Fix for Season Mismatch: Recalculate based on real limits
         document.getElementById('mEpRange').max = maxEp;
         document.getElementById('mEpRange').value = local.ep || 0;
         
-        state.activeSeasons = (details.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
+        // BUG FIX: Scoped to state.active instead of details
+        state.activeSeasons = (state.active.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
         let cumulative = 0;
         state.activeSeasons.forEach(s => {
             s.startEp = cumulative;
@@ -4636,9 +4720,11 @@ async function openSaga(id, isEditing = false) {
                 name: currentSagaViewContext.name + ' (Custom)',
                 description: currentSagaViewContext.overview || '',
                 backdrop_path: currentSagaViewContext.backdrop_path,
+               
                 parts: currentSagaViewContext.parts.map(p => ({
-                    id: p.id, media_type: 'movie', title: p.title,
-                    poster_path: p.poster_path, release_date: p.release_date || '2000-01-01', size: 'main'
+                    id: p.id, media_type: p.media_type || 'movie', title: p.title || p.name,
+                    poster_path: p.poster_path, release_date: p.release_date || p.first_air_date || '2000-01-01', size: p.size || 'main',
+                    vote_average: p.vote_average || p.imdb || 0 // <-- This saves the rating
                 })),
                 isCustom: true
             };
@@ -4649,7 +4735,7 @@ async function openSaga(id, isEditing = false) {
 
         modal.innerHTML = `
             <div class="relative min-h-screen pb-32 bg-dark p-4 md:p-12 lg:p-24 animate-in zoom-in-95 duration-300">
-                <button onclick="document.getElementById('sagaModal').classList.add('hidden')" class="saga-close-btn rounded-full flex items-center justify-center shadow-2xl">
+               <button onclick="closeSagaModal()" class="saga-close-btn rounded-full flex items-center justify-center shadow-2xl">
                     <i class="fas fa-times text-lg"></i>
                 </button>
 
@@ -4747,14 +4833,16 @@ async function openSaga(id, isEditing = false) {
         actionButtons += `<button onclick="deleteCustomUniverse('${id}')" class="bg-red-600/20 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 w-full md:w-auto justify-center"><i class="fas fa-radiation"></i> Collapse</button>`;
     }
 
-    const parts = saga.parts.sort((a, b) => new Date(a.release_date || a.first_air_date) - new Date(b.release_date || b.first_air_date));
+    const parts = saga.isCustom 
+        ? saga.parts 
+        : saga.parts.sort((a, b) => new Date(a.release_date || a.first_air_date) - new Date(b.release_date || b.first_air_date));
 
     // Fallback logic for TMDB's "overview" vs Custom Forge's "description"
     const displayDesc = saga.description || saga.overview;
 
     modal.innerHTML = `
         <div class="relative min-h-screen pb-32 animate-in fade-in duration-300">
-            <button onclick="document.getElementById('sagaModal').classList.add('hidden')" class="saga-close-btn rounded-full flex items-center justify-center shadow-2xl">
+           <button onclick="closeSagaModal()" class="saga-close-btn rounded-full flex items-center justify-center shadow-2xl">
                 <i class="fas fa-times text-lg"></i>
             </button>
             <div class="relative w-full h-[35vh] md:h-[45vh] md:rounded-b-[40px] overflow-hidden mb-8 border-b border-white/10 shadow-2xl bg-dark">
@@ -4778,6 +4866,9 @@ async function openSaga(id, isEditing = false) {
                     const isFinished = localData && localData.status === 'Finished';
                     const statusIcon = isFinished ? '<i class="fas fa-check text-[#22c55e]"></i>' : (localData ? '<i class="fas fa-eye text-pulse"></i>' : '');
                     const borderHighlight = localData ? (isFinished ? 'border-[#22c55e]/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-pulse/50 shadow-[0_0_15px_rgba(255,45,85,0.1)]') : 'border-white/5';
+                    
+                    // FIX: Extract personal score safely
+                    const personalScore = localData && localData.score ? localData.score : 0;
 
                     return `
                     <div class="saga-movie-card relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group transition-all duration-500 overflow-hidden" style="max-height: 500px; opacity:1;">
@@ -4785,16 +4876,17 @@ async function openSaga(id, isEditing = false) {
                             <span class="text-[9px] md:text-[10px] font-black">${statusIcon || (index + 1)}</span>
                         </div>
                         
-                        <div class="w-[calc(100%-3rem)] md:w-[calc(50%-3rem)] p-3 md:p-4 rounded-2xl md:rounded-3xl border ${borderHighlight} bg-[#0a0c12]/80 backdrop-blur-md hover:border-pulse transition-all flex gap-3 md:gap-4 cursor-pointer shadow-xl" onclick="document.getElementById('sagaModal').classList.add('hidden'); openModal('${p.id}', '${p.media_type || 'movie'}')">
+                        <div class="w-[calc(100%-3rem)] md:w-[calc(50%-3rem)] p-3 md:p-4 rounded-2xl md:rounded-3xl border ${borderHighlight} bg-[#0a0c12]/80 backdrop-blur-md hover:border-pulse transition-all flex gap-3 md:gap-4 cursor-pointer shadow-xl" onclick="document.getElementById('sagaModal').classList.add('hidden'); openModal(${p.id}, '${p.media_type || 'movie'}')">
                             <div class="w-16 h-24 md:w-24 md:h-32 shrink-0 rounded-xl overflow-hidden border border-white/5">
                                 <img src="${IMG + (p.poster_path || '')}" class="w-full h-full object-cover bg-dark">
                             </div>
                             <div class="flex flex-col justify-center flex-1">
                                 <h4 class="text-[11px] md:text-sm font-black uppercase italic text-white line-clamp-2">${p.title || p.name}</h4>
                                 <div class="text-[8px] md:text-[9px] text-gray-500 font-bold tracking-widest mt-2 flex flex-col md:flex-row md:items-center justify-between w-full gap-2 md:gap-0">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-3">
                                         <span class="bg-white/5 px-2 py-1 rounded text-white">${(p.release_date || p.first_air_date || '').split('-')[0] || 'N/A'}</span>
-                                        <span class="text-pulse">★ ${p.vote_average ? p.vote_average.toFixed(1) : 'N/A'}</span>
+                                        <span class="text-pulse">IMDb: ★ ${p.vote_average ? p.vote_average.toFixed(1) : 'N/A'}</span>
+                                        ${personalScore > 0 ? `<span class="text-yellow-500">My Score: ★ ${personalScore}/5</span>` : ''}
                                     </div>
                                     ${localData ? `<span class="uppercase font-black ${isFinished ? 'text-[#22c55e]' : 'text-pulse'} text-[7px] md:text-[8px] bg-white/10 px-2 py-1 rounded tracking-tighter w-fit">${localData.status}</span>` : ''}
                                 </div>
@@ -4935,6 +5027,12 @@ function markSagaFinished(sagaId) {
     // Dynamic UI Refresh Fix
     if (state.view === 'mylist') renderList();
     if (state.view === 'sagamatrix') renderMySagas();
+}
+function closeSagaModal() {
+    document.getElementById('sagaModal').classList.add('hidden');
+    if (state.view === 'sagamatrix') {
+        setSagaTab(currentSagaTab); // Force re-render of My Sagas tab to show changes immediately
+    }
 }
 
 function toggleSafeMode() {
@@ -5126,19 +5224,19 @@ function handleForgeSearch(query) {
         const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(query)}&include_adult=${!prefs.safeMode}`);
         const results = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv').slice(0, 8);
         
-        document.getElementById('forgeSearchResults').innerHTML = results.map(i => `
-            <div class="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:border-pulse/50 transition-all cursor-pointer group" 
+       document.getElementById('forgeSearchResults').innerHTML = results.map(i => `
+            <div class="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:border-pulse/50 transition-all cursor-pointer group w-full min-w-0" 
                 draggable="true" 
                 ondragstart="forgeSearchDragStart(event, ${i.id}, '${i.media_type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')"
                 onclick="addToForge(${i.id}, '${i.media_type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')">
-                <div class="flex items-center gap-3">
-                    <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 object-cover rounded-md pointer-events-none">
-                    <div class="pointer-events-none">
-                        <div class="text-[10px] font-black uppercase text-white line-clamp-1 group-hover:text-pulse">${i.title || i.name}</div>
+                <div class="flex items-center gap-3 min-w-0 w-[85%]">
+                    <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 object-cover rounded-md pointer-events-none shrink-0">
+                    <div class="pointer-events-none truncate flex-1 min-w-0">
+                        <div class="text-[10px] font-black uppercase text-white truncate group-hover:text-pulse">${i.title || i.name}</div>
                         <div class="text-[8px] font-bold text-gray-500 tracking-widest mt-1">${i.media_type} • ${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
                     </div>
                 </div>
-                <i class="fas fa-plus text-gray-500 group-hover:text-pulse pointer-events-none"></i>
+                <i class="fas fa-plus text-gray-500 group-hover:text-pulse pointer-events-none shrink-0 ml-2"></i>
             </div>
         `).join('');
     }, 400);
@@ -5429,11 +5527,12 @@ function addEntityToSaga(item) {
     }
     
     currentSagaViewContext.parts.push({
-        id: item.id,
-        title: item.title || item.name,
-        poster_path: item.poster_path,
-        media_type: item.media_type || 'movie',
-        release_date: item.release_date || item.first_air_date || '2000-01-01'
+    id: item.id,
+    title: item.title || item.name,
+    poster_path: item.poster_path,
+    media_type: item.media_type || 'movie',
+    release_date: item.release_date || item.first_air_date || '2000-01-01',
+    vote_average: item.vote_average || 0 // <-- This saves it for newly injected items
     });
     
     renderInlineSagaList();
@@ -5513,7 +5612,8 @@ function saveCustomUniverse() {
         backdrop_path: activeForgeItems[0].poster,
         parts: activeForgeItems.map(item => ({
             id: item.id, title: item.title, poster_path: item.poster,
-            media_type: item.type, release_date: item.year + '-01-01', size: item.size
+            media_type: item.type, release_date: item.year + '-01-01', size: item.size,
+            vote_average: item.vote_average || 0 // <-- Carries it into localStorage
         }))
     };
 

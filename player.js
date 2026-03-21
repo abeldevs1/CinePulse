@@ -20,17 +20,14 @@ const SERVERS = {
         { name: 'Eurasia Stream', build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}` },
         { name: 'Global Relay', build: (t, id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1${t==='tv'?`&s=${s}&e=${e}`:''}` }
     ],
-    anime: [
-        // For Anime, we pass the absolute episode and the Sub/Dub mode.
-        // Note: VidSrc handles anime via TMDB ID, but usually defaults to Sub.
-        { name: 'Anime Core (Sub/Dub)', build: (t, id, s, e, abs, mode) => {
-            // If you find a dedicated anime embed later, you would use 'abs' and 'mode' here.
-            // Example: return \`https://your-anime-site.net/embed?id=\${id}&ep=\${abs}&lang=\${mode}\`;
-            
-            // For now, we route to aggregators that support TMDB Anime mapping.
+anime: [
+        // Primary Anime Server (VidSrc)
+        { name: 'Anime Primary', build: (t, id, s, e, abs, mode) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` },
+        // Secondary Anime Server with Sub/Dub capabilities via its own UI
+        { name: 'Anime Secondary (Sub/Dub)', build: (t, id, s, e, abs, mode) => {
+            // AutoEmbed will read the TMDB ID and usually provides its own internal Sub/Dub switch in the gear icon
             return `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}`;
-        }},
-        { name: 'Anime Fallback', build: (t, id, s, e, abs, mode) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` }
+        }}
     ]
 };
 
@@ -68,6 +65,9 @@ async function initPlayer() {
         }
 
         updateStream();
+        
+        // FIX: Initialize the library state instantly on load
+        initPlayerLibraryState(); 
 
         setTimeout(() => {
             const preloader = document.getElementById('preloader');
@@ -193,13 +193,14 @@ function renderEpisodes(seasonNum) {
     if (!targetSeason) return;
 
     let html = '';
-    for (let i = 1; i <= targetSeason.episode_count; i++) {
+   for (let i = 1; i <= targetSeason.episode_count; i++) {
         const isActive = (state.episode === i);
         const btnClass = isActive 
             ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.4)]' 
             : 'bg-dark border-white/10 text-gray-400 hover:border-white/30 hover:text-white';
             
-        html += `<button onclick="switchEpisode(${i})" class="w-12 h-12 rounded-xl border flex items-center justify-center text-xs font-black transition-all shrink-0 ${btnClass}">${i}</button>`;
+        // Removed fixed w-12 h-12 and added aspect-square w-full so it naturally fills the CSS grid beautifully
+        html += `<button onclick="switchEpisode(${i})" class="w-full aspect-square rounded-xl border flex items-center justify-center text-xs font-black transition-all shrink-0 ${btnClass}">${i}</button>`;
     }
     document.getElementById('episodeGrid').innerHTML = html;
 }
@@ -293,5 +294,114 @@ document.addEventListener('click', (e) => {
         document.getElementById('playerSearchDropdown').classList.add('hidden');
     }
 });
+// --- LIBRARY STATUS ENGINE ---
+function initPlayerLibraryState() {
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+    let existing = db.find(i => String(i.id) === String(state.id));
+    
+    const textEl = document.getElementById('playerStatusText');
+    const iconEl = document.getElementById('playerStatusIcon');
+    
+    if (existing) {
+        textEl.innerText = existing.status;
+        textEl.className = "text-xs font-bold uppercase text-[#22c55e]";
+        iconEl.innerHTML = '<i class="fas fa-check text-[#22c55e]"></i>';
+        iconEl.className = "w-10 h-10 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 flex items-center justify-center";
+    }
+}
+
+async function initPlayer() {
+    const urlParams = new URLSearchParams(window.location.search);
+    state.id = urlParams.get('id');
+    state.type = urlParams.get('type') || 'movie';
+
+    if (!state.id) {
+        window.location.href = 'index.html';
+        return;
+    }
+
+    try {
+        const [details, credits, recs] = await Promise.all([
+            fetch(`${BASE}/${state.type}/${state.id}?api_key=${API_KEY}`).then(r => r.json()),
+            fetch(`${BASE}/${state.type}/${state.id}/credits?api_key=${API_KEY}`).then(r => r.json()),
+            fetch(`${BASE}/${state.type}/${state.id}/recommendations?api_key=${API_KEY}`).then(r => r.json())
+        ]);
+
+        state.data = details;
+        state.category = detectCategory(details);
+        
+        buildUI(details, credits.cast, recs.results);
+        buildServers();
+        
+        if (state.type === 'tv' && details.seasons) {
+            buildSeasons();
+        }
+
+        updateStream();
+        
+        // FIX: Initialize the library state instantly on load
+        initPlayerLibraryState(); 
+
+        setTimeout(() => {
+            const preloader = document.getElementById('preloader');
+            preloader.style.opacity = '0';
+            setTimeout(() => preloader.style.display = 'none', 500);
+        }, 800);
+
+    } catch (err) {
+        console.error(err);
+        document.getElementById('headerTitle').innerText = "Failed to load data.";
+    }
+}
+
+function togglePlayerLibraryStatus() {
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+    let existing = db.find(i => String(i.id) === String(state.id));
+    
+    if (!existing) {
+        db.push({
+            id: state.id, title: state.data.title || state.data.name, poster: state.data.poster_path,
+            type: state.category === 'anime' || state.category === 'kdrama' ? state.category : state.type,
+            tmdb_type: state.type, status: 'Watching', ep: 1, max_ep: state.data.number_of_episodes || 1,
+            score: 0, crown: 0, imdb: state.data.vote_average,
+            year: (state.data.release_date || state.data.first_air_date || '').split('-')[0], genres: [], added: Date.now()
+        });
+        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+        initPlayerLibraryState();
+        
+        // FIX: Modern UI Toast instead of native alert()
+        const t = document.createElement('div');
+        t.className = `fixed top-10 right-10 bg-[#22c55e] text-white px-8 py-4 rounded-2xl shadow-2xl z-[9999] font-black uppercase text-[10px] tracking-widest transition-all duration-500 transform translate-y-[-20px] opacity-0 flex items-center gap-3`;
+        t.innerHTML = `<i class="fas fa-check-circle text-lg"></i> Record initialized. Status set to WATCHING.`;
+        document.body.appendChild(t);
+        setTimeout(() => { t.classList.remove('translate-y-[-20px]', 'opacity-0'); }, 10);
+        setTimeout(() => { 
+            t.classList.add('opacity-0', 'translate-y-[-20px]'); 
+            setTimeout(() => t.remove(), 500); 
+        }, 3000);
+        
+    } else {
+        goBackToModal();
+    }
+}
+// --- MINI MODAL ENGINE ---
+function openPlayerMiniModal(id, type, title, poster) {
+    document.getElementById('miniModalImg').src = IMG + poster;
+    document.getElementById('miniModalTitle').innerText = title;
+    
+    document.getElementById('btnMiniWatch').onclick = () => {
+        window.location.href = `player.html?id=${id}&type=${type}`;
+    };
+    
+    document.getElementById('btnMiniDetails').onclick = () => {
+        window.location.href = `index.html?open=${id}&type=${type}`;
+    };
+    
+    document.getElementById('playerMiniModal').classList.remove('hidden');
+}
+
+// Update your buildUI recommendations mapping to use the modal:
+// Replace the onclick in detailRecs generation with:
+// onclick="openPlayerMiniModal(${r.id}, '${state.type}', '${(r.title || r.name).replace(/'/g, "\\'")}', '${r.poster_path}')"
 
 initPlayer();

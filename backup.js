@@ -4736,3 +4736,113 @@ function saveCustomUniverse() {
         init();
         
 
+
+
+
+
+
+        // the import cunction
+
+
+//         function importData(event) {
+//     const file = event.target.files[0];
+//     if (!file) return;
+
+//     showNotification("Analyzing Backup Data...");
+
+//     const reader = new FileReader();
+//     reader.onload = function(e) {
+//         try {
+//             const data = JSON.parse(e.target.result);
+            
+//             // 1. Merge Database
+//             const importedDB = Array.isArray(data) ? data : (data.db || []);
+//             let updatedCount = 0;
+//             let newCount = 0;
+
+//             importedDB.forEach(importedItem => {
+//                 const existingIdx = state.db.findIndex(ex => ex.id === importedItem.id);
+//                 if (existingIdx !== -1) {
+//                     const ex = state.db[existingIdx];
+//                     ex.score = Math.max(ex.score || 0, importedItem.score || 0);
+//                     ex.crown = Math.max(ex.crown || 0, importedItem.crown || 0);
+//                     ex.ep = Math.max(ex.ep || 0, importedItem.ep || 0);
+//                     ex.status = importedItem.status || ex.status;
+                    
+//                     // Pull in new Saga/Realm tags if old record lacks them
+//                     if (importedItem.sagaId) ex.sagaId = importedItem.sagaId;
+//                     if (importedItem.sagaName) ex.sagaName = importedItem.sagaName;
+//                     if (importedItem.realm) ex.realm = importedItem.realm;
+                    
+//                     updatedCount++;
+//                 } else {
+//                     state.db.push(importedItem);
+//                     newCount++;
+//                 }
+//             });
+
+//             // 2. Merge Sources
+//             if (data.sources) {
+//                 Object.keys(data.sources).forEach(cat => {
+//                     if(!sourcesDb[cat]) sourcesDb[cat] = [];
+//                     data.sources[cat].forEach(src => {
+//                         if (!sourcesDb[cat].some(existing => existing.url === src.url)) {
+//                             sourcesDb[cat].push(src);
+//                         }
+//                     });
+//                 });
+//                 localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
+//                 if(typeof renderSources === 'function') renderSources();
+//             }
+
+//             // 3. Merge Custom Sagas (The Forge)
+//             if (data.customSagas) {
+//                 let sagasAdded = 0;
+//                 let sagasUpdated = 0;
+                
+//                 data.customSagas.forEach(importedSaga => {
+//                     // Check if it exists by ID or exactly matching name
+//                     const existingIdx = customSagas.findIndex(ex => ex.id === importedSaga.id || ex.name === importedSaga.name);
+                    
+//                     if (existingIdx === -1) {
+//                         customSagas.push(importedSaga);
+//                         sagasAdded++;
+//                     } else {
+//                         // If it exists, update the blueprint with the imported parts
+//                         customSagas[existingIdx].parts = importedSaga.parts;
+//                         sagasUpdated++;
+//                     }
+//                 });
+                
+//                 // Save safely to local storage
+//                 localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
+          
+//                 // 4. Merge Neural Radar (Reminders)
+//             if (data.reminders) {
+//                 data.reminders.forEach(r => {
+//                     if (!state.reminders.find(ex => ex.id === r.id)) {
+//                         state.reminders.push(r);
+//                     }
+//                 });
+//                 localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
+//             }
+            
+
+//             save();
+//             if (state.view === 'sagamatrix') renderMySagas();
+                
+//                 if (sagasAdded > 0 || sagasUpdated > 0) {
+//                     console.log(`Forge Sync: ${sagasAdded} Universes forged, ${sagasUpdated} blueprints updated.`);
+//                 }
+//             }
+//             if (state.view === 'mylist') renderList();
+//             updateCounters();
+            
+//             showNotification(`Imported: ${newCount} New, ${updatedCount} Updated`);
+//             document.getElementById('importFile').value = ''; 
+//         } catch (err) {
+//             showNotification("Invalid backup file format.", true);
+//         }
+//     };
+//     reader.readAsText(file);
+// }
