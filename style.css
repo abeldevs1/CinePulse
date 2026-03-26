@@ -76,6 +76,21 @@
     transform: scale(1.02);
 }
 
+#searchBar.neural-diff-active {
+    max-width: 240px !important;
+}
+
+#searchBar.neural-diff-active .glass-search {
+    transform: scale(0.94) !important;
+    border-color: rgba(34, 197, 94, 0.7) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+#searchBar.neural-diff-active .glass-search .fa-search,
+#searchBar.neural-diff-active .glass-search #clearSearch {
+    opacity: 0.8;
+}
+
 /* Fix Search Icon & X Button Visibility */
 .search-icon-fixed {
     color: white !important;
@@ -1562,4 +1577,133 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
         box-shadow: 0 0 10px #ff2d55;
         opacity: 0.6;
     }
+}
+
+/* --- NEURAL LINK: P2P SYNC STYLES --- */
+
+/* Radar Pulse Background */
+.radar-circle {
+    animation: radar-expand 6s cubic-bezier(0.1, 0.5, 0.5, 1) infinite;
+    opacity: 0;
+}
+.animation-delay-1000 {
+    animation-delay: 3s;
+}
+
+@keyframes radar-expand {
+    0% { transform: scale(0.1); opacity: 0; }
+    50% { opacity: 0.15; }
+    100% { transform: scale(1.5); opacity: 0; }
+}
+
+/* Holographic Scanner Line */
+@keyframes scan-line {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(100vh); opacity: 0; }
+}
+.animate-scan-line {
+    animation: scan-line 3s linear infinite;
+    box-shadow: 0 5px 20px rgba(255,45,85,0.8);
+}
+
+/* --- RESPONSIVE DIFF CARDS --- */
+.diff-card-new {
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 12, 18, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    /* Base setup for the staggered entrance */
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+    animation: diffCardEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    will-change: transform, opacity;
+}
+
+@keyframes diffCardEnter {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+#diffCardsContainer {
+    /* Ensures the scrollbar respects the boundaries and adds momentum scrolling on iOS */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    /* Custom scrollbar for this specific panel to make it look sleek */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 45, 85, 0.5) transparent;
+}
+
+/* Desktop Layout */
+@media (min-width: 768px) {
+    .diff-card-new {
+        flex-direction: row;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+}
+.diff-card-new:hover { border-color: rgba(255, 45, 85, 0.5); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+.diff-card-new.deselected { opacity: 0.3; filter: grayscale(100%); transform: scale(0.98); border-color: rgba(255,255,255,0.05); }
+
+/* Ensure Html5QrcodeScanner internal elements don't look broken */
+#qr-reader { border: none !important; }
+#qr-reader__scan_region { background: black; }
+#qr-reader__dashboard_section_csr button {
+    background: #ff2d55 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    padding: 8px 16px !important;
+    border: none !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    font-size: 10px !important;
+    letter-spacing: 1px !important;
+}
+
+/* --- HOLOGRAPHIC SYNC ANIMATION --- */
+@keyframes neuralSyncJump {
+    0% { transform: scale(0) translateX(-150px) translateY(50px) rotate(-15deg); opacity: 0; filter: blur(5px); }
+    20% { transform: scale(1.3) translateX(0px) translateY(-20px) rotate(0deg); opacity: 1; filter: blur(0px); box-shadow: 0 0 40px rgba(34,197,94,0.8); }
+    80% { transform: scale(1.3) translateX(0px) translateY(-20px) rotate(0deg); opacity: 1; filter: blur(0px); box-shadow: 0 0 40px rgba(34,197,94,0.8); }
+    100% { transform: scale(0) translateX(150px) translateY(50px) rotate(15deg); opacity: 0; filter: blur(5px); }
+}
+
+/* --- NETWORK TOPOLOGY TREE --- */
+.topology-node {
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 12px;
+}
+.topology-node::before {
+    content: '';
+    position: absolute;
+    left: -5px;
+    top: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #0a0c12;
+    border: 3px solid #a855f7;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+.topology-node.offline::before { border-color: #4b5563; }
+.topology-node.active::before { 
+    border-color: #22c55e; 
+    box-shadow: 0 0 15px rgba(34,197,94,0.8);
+    background: #22c55e;
+}
+
+/* --- OVERLAY SCROLL LOCK (OVERSCROLL FIX) --- */
+body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
 }

@@ -7,15 +7,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="referrer" content="no-referrer">
     <meta name="apple-mobile-web-app-title" content="CinePulse">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.themoviedb.org; frame-src *;"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.themoviedb.org; frame-src *;">
     <meta name="apple-mobile-web-app-capable" content="yes"> 
-    <meta http-equiv="Content-Security-Policy" content="
+   <meta name="mobile-web-app-capable" content="yes">
+    
+<meta http-equiv="Content-Security-Policy" content="
     default-src 'self'; 
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com; 
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com; 
     style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; 
     font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; 
     img-src 'self' data: https:; 
-    connect-src 'self' https://api.themoviedb.org; 
+    connect-src 'self' https://api.themoviedb.org wss://*.peerjs.com https://*.peerjs.com https://unpkg.com stun: turn: https://cdnjs.cloudflare.com; 
     frame-src 'self' https://vidsrc.cc https://www.youtube.com;
 ">
 
@@ -45,13 +46,16 @@
             }
         }
     </script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
 <link rel="stylesheet" href="style.css">
 
 </head>
 <body class="antialiased select-none">
 
-    <!-- PRELOADER -->
-<div id="preloader" class="fixed inset-0 z-[9999] bg-[#020408] flex flex-col items-center justify-center transition-all duration-1000">
+    <div id="preloader" class="fixed inset-0 z-[9999] bg-[#020408] flex flex-col items-center justify-center transition-all duration-1000">
     <div class="loader mb-8">
       <div class="dot"></div>
       <div class="dot"></div>
@@ -62,8 +66,7 @@
     </div>
 </div>
 
-    <!-- NAVIGATION -->
- <aside id="mainSidebar" class="fixed left-0 top-0 h-full w-20 hover:w-64 bg-[#0a0c12]/95 backdrop-blur-2xl border-r border-white/5 z-[100] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group peer overflow-hidden">
+    <aside id="mainSidebar" class="fixed left-0 top-0 h-full w-20 hover:w-64 bg-[#0a0c12]/95 backdrop-blur-2xl border-r border-white/5 z-[100] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group peer overflow-hidden">
         
         <div class="p-8 flex items-center">
                 <span class="text-pulse text-3xl font-black italic tracking-tighter shrink-0">C</span>
@@ -111,6 +114,10 @@
                 <i class="fas fa-cubes text-xl w-6 text-center shrink-0"></i> 
                 <span class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Saga Matrix</span>
             </button>
+            <button onclick="navigate('neurallink')" class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
+            <i class="fas fa-microchip text-xl w-6 text-center shrink-0"></i> 
+            <span class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Neural Link</span>
+        </button>
             
             <div id="mobileInstallLink" class="hidden"> 
                 <a href="app.html" class="flex items-center gap-3 p-4 text-gray-400 hover:text-pulse transition-colors">
@@ -191,7 +198,6 @@
                 </button>
             </div>
         </div>
-        <!-- HOME PAGE -->
         <div id="view-home" class="page-view">
             <div class="relative h-screen w-full overflow-hidden ">
                 <div id="heroSlider" class="w-full h-full relative"></div>
@@ -209,7 +215,6 @@
                 </div>
             </div>
 
-            <!-- Global Type Counters -->
             <div id="homeCounters" class="grid grid-cols-2 md:grid-cols-5 gap-6 px-10 lg:px-20 -mt-16 relative z-20 mb-32"></div>
             <div id="homeContinueWatchingWrapper" class="px-10 lg:px-20 relative z-20"></div>
 
@@ -274,8 +279,6 @@
         </div>
 
 
-<!-- masterpiece  -->
-
 <div id="view-masterpieces" class="page-view hidden p-10 lg:p-24 pt-32 min-h-screen">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-12">
         <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter liquid-glass">Masterpieces</h2>
@@ -288,8 +291,7 @@
     <div id="mpContainer" class="pb-20"></div>
 </div>
 
- <!-- SEARCH PAGE -->
-       <div id="view-search" class="page-view hidden p-10 lg:p-24 pt-32">
+ <div id="view-search" class="page-view hidden p-10 lg:p-24 pt-32">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-12">
                 <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter" id="searchHeader">Discover</h2>
                 <div class="flex flex-wrap gap-4 items-center">
@@ -361,9 +363,7 @@
 
 
 
-        <!-- saga matrix -->
-
-<div id="view-sagamatrix" class="page-view hidden p-10 lg:p-24 pt-32 min-h-screen">
+        <div id="view-sagamatrix" class="page-view hidden p-10 lg:p-24 pt-32 min-h-screen">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-10 mb-12">
         <div>
             <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter liquid-glass">Saga Matrix</h2>
@@ -448,8 +448,6 @@
 </div>
 
         
-<!-- my-list  -->
-
 <div id="view-mylist" class="page-view hidden p-6 lg:p-24 pt-24 lg:pt-32">
     <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 mb-16">
         <div>
@@ -596,8 +594,7 @@
     </div>
 </div>
 
-        <!-- RHYTHM LAB PAGE / collections page  -->
-<div id="view-rhythmlab" class="page-view hidden p-6 md:p-10 lg:p-24 pt-24 lg:pt-32">
+        <div id="view-rhythmlab" class="page-view hidden p-6 md:p-10 lg:p-24 pt-24 lg:pt-32">
             <div class="flex justify-between items-center mb-10 md:mb-16">
                 <h2 class="text-4xl md:text-7xl font-black italic uppercase tracking-tighter">Your Collections</h2>
             </div>
@@ -686,8 +683,7 @@
 
 
         
-        <!-- SYNC ENGINE PAGE -->
-<div id="view-sync" class="page-view hidden p-6 md:p-10 lg:p-24 pt-24 lg:pt-32 min-h-screen">
+        <div id="view-sync" class="page-view hidden p-6 md:p-10 lg:p-24 pt-24 lg:pt-32 min-h-screen">
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
         <div>
             <h2 class="text-4xl md:text-6xl lg:text-7xl font-black italic uppercase tracking-tighter liquid-glass mb-2">For You</h2>
@@ -706,8 +702,194 @@
     <div id="syncContainer" class="space-y-16 md:space-y-32"></div>
 </div>
 
-<!-- sources -->
+<div id="view-neurallink" class="page-view hidden p-6 md:p-10 lg:p-24 pt-24 lg:pt-32 relative min-h-screen flex flex-col items-center">
+    
+    <div class="absolute inset-0 z-0 overflow-hidden flex items-center justify-center opacity-20 pointer-events-none">
+        <div class="radar-circle w-[300px] h-[300px] md:w-[600px] md:h-[600px] rounded-full border border-pulse absolute"></div>
+        <div class="radar-circle w-[450px] h-[450px] md:w-[900px] md:h-[900px] rounded-full border border-pulse absolute animation-delay-1000"></div>
+    </div>
 
+    <div class="relative z-10 w-full max-w-5xl text-center mb-12">
+        <h2 class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white mb-4">Neural <span class="text-pulse">Link</span></h2>
+        <p class="text-[11px] text-gray-400 font-bold tracking-[0.2em] uppercase">Multi-Master P2P Synchronization</p>
+    </div>
+
+    <div class="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+        
+        <div class="bg-[#0a0c12]/80 backdrop-blur-2xl p-8 rounded-[40px] border border-white/10 flex flex-col items-center text-center shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+            <div class="w-16 h-16 rounded-full bg-pulse/10 text-pulse flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(255,45,85,0.2)]">
+                <i class="fas fa-satellite-dish animate-pulse"></i>
+            </div>
+            <h3 class="text-xl font-black uppercase tracking-widest mb-2 text-white">Primary Hub</h3>
+            <p class="text-xs text-gray-400 mb-8 leading-relaxed">Establish this device as the source of truth.</p>
+            
+            <div class="w-full mt-auto relative">
+                <input type="text" id="deviceNameInput" placeholder="Node Name (e.g., Rig-01)" class="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-4 text-xs text-white placeholder-gray-600 outline-none focus:border-pulse mb-4 font-bold uppercase tracking-wider text-center">
+                
+                <button onclick="document.getElementById('syncFilters').classList.toggle('hidden')" class="text-[9px] font-black uppercase text-gray-500 hover:text-white transition-colors mb-4 flex items-center justify-center gap-2 w-full"><i class="fas fa-sliders-h"></i> Toggle Payload Filters</button>
+                <div id="syncFilters" class="hidden mb-4 bg-white/5 p-4 rounded-xl border border-white/10 text-left">
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        <label class="flex items-center gap-2 text-[9px] text-white uppercase font-bold cursor-pointer"><input type="checkbox" class="sync-filter accent-pulse w-3 h-3" value="movie" checked> Movies</label>
+                        <label class="flex items-center gap-2 text-[9px] text-white uppercase font-bold cursor-pointer"><input type="checkbox" class="sync-filter accent-pulse w-3 h-3" value="tv" checked> Series</label>
+                        <label class="flex items-center gap-2 text-[9px] text-white uppercase font-bold cursor-pointer"><input type="checkbox" class="sync-filter accent-pulse w-3 h-3" value="anime" checked> Anime</label>
+                        <label class="flex items-center gap-2 text-[9px] text-white uppercase font-bold cursor-pointer"><input type="checkbox" class="sync-filter accent-pulse w-3 h-3" value="kdrama" checked> K-Drama</label>
+                        <label class="flex items-center gap-2 text-[9px] text-white uppercase font-bold cursor-pointer"><input type="checkbox" class="sync-filter accent-pulse w-3 h-3" value="turkish" checked> Turkish</label>
+                        <label class="flex items-center gap-2 text-[9px] text-white uppercase font-bold cursor-pointer"><input type="checkbox" class="sync-filter accent-pulse w-3 h-3" value="asian" checked> Asian</label>
+                    </div>
+                </div>
+
+                <button onclick="initNeuralHost()" class="w-full bg-pulse text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:scale-105 transition-all shadow-[0_10px_20px_rgba(255,45,85,0.3)]">
+                    Generate Sync Key
+                </button>
+            </div>
+            
+            <div id="qrContainer" class="hidden mt-8 w-full flex flex-col items-center">
+                <div class="relative inline-block p-4 bg-white rounded-[30px] shadow-[0_0_40px_rgba(255,45,85,0.5)] overflow-hidden">
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-15">
+                        <span class="text-pulse font-black italic tracking-tighter" style="font-size: 140px; line-height: 1;">C</span>
+                    </div>
+                    <div id="qrCanvas" class="relative z-10 mix-blend-multiply"></div>
+                </div>
+                <div id="hostStatusText" class="mt-6 text-[10px] text-pulse font-black uppercase tracking-widest animate-pulse bg-pulse/10 border border-pulse/30 px-4 py-2 rounded-full">Awaiting Connection...</div>
+            </div>
+        </div>
+
+        <div class="bg-[#0a0c12]/80 backdrop-blur-2xl p-8 rounded-[40px] border border-white/10 flex flex-col items-center text-center shadow-[0_20px_40px_rgba(0,0,0,0.5)]">
+            <div class="w-16 h-16 rounded-full bg-[#3b82f6]/10 text-[#3b82f6] flex items-center justify-center text-2xl mb-6 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+                <i class="fas fa-network-wired"></i>
+            </div>
+            <h3 class="text-xl font-black uppercase tracking-widest mb-2 text-white">Secondary Node</h3>
+            <p class="text-xs text-gray-400 mb-8 leading-relaxed">Connect to a Hub to merge timelines.</p>
+            
+            <div class="w-full mt-auto space-y-4">
+                <button onclick="startQRScanner()" class="w-full bg-[#3b82f6]/10 border border-[#3b82f6]/30 text-[#3b82f6] py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-[#3b82f6] hover:text-white transition-all shadow-lg">
+                    <i class="fas fa-camera mr-2"></i> Scan Hub QR
+                </button>
+                <div class="flex items-center gap-3 opacity-50 py-2">
+                    <div class="h-px flex-1 bg-white/20"></div>
+                    <span class="text-[9px] text-white uppercase font-black tracking-widest">OR</span>
+                    <div class="h-px flex-1 bg-white/20"></div>
+                </div>
+                <div class="flex gap-3">
+                    <input type="text" id="manualPeerId" placeholder="Enter Host Key..." class="flex-1 bg-black/50 border border-white/10 rounded-2xl px-4 py-4 text-xs text-white placeholder-gray-600 outline-none focus:border-[#3b82f6] font-bold uppercase tracking-wider text-center">
+                    <button onclick="joinNeuralNetwork()" class="bg-[#3b82f6] px-6 rounded-2xl hover:scale-105 transition-all text-white shadow-[0_10px_20px_rgba(59,130,246,0.3)]">
+                        <i class="fas fa-link"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-5xl bg-[#0a0c12]/80 backdrop-blur-2xl p-6 md:p-12 rounded-[40px] border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.5)] flex flex-col items-center">
+        <div class="flex flex-col md:flex-row justify-between items-center w-full mb-10 border-b border-white/5 pb-6 gap-4">
+            <div class="text-center md:text-left">
+                <h3 class="text-2xl md:text-3xl font-black uppercase tracking-widest text-white flex items-center justify-center md:justify-start gap-4">
+                    <i class="fas fa-project-diagram text-[#a855f7]"></i> Network Topology
+                </h3>
+                <p class="text-[10px] text-gray-400 uppercase tracking-widest mt-2 font-bold">Device Hierarchy & Memory</p>
+            </div>
+            <button onclick="clearTopology()" class="px-6 py-3 bg-pulse/10 text-pulse border border-pulse/30 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-pulse hover:text-white transition-all flex items-center gap-2">
+                <i class="fas fa-trash"></i> Purge Network
+            </button>
+        </div>
+        
+        <div id="topologyTree" class="w-full relative flex flex-col items-center pt-4">
+            </div>
+    </div>
+</div>
+<div id="qrScannerModal" class="fixed inset-0 z-[500] hidden bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+    <div class="w-full max-w-md bg-[#0a0c12] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
+        <button onclick="closeQRScanner()" class="absolute top-4 right-4 z-50 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-pulse transition-colors">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="p-6 text-center border-b border-white/10">
+            <h3 class="text-xl font-black italic uppercase text-white tracking-widest">Optical Scanner</h3>
+            <p class="text-[9px] text-pulse uppercase font-bold tracking-widest mt-1">Point camera at Hub QR Code</p>
+        </div>
+        <div class="p-4 bg-black relative min-h-[300px] flex items-center justify-center">
+             <div id="qr-reader" class="w-full relative z-10"></div>
+        </div>
+    </div>
+</div>
+
+
+<div id="neuralDiffOverlay" class="hidden opacity-0 transition-all duration-300 ease-out w-full max-w-6xl mx-auto my-6 md:my-8 bg-gradient-to-br from-[#0a0c12] via-[#0d0f14] to-[#0a0c12] border border-white/20 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-sm max-h-[calc(100vh-80px)]">
+    <!-- Header -->
+    <div class="p-4 md:p-6 border-b border-white/20 bg-gradient-to-r from-[#0a0c12]/95 to-[#0d0f14]/95 relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-r from-pulse/5 to-transparent opacity-50"></div>
+        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-3 h-3 bg-pulse rounded-full animate-pulse"></div>
+                    <h3 class="text-2xl md:text-3xl lg:text-4xl font-black italic uppercase tracking-tighter text-white">
+                        Delta <span class="text-pulse drop-shadow-lg">Resolution</span>
+                    </h3>
+                </div>
+                <p id="syncConnectionInfo" class="text-sm text-gray-300 font-bold tracking-widest uppercase flex items-center gap-2">
+                    <i class="fas fa-network-wired text-pulse"></i>
+                    <span>Neural Sync Active</span>
+                </p>
+                <p id="neuralDiffActionTip" class="text-xs text-gray-400 uppercase tracking-wide mt-2">Select a diff or tap Select All, swipe right to approve</p>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-3 cursor-pointer bg-white/10 px-4 py-3 rounded-xl border border-white/20 hover:border-pulse/50 transition-all duration-300 shadow-lg hover:shadow-pulse/10">
+                        <input type="checkbox" id="selectAllDiffs" onchange="toggleAllDiffs(this)" class="accent-pulse w-5 h-5 cursor-pointer">
+                        <span class="text-sm font-bold uppercase text-white tracking-wider">Select All</span>
+                    </label>
+                    <button onclick="closeDiffOverlay()" class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center border border-white/20 hover:bg-pulse hover:text-white hover:border-pulse transition-all duration-300 shadow-lg hover:shadow-pulse/20 text-gray-400" aria-label="Close overlay">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Area -->
+    <div class="relative">
+        <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-pulse via-pulse/50 to-transparent"></div>
+        <div id="neuralDiffCard" class="max-h-[800px] md:max-h-[1000px] overflow-y-auto hide-scroll">
+            <div id="diffCardsContainer" class="p-6 md:p-8 space-y-6 min-h-[400px]">
+                <!-- Diff cards will be inserted here -->
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-4 text-gray-600"></i>
+                    <p class="text-lg font-medium">No differences detected</p>
+                    <p class="text-sm">Changes will appear here when sync conflicts are found</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="sticky bottom-0 left-0 right-0 p-4 md:p-6 border-t border-white/20 bg-gradient-to-r from-[#0a0c12]/95 to-[#0d0f14]/95 relative z-30">
+        <div class="absolute inset-0 bg-gradient-to-r from-transparent to-pulse/5 opacity-30"></div>
+        <div class="relative z-10 flex flex-col sm:flex-row gap-3 sm:justify-end items-stretch sm:items-center">
+            <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <button onclick="rejectAllChanges()" class="w-full sm:w-auto py-3 px-4 md:py-4 md:px-6 rounded-xl border-2 border-white/20 bg-white/5 text-gray-400 font-bold uppercase text-xs md:text-sm tracking-wider hover:bg-white/10 hover:text-white hover:border-white/30 transition-all duration-300 shadow-lg hover:shadow-white/10 flex items-center justify-center gap-2">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Discard Selected</span>
+                </button>
+                <button onclick="executeSelectedMerges()" class="w-full sm:w-auto py-3 px-4 md:py-4 md:px-6 rounded-xl bg-gradient-to-r from-[#22c55e] to-[#16a34a] text-white font-bold uppercase text-xs md:text-sm tracking-wider hover:from-[#16a34a] hover:to-[#15803d] active:scale-95 transition-all duration-300 shadow-lg shadow-[#22c55e]/30 hover:shadow-[#22c55e]/50 flex items-center justify-center gap-2">
+                    <i class="fas fa-check-double"></i>
+                    <span>Commit Timelines</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sync Animation Overlay -->
+    <div id="syncAnimationContainer" class="absolute inset-0 hidden bg-gradient-to-br from-[#0a0c12]/95 via-[#0d0f14]/95 to-[#0a0c12]/95 backdrop-blur-md flex items-center justify-center pointer-events-none rounded-3xl z-20">
+        <div class="text-center">
+            <div class="w-16 h-16 border-4 border-pulse/30 border-t-pulse rounded-full animate-spin mx-auto mb-4"></div>
+            <p class="text-pulse font-bold text-lg">Synchronizing...</p>
+        </div>
+    </div>
+</div>
+        <!-- Animation content can be added here -->
+    </div>
+</div>
+
+<!-- sources  -->
 <div id="view-sources" class="page-view hidden p-10 lg:p-24 pt-32">
     <div class="mb-16">
         <h2 class="text-5xl md:text-7xl font-black italic uppercase tracking-tighter text-white">Source Engine</h2>
@@ -790,10 +972,9 @@
 </div>
 
     </main>
-    <!-- actor-modal -->
-    <div id="personModal" class="fixed inset-0 z-[200] hidden bg-dark overflow-y-auto">
+    <div id="personModal" class="fixed inset-0 z-[250] hidden bg-dark overflow-y-auto">
     <div class="relative min-h-screen flex flex-col lg:flex-row">
-        <button onclick="closePersonModal()" class="fixed top-6 right-6 z-[210] w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
+        <button onclick="closePersonModal()" class="fixed top-6 right-6 z-[260] w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
             <i class="fas fa-times"></i>
         </button>
 
@@ -826,26 +1007,25 @@
         </div>
     </div>
 </div>
-    <!-- INFO MODAL -->
-   <div id="modal" class="fixed inset-0 z-[150] hidden bg-dark overflow-y-auto">
+    <div id="modal" class="fixed inset-0 z-[260] hidden bg-dark overflow-y-auto">
         <div class="relative h-[40vh] md:h-[50vh] lg:h-[60vh]">
             
             <img id="mBackdrop" class="w-full h-full object-cover object-top">
             <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
             
-            <button onclick="closeModal()" class="fixed top-6 right-6 lg:top-10 lg:right-10 z-[160] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
+            <button onclick="closeModal()" class="fixed top-6 right-6 lg:top-10 lg:right-10 z-[270] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
                 <i class="fas fa-times"></i>
             </button>
             
-            <button id="mBackBtn" onclick="modalGoBack()" class="fixed top-6 left-6 lg:top-10 lg:left-10 z-[160] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all hidden">
+            <button id="mBackBtn" onclick="modalGoBack()" class="fixed top-6 left-6 lg:top-10 lg:left-10 z-[270] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all hidden">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <button id="mBackBtn" ...></button>
-            <button onclick="closeModal(); navigate('home')" class="fixed top-6 right-20 lg:top-10 lg:right-28 z-[160] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all shadow-xl" title="Return to Home">
+            
+            <button onclick="closeModal(); navigate('home')" class="fixed top-6 right-20 lg:top-10 lg:right-28 z-[270] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all shadow-xl" title="Return to Home">
                 <i class="fas fa-home"></i>
             </button>
             
-<div id="modalSearchWrapper" class="fixed top-6 left-6 lg:top-10 lg:left-28 z-[160] transition-all duration-500 ease-in-out">
+<div id="modalSearchWrapper" class="fixed top-6 left-6 lg:top-10 lg:left-28 z-[270] transition-all duration-500 ease-in-out">
     
     <div class="relative group flex items-center">
         
@@ -861,7 +1041,7 @@
             </button>
         </div>
         
-        <div id="modalSearchDrop" class="absolute top-full left-0 w-[280px] md:w-full mt-3 bg-[#0a0c12]/90 backdrop-blur-3xl border border-white/10 rounded-2xl hidden overflow-hidden shadow-2xl z-[170]">
+        <div id="modalSearchDrop" class="absolute top-full left-0 w-[280px] md:w-full mt-3 bg-[#0a0c12]/90 backdrop-blur-3xl border border-white/10 rounded-2xl hidden overflow-hidden shadow-2xl z-[280]">
         </div>
     </div>
 </div>
@@ -886,6 +1066,11 @@
                     <button onclick="openWatchMenu()" class="border-b border-[#22c55e] pb-1 text-[#22c55e] flex items-center gap-2">
                         <i class="fas fa-play"></i> Watch
                     </button>
+                </div>
+
+                <div id="mNetworkActions" class="hidden flex-wrap items-center gap-4 mt-6 pt-4 border-t border-white/10">
+                    <button onclick="castToPeer()" class="text-[9px] font-black uppercase tracking-widest text-[#a855f7] hover:text-white transition-colors flex items-center gap-2"><i class="fas fa-tv"></i> Cast to Peer</button>
+                    <button onclick="pingPeer()" class="text-[9px] font-black uppercase tracking-widest text-[#3b82f6] hover:text-white transition-colors flex items-center gap-2"><i class="fas fa-paper-plane"></i> Ping Recommendation</button>
                 </div>
             </div>
         </div>
@@ -947,8 +1132,7 @@
                             </div>
                         </div>
 
-                        <!-- Progress Bar (TV Only) -->
-                      <div id="mProgressBox" class="hidden space-y-4">
+                        <div id="mProgressBox" class="hidden space-y-4">
     <div class="flex justify-between items-end text-[10px] font-black uppercase">
         <span class="text-gray-500 tracking-widest">Neural Progress</span>
         <span id="mEpLabel" class="text-pulse text-xs bg-pulse/10 px-3 py-1 rounded-full border border-pulse/20">0/0</span>
@@ -1033,8 +1217,7 @@
             </div>
         </div>
     </div>
-<!-- close modal -->
-    <div id="purgeModal" onclick="backdropClosePurge(event)" class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 transition-all">
+<div id="purgeModal" onclick="backdropClosePurge(event)" class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 transition-all">
         <div onclick="event.stopPropagation()" class="relative w-full max-w-md bg-[#0a0c12] border border-pulse/30 rounded-[30px] shadow-2xl shadow-pulse/10 flex flex-col p-8 text-center animate-in fade-in zoom-in duration-300">
             
             <div class="w-20 h-20 mx-auto bg-pulse/10 rounded-full flex items-center justify-center mb-6 border border-pulse/20 text-pulse text-3xl">
@@ -1058,14 +1241,11 @@
            </div> 
         </div>
 
-    <!-- PICKER MODAL -->
-
- <div id="pickerModal"
+    <div id="pickerModal"
      onclick="backdropClose(event)"
-     class="fixed inset-0 z-[150] hidden flex items-center justify-center
+     class="fixed inset-0 z-[500] hidden flex items-center justify-center
             bg-black/70 backdrop-blur-xl p-4">
 
-    <!-- Modal Card -->
     <div onclick="event.stopPropagation()"
          class="relative w-full max-w-md sm:max-w-xl
                 max-h-[95vh]
@@ -1074,7 +1254,6 @@
                 shadow-2xl
                 flex flex-col">
 
-        <!-- Header -->
         <div class="flex items-center justify-between px-6 pt-6">
             <h3 class="text-xl sm:text-3xl font-black uppercase italic text-pulse">
                 Neural Picker
@@ -1088,13 +1267,10 @@
             </button>
         </div>
 
-        <!-- Scrollable Content -->
         <div class="px-6 pb-6 mt-6 overflow-y-auto">
 
-            <!-- Filters -->
             <div class="space-y-6">
 
-                <!-- Status -->
                 <div class="flex justify-center gap-6">
                     <label class="flex items-center gap-2 text-xs font-black uppercase cursor-pointer">
                         <input type="checkbox" id="pWatching" checked class="accent-pulse w-4 h-4">
@@ -1107,7 +1283,6 @@
                     </label>
                 </div>
 
-                <!-- Type + Genre -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                     <div class="flex flex-col gap-2">
@@ -1142,7 +1317,6 @@
                 </div>
             </div>
 
-            <!-- Result -->
             <div id="pickerResult"
                  class="hidden mt-8 animate-in fade-in zoom-in duration-300">
 
@@ -1176,8 +1350,7 @@
     
     </div>
 </div>
-<!-- notification -->
- <div id="neuralToast" class="fixed top-24 right-4 left-4 sm:left-auto lg:top-auto lg:bottom-10 lg:right-10 z-[300] hidden animate-in slide-in-from-top-5 lg:slide-in-from-right-10 fade-in duration-500 cursor-pointer hover:scale-105 transition-transform" onclick="handleToastClick()">
+<div id="neuralToast" class="fixed top-24 right-4 left-4 sm:left-auto lg:top-auto lg:bottom-10 lg:right-10 z-[300] hidden animate-in slide-in-from-top-5 lg:slide-in-from-right-10 fade-in duration-500 cursor-pointer hover:scale-105 transition-transform" onclick="handleToastClick()">
     <div class="bg-[#0a0c12]/95 backdrop-blur-xl border border-pulse/30 p-4 rounded-2xl shadow-2xl shadow-pulse/20 flex items-center gap-4 max-w-sm">
         <div class="w-12 h-16 rounded-lg overflow-hidden shrink-0 border border-white/10">
             <img id="toastImg" class="w-full h-full object-cover" src="">
@@ -1209,14 +1382,15 @@
     </div>
     <div id="notifList" class="flex-1 overflow-y-auto p-6 space-y-4"></div>
 </div>
-<div id="watchModal" onclick="this.classList.add('hidden')" class="fixed inset-0 z-[250] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
+
+<div id="watchModal" onclick="this.classList.add('hidden'); checkScrollLock();" class="fixed inset-0 z-[270] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4">
     <div onclick="event.stopPropagation()" class="relative w-full max-w-sm bg-[#0a0c12] border border-white/10 rounded-[30px] shadow-2xl p-6">
         <h3 class="text-xl font-black italic uppercase text-white mb-4 flex items-center gap-3">
             <i class="fas fa-play text-[#22c55e]"></i> Select Source
         </h3>
         <p class="text-[10px] text-gray-500 uppercase font-bold mb-4 tracking-widest">Available Links for this Category</p>
         <div id="watchSourceList" class="space-y-3 max-h-[50vh] overflow-y-auto pr-2"></div>
-        <button onclick="document.getElementById('watchModal').classList.add('hidden')" class="mt-6 w-full py-3 bg-white/5 rounded-xl text-[10px] uppercase font-black tracking-widest text-gray-400 hover:text-white transition-all">Cancel</button>
+        <button onclick="document.getElementById('watchModal').classList.add('hidden'); checkScrollLock();" class="mt-6 w-full py-3 bg-white/5 rounded-xl text-[10px] uppercase font-black tracking-widest text-gray-400 hover:text-white transition-all">Cancel</button>
     </div>
 </div>
 
@@ -1244,9 +1418,9 @@
     </button>
 </div>
 
-<div id="advancedIOModal" onclick="this.classList.add('hidden')" class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 transition-all">
+<div id="advancedIOModal" onclick="closeAdvancedIO()" class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/80 backdrop-blur-xl p-4 transition-all">
     <div onclick="event.stopPropagation()" class="relative w-full max-w-2xl bg-[#0a0c12] border border-white/10 rounded-[40px] shadow-2xl flex flex-col p-8 md:p-12 animate-in fade-in zoom-in duration-300 max-h-[90vh] overflow-y-auto hide-scroll">
-        <button onclick="document.getElementById('advancedIOModal').classList.add('hidden')" class="absolute top-6 right-6 w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-pulse transition-all">
+        <button onclick="closeAdvancedIO()" class="absolute top-6 right-6 w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-pulse transition-all">
             <i class="fas fa-times"></i>
         </button>
         
@@ -1289,7 +1463,7 @@
 </div>
 
 
-<div id="factoryResetModal" onclick="this.classList.add('hidden')" class="fixed inset-0 z- hidden flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 transition-all">
+<div id="factoryResetModal" onclick="closeFactoryResetModal()" class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 transition-all">
     <div onclick="event.stopPropagation()" class="relative w-full max-w-md bg-[#0a0c12] border border-red-600/50 rounded-[40px] shadow-[0_20px_60px_rgba(220,38,38,0.2)] flex flex-col p-8 md:p-12 text-center animate-in zoom-in duration-300">
         <div class="w-24 h-24 mx-auto bg-red-600/10 rounded-full flex items-center justify-center mb-6 border border-red-600/30 text-red-500 text-4xl">
             <i class="fas fa-biohazard animate-pulse"></i>
@@ -1302,14 +1476,33 @@
             <button onclick="executeFactoryReset()" class="w-full bg-red-600 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors shadow-lg shadow-red-600/30 text-white">
                 Initiate Factory Reset
             </button>
-            <button onclick="document.getElementById('factoryResetModal').classList.add('hidden')" class="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-gray-400">
+            <button onclick="closeFactoryResetModal()" class="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-gray-400">
                 Abort
             </button>
         </div>
     </div>
 </div>
 
-<!-- watach modal -->
+<div id="networkPurgeModal" onclick="closeNetworkPurgeModal()" class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 transition-all">
+    <div onclick="event.stopPropagation()" class="relative w-full max-w-md bg-[#0a0c12] border border-pulse/50 rounded-[40px] shadow-[0_20px_60px_rgba(255,45,85,0.2)] flex flex-col p-8 md:p-12 text-center animate-in zoom-in duration-300">
+        <div class="w-24 h-24 mx-auto bg-pulse/10 rounded-full flex items-center justify-center mb-6 border border-pulse/30 text-pulse text-4xl">
+            <i class="fas fa-network-wired animate-pulse"></i>
+        </div>
+        <h3 class="text-3xl font-black italic uppercase text-white mb-4">Purge Network?</h3>
+        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-8 leading-relaxed">
+            This will permanently erase all recognized peers and network history from this device.
+        </p>
+        <div class="flex flex-col gap-4">
+            <button onclick="executeNetworkPurge()" class="w-full bg-pulse py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-pulse/30 text-white">
+                Confirm Purge
+            </button>
+            <button onclick="closeNetworkPurgeModal()" class="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-gray-400">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="watchOptionsModal" class="fixed inset-0 z-[100] hidden bg-[#020408]/90 backdrop-blur-md flex items-center justify-center p-4 opacity-0 transition-opacity duration-300">
     <div class="bg-[#0a0c12] border border-white/10 rounded-3xl w-full max-w-md p-6 flex flex-col gap-6 transform scale-95 transition-transform duration-300 shadow-2xl">
         
@@ -1346,6 +1539,7 @@
 </div>
 
 
+<script src="sync-engine.js"></script>
 <script src="script.js"></script>
 
     

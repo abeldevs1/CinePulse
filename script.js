@@ -350,6 +350,7 @@ function navigate(view, skipHistory = false) {
     if(view === 'masterpieces') renderMasterpieces();
     if(view === 'sagamatrix') renderSagaMatrix();
 
+
     if(view === 'search') {
         const input = document.getElementById('mainSearch');
         const header = document.getElementById('searchHeader');
@@ -357,9 +358,28 @@ function navigate(view, skipHistory = false) {
             header.innerText = "Discover";
             loadDiscoverContent();
         }
+        
     }
     if(view === 'radar') renderRadar();
-    
+    if(view === 'neurallink') {
+        // 1. Reset Host UI to default state
+        const qrContainer = document.getElementById('qrContainer');
+        const hostStatus = document.getElementById('hostStatusText');
+        if(qrContainer) qrContainer.classList.add('hidden');
+        if(hostStatus) {
+            hostStatus.classList.add('hidden');
+            hostStatus.innerText = "Awaiting Connection...";
+            hostStatus.className = "hidden mt-4 text-[10px] text-pulse font-bold uppercase tracking-widest animate-pulse";
+        }
+        
+        // 2. Clear manual input
+        const manualInput = document.getElementById('manualPeerId');
+        if(manualInput) manualInput.value = '';
+
+        // 3. Optional: Auto-init Peer if you want the ID ready immediately 
+        // otherwise, let the user click "Generate Sync Key"
+        console.log("Neural Link View Initialized");
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(hideLoader, 300); 
 }
@@ -493,6 +513,24 @@ if (modalSearch) {
 }
 
 }
+window.checkScrollLock = function() {
+    const modalIds = [
+        'modal', 'personModal', 'sagaModal', 'pickerModal', 'advancedIOModal', 
+        'networkPurgeModal', 'factoryResetModal', 'watchModal', 'watchOptionsModal', 
+        'qrScannerModal', 'neuralDiffOverlay', 'purgeModal'
+    ];
+    
+    const isAnyModalOpen = modalIds.some(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none';
+    });
+    
+    document.body.style.overflow = isAnyModalOpen ? 'hidden' : 'auto';
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    setupNeuralDiffOverlayGestures();
+});
  
 // Add this new function
 function setupModalSearch() {
@@ -650,7 +688,8 @@ currentPersonCredits = credits.cast
     
     renderPersonWorks();
 
-    document.getElementById('personModal').classList.remove('hidden');
+   document.getElementById('personModal').classList.remove('hidden');
+    checkScrollLock();
     document.body.style.overflow = 'hidden';
 
     // Activate Load More Button
@@ -669,7 +708,7 @@ function renderPersonWorks() {
     const items = currentPersonCredits.slice(0, personDisplayLimit);
     
     container.innerHTML = items.map(w => `
-        <div class="group cursor-pointer" onclick="closePersonModal(); openModal(${w.id}, '${w.media_type || 'movie'}')">
+        <div class="group cursor-pointer" onclick="openModal(${w.id}, '${w.media_type || 'movie'}')">
             <div class="aspect-[2/3] rounded-2xl overflow-hidden mb-3 border border-white/5 group-hover:border-pulse transition-all">
                 <img src="${IMG + w.poster_path}" class="w-full h-full object-cover">
             </div>
@@ -677,10 +716,8 @@ function renderPersonWorks() {
         </div>
     `).join('');
 
-    // Show button only if there are more items to load
     loadMoreBox.classList.toggle('hidden', personDisplayLimit >= currentPersonCredits.length);
 }
-
 
     
 function renderDrop(items, query) {
@@ -697,17 +734,17 @@ function renderDrop(items, query) {
 
             return `
                 <div class="flex items-center gap-3 p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 group relative" 
-                     onclick="openModal(${i.id}, '${tmdbType}')">
+                     onpointerdown="event.preventDefault(); openModal(${i.id}, '${tmdbType}')">
                     <img src="${i.poster_path ? IMG + i.poster_path : 'https://via.placeholder.com/45x68?text=?'}" 
-                         class="w-10 h-14 object-cover rounded shadow-md">
-                    <div class="flex-1 min-w-0">
+                         class="w-10 h-14 object-cover rounded shadow-md pointer-events-none">
+                    <div class="flex-1 min-w-0 pointer-events-none">
                         <div class="text-[11px] font-black uppercase truncate group-hover:text-pulse transition-colors">${title}</div>
                         <div class="text-[8px] font-bold text-gray-500 uppercase mt-1 tracking-widest">
                             ${label} • ${year || 'TBA'}
                         </div>
                     </div>
-                    <button onclick="event.stopPropagation(); quickAdd(${i.id}, '${tmdbType}')" 
-                            class="p-2 px-3 bg-pulse/10 hover:bg-pulse text-pulse hover:text-white rounded-lg transition-all border border-pulse/20">
+                    <button onpointerdown="event.preventDefault(); event.stopPropagation(); quickAdd(${i.id}, '${tmdbType}')" 
+                            class="p-2 px-3 bg-pulse/10 hover:bg-pulse text-pulse hover:text-white rounded-lg transition-all border border-pulse/20 z-10">
                         <i class="fas fa-plus text-[10px]"></i>
                     </button>
                 </div>
@@ -715,7 +752,7 @@ function renderDrop(items, query) {
         }).join('');
     }
     drop.classList.remove('hidden');
-}
+}   
 
 // Logic for the Quick Add Button
 function quickWatch(event, id, cat, title, year) {
@@ -988,14 +1025,23 @@ async function openModal(id, type, isBack = false) {
 
     state.active = { ...details, media_type: type };
     const local = state.db.find(i => i.id === id);
-const originalRenderMasterpieces = renderMasterpieces;
-renderMasterpieces = function() {
-    // Call the original, but intercept the 'crowned' tab HTML generation
-    if (state.mpTab !== 'crowned') {
-        originalRenderMasterpieces();
-        return;
+    const originalRenderMasterpieces = renderMasterpieces;
+    renderMasterpieces = function() {
+        // Call the original, but intercept the 'crowned' tab HTML generation
+        if (state.mpTab !== 'crowned') {
+            originalRenderMasterpieces();
+            return;
+        }
+    const netActions = document.getElementById('mNetworkActions');
+    if (netActions) {
+        if (typeof NeuralSync !== 'undefined' && Object.keys(NeuralSync.activeConns).length > 0) {
+            netActions.classList.remove('hidden');
+            netActions.classList.add('flex');
+        } else {
+            netActions.classList.add('hidden');
+            netActions.classList.remove('flex');
+        }
     }
-    
     const container = document.getElementById('mpContainer');
     const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
     const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish', asian: 'Asian Drama' };
@@ -1189,6 +1235,7 @@ document.getElementById('mStatus').value = local ? local.status : '';
 
     document.getElementById('mRemoveBtn').classList.toggle('hidden', !local);
     document.getElementById('modal').classList.remove('hidden');
+    checkScrollLock();
     document.body.style.overflow = 'hidden';
     
     state.recPage = 1;
@@ -1214,6 +1261,7 @@ document.getElementById('mStatus').value = local ? local.status : '';
                         const idx = state.db.findIndex(i => i.id === state.active.id);
                         if(idx !== -1) {
                             state.db[idx].score = val;
+                            state.db[idx].updatedAt = Date.now();
                             save();
                             setStars(val);
                             
@@ -2035,7 +2083,7 @@ function renderGrid(id, items, forced, clear = true) {
             document.getElementById('pickerModal').classList.remove('hidden');
             document.getElementById('pickerResult').classList.add('hidden');
         }
-        function closePicker() { document.getElementById('pickerModal').classList.add('hidden'); }
+        function closePicker() { document.getElementById('pickerModal').classList.add('hidden'); checkScrollLock();}
 
         function runPulsePicker() {
             const w = document.getElementById('pWatching').checked;
@@ -2117,12 +2165,14 @@ function syncProgress(v) {
         state.db[idx].ep = v;
         updateEpUI(v, max);
         renderSeasonsUI(); // Update glowing/checked states instantly
+        state.db[idx].updatedAt = Date.now();
         save();
         
         // Auto-mark finished if max is reached
         if (v === max && state.db[idx].status !== 'Finished') {
             document.getElementById('mStatus').value = 'Finished';
             updateStatus(); 
+            state.db[idx].updatedAt = Date.now();
         }
     }
 }
@@ -2223,13 +2273,24 @@ function closeActorMode(e) {
             const d = new Date();
             document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
         }, 1000); }
-function save() { 
+function save(skipBroadcast = false) { 
     localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); 
     updateCounters(); 
-    renderContinueWatching(); // <-- NEW: Updates UI live when you watch an episode
+    if (typeof renderContinueWatching === 'function') renderContinueWatching(); 
     
     if (state.view === 'mylist') renderList();
     if (state.view === 'rhythmlab') runLab();
+
+    // Trigger Micro-Sync to connected peers
+    if (!skipBroadcast && typeof NeuralSync !== 'undefined' && Object.keys(NeuralSync.activeConns).length > 0) {
+        // Find the item that was literally just updated (within the last 1 second)
+        const latest = state.db.reduce((a, b) => ((a.updatedAt || 0) > (b.updatedAt || 0) ? a : b), state.db[0]);
+        if (latest && (Date.now() - (latest.updatedAt || 0)) < 1500) {
+            Object.values(NeuralSync.activeConns).forEach(conn => {
+                if (conn && conn.open) conn.send({ type: 'MICRO_SYNC', item: latest });
+            });
+        }
+    }
 }
 // Add this logic to your save routine
 async function saveWithSagaContext(item, type) {
@@ -2246,11 +2307,12 @@ async function saveWithSagaContext(item, type) {
     state.myList.push(item);
     saveToLocalStorage();
 }
-      function closeModal(fromPopState = false) { 
+function closeModal(fromPopState = false) { 
     state.modalHistory = []; // Wipe history on full close
     document.getElementById('mBackBtn').classList.add('hidden');
     document.getElementById('modal').classList.add('hidden'); 
-    document.body.style.overflow = 'auto'; 
+    
+    checkScrollLock(); // Replaces document.body.style.overflow = 'auto'
     
     // If closed manually via X button, reverse the history to clean the stack
     if (!fromPopState) window.history.back();
@@ -2258,16 +2320,23 @@ async function saveWithSagaContext(item, type) {
 
 function closePersonModal(fromPopState = false) {
     document.getElementById('personModal').classList.add('hidden');
-    document.body.style.overflow = 'auto';
+    checkScrollLock(); // Replaces document.body.style.overflow = 'auto'
+    
     if (!fromPopState) window.history.back();
 }
-        function removeItem() { state.db = state.db.filter(i => i.id !== state.active.id); save(); closeModal(); }
-        function modalGoBack() {
-            if (state.modalHistory.length > 0) {
-                const prev = state.modalHistory.pop();
-                openModal(prev.id, prev.type, true); // true = isBack
-            }
+function removeItem() { 
+    state.db = state.db.filter(i => i.id !== state.active.id); 
+    save(); 
+    closeModal(); 
 }
+function modalGoBack() {
+     if (state.modalHistory.length > 0) {
+        const prev = state.modalHistory.pop();
+                openModal(prev.id, prev.type, true); // true = isBack
+        }
+}
+
+
 // --- DATA SYNC: IMPORT & EXPORT ---
 
    // --- Beautiful UI Notification System ---
@@ -4308,6 +4377,7 @@ function setupLongPressCopy() {
 
         function closePurgeModal() {
             document.getElementById('purgeModal').classList.add('hidden');
+            checkScrollLock();
         }
 
         function backdropClosePurge(e) {
@@ -4345,6 +4415,7 @@ function overrideType(newType) {
     
     if (idx !== -1) {
         state.db[idx].type = newType;
+        state.db[idx].updatedAt = Date.now();
         save();
     } else {
         // If not in library yet, store the forceType to be used when they click '+ Add to List'
@@ -4612,7 +4683,7 @@ async function syncSagaData(cId, cName) {
                     id: part.id, title: part.title, poster: part.poster_path, type: 'movie',
                     status: 'Plan to Watch', ep: 0, max_ep: 1, score: 0, crown: 0, imdb: part.vote_average,
                     year: (part.release_date || '').split('-')[0], genres: part.genre_ids || [],
-                    added: Date.now(), sagaId: cId, sagaName: cName
+                    added: Date.now(), sagaId: cId, sagaName: cName,updatedAt: Date.now()
                 });
                 addedCount++;
             } else {
@@ -4937,7 +5008,7 @@ async function saveInlineSaga() {
                 type: part.media_type || 'movie', status: 'Plan to Watch', 
                 ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0, 
                 year: (part.release_date || '').split('-')[0], genres: [], added: Date.now(),
-                sagaId: sId, sagaName: title
+                sagaId: sId, sagaName: title,updatedAt: Date.now()
             });
             addedCount++;
         }
@@ -5004,7 +5075,7 @@ function markSagaFinished(sagaId) {
                     type: part.media_type || 'movie', status: 'Finished', 
                     ep: 1, max_ep: 1, score: 0, crown: 0, imdb: 0, 
                     year: (part.release_date || '').split('-')[0], genres: [], added: Date.now(),
-                    sagaId: sagaId, sagaName: "Custom Universe"
+                    sagaId: sagaId, sagaName: "Custom Universe",updatedAt: Date.now()
                 });
                 updated++;
             }
@@ -5030,9 +5101,14 @@ function markSagaFinished(sagaId) {
 }
 function closeSagaModal() {
     document.getElementById('sagaModal').classList.add('hidden');
+    checkScrollLock();
     if (state.view === 'sagamatrix') {
-        setSagaTab(currentSagaTab); // Force re-render of My Sagas tab to show changes immediately
+        setSagaTab(currentSagaTab); 
     }
+}
+function closeAdvancedIO() {
+    document.getElementById('advancedIOModal').classList.add('hidden');
+    checkScrollLock();
 }
 
 function toggleSafeMode() {
@@ -5639,7 +5715,7 @@ function saveCustomUniverse() {
                 type: part.type === 'tv' ? 'tv' : 'movie', status: 'Plan to Watch', 
                 ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0, 
                 year: part.year, genres: [], added: Date.now(),
-                sagaId: sagaId, sagaName: title
+                sagaId: sagaId, sagaName: title,updatedAt: Date.now()
             });
             addedCount++;
         }
@@ -5759,7 +5835,7 @@ async function autoMarkWatching(id, type) {
                 id: data.id, title: data.title || data.name, poster: data.poster_path,
                 type: cat, tmdb_type: type, status: 'Watching', ep: 0, max_ep: data.number_of_episodes || 1, 
                 score: 0, crown: 0, imdb: data.vote_average, year: (data.release_date || data.first_air_date || '').split('-')[0], 
-                genres: (data.genres || []).map(g => g.id), added: Date.now()
+                genres: (data.genres || []).map(g => g.id), added: Date.now(),updatedAt: Date.now()
             });
         } catch(e) { return; }
     }
@@ -5842,9 +5918,9 @@ function closeWatchOptions() {
     const modal = document.getElementById('watchOptionsModal');
     modal.classList.add('opacity-0');
     modal.firstElementChild.classList.add('scale-95');
-    
     setTimeout(() => {
         modal.classList.add('hidden');
+        checkScrollLock();
     }, 300);
 }
 
@@ -5920,6 +5996,7 @@ function syncProgressToLibrary() {
     if (idx !== -1) {
         state.db[idx].ep = absoluteEp;
         state.db[idx].status = 'Watching'; // Auto-mark as watching
+        state.db[idx].updatedAt = Date.now();
         save();
     }
 }
@@ -5927,4 +6004,9 @@ function syncProgressToLibrary() {
 function closePlayerAndReturn() {
     document.getElementById('neuralIframe').src = ""; // Stop video playback
     navigate('home'); // Or navigate('mylist') if you want. Home is safest.
+}
+
+function closeFactoryResetModal() {
+    document.getElementById('factoryResetModal').classList.add('hidden');
+    checkScrollLock();
 }

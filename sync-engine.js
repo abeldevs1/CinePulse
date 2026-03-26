@@ -1,0 +1,612 @@
+/**
+ * CINEPULSE NEURAL LINK - P2P SYNC ENGINE (ELITE V4.1)
+ * Refined Diff Resolutions, Network Payloads, and Transitions
+ */
+
+const NeuralSync = {
+    peer: null,
+    activeConns: {}, // Tracks live presence
+    role: 'standalone',
+    deviceId: localStorage.getItem('cp_device_id') || `CP-NODE-${Math.floor(Math.random() * 10000)}`,
+    pendingDiffs: [],
+    history: JSON.parse(localStorage.getItem('cp_network_history')) || []
+};
+
+localStorage.setItem('cp_device_id', NeuralSync.deviceId);
+
+document.addEventListener('DOMContentLoaded', renderTopology);
+
+// ==========================================
+// 1. HOST MODE (PRIMARY NODE)
+// ==========================================
+window.initNeuralHost = function() {
+    if (typeof Peer === 'undefined') return showNotification("P2P Module failed to load.", true);
+
+    const nameInput = document.getElementById('deviceNameInput');
+    const customName = (nameInput && nameInput.value) ? nameInput.value : NeuralSync.deviceId;
+    const hostStatus = document.getElementById('hostStatusText');
+    const qrContainer = document.getElementById('qrContainer');
+    
+    if (hostStatus) {
+        hostStatus.classList.remove('hidden');
+        hostStatus.innerText = "Initializing Peer Network...";
+    }
+
+    try {
+        const sanitizedId = customName.replace(/\s+/g, '-').toUpperCase();
+        if (NeuralSync.peer) NeuralSync.peer.destroy();
+        
+        NeuralSync.peer = new Peer(sanitizedId);
+
+        NeuralSync.peer.on('open', (id) => {
+            NeuralSync.role = 'host';
+            if (hostStatus) hostStatus.innerText = `Hub Active: ${id}`;
+            if (qrContainer) qrContainer.classList.remove('hidden');
+            
+            const qrCanvas = document.getElementById('qrCanvas');
+            if (qrCanvas && typeof QRCode !== 'undefined') {
+                qrCanvas.innerHTML = '';
+                new QRCode(qrCanvas, {
+                    text: id, width: 200, height: 200,
+                    colorDark: "#ff2d55", 
+                    colorLight: "#ffffff", 
+                    correctLevel: QRCode.CorrectLevel.H 
+                });
+            }
+            showNotification(`Neural Hub Opened: ${id}`);
+            startHeartbeat(); 
+        });
+
+        NeuralSync.peer.on('error', (err) => {
+            showNotification(err.type === 'unavailable-id' ? "ID taken. Try a different Node Name." : `Network Error: ${err.type}`, true);
+        });
+
+        NeuralSync.peer.on('connection', (conn) => {
+            setupConnection(conn);
+        });
+
+    } catch (e) { console.error("Critical failure:", e); }
+}
+
+// ==========================================
+// 2. CLIENT MODE (SECONDARY NODE)
+// ==========================================
+window.joinNeuralNetwork = function(targetId = null) {
+    const hostId = targetId || document.getElementById('manualPeerId').value.trim();
+    if (!hostId) return showNotification("Please enter a Host Key.", true);
+    if (typeof Peer === 'undefined') return showNotification("P2P Module blocked.", true);
+
+    showNotification(`Initializing connection to ${hostId}...`);
+
+    if (NeuralSync.peer) NeuralSync.peer.destroy();
+    NeuralSync.peer = new Peer(NeuralSync.deviceId);
+
+    NeuralSync.peer.on('open', (id) => {
+        NeuralSync.role = 'node';
+        const conn = NeuralSync.peer.connect(hostId);
+        setupConnection(conn);
+    });
+
+    NeuralSync.peer.on('error', (err) => {
+        showNotification(`Connection Error: ${err.type}`, true);
+    });
+};
+
+// ==========================================
+// 3. QR SCANNER INTEGRATION
+// ==========================================
+let html5QrcodeScanner;
+window.startQRScanner = function() {
+    if (typeof Html5QrcodeScanner === 'undefined') return showNotification("Scanner library not loaded.", true);
+    
+    const modal = document.getElementById('qrScannerModal');
+    modal.classList.remove('hidden');
+    if (typeof checkScrollLock === 'function') checkScrollLock();
+    
+    setTimeout(() => {
+        if (!html5QrcodeScanner) {
+            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
+            html5QrcodeScanner.render((decodedText) => {
+                closeQRScanner();
+                document.getElementById('manualPeerId').value = decodedText;
+                joinNeuralNetwork(decodedText);
+            }, (errorMessage) => { });
+        }
+    }, 100);
+};
+
+window.closeQRScanner = function() {
+    if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(e => console.log(e));
+        html5QrcodeScanner = null;
+    }
+    document.getElementById('qrScannerModal').classList.add('hidden');
+    if (typeof checkScrollLock === 'function') checkScrollLock();
+}
+
+// ==========================================
+// 4. TOPOLOGY (HISTORY & LIVE PRESENCE)
+// ==========================================
+function saveToHistory(peerId) {
+    const existing = NeuralSync.history.find(h => h.id === peerId);
+    if (existing) existing.lastSeen = Date.now();
+    else NeuralSync.history.push({ id: peerId, lastSeen: Date.now() });
+    localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
+    renderTopology();
+}
+
+function renderTopology() {
+    const container = document.getElementById('topologyTree');
+    if (!container) return;
+
+    if (NeuralSync.history.length === 0) {
+        container.innerHTML = '<div class="text-[10px] text-gray-500 uppercase tracking-widest font-black py-12 text-center w-full border border-dashed border-white/10 rounded-[30px]">Network Void. No external nodes detected.</div>';
+        return;
+    }
+
+    let html = `
+        <div class="relative z-20 bg-dark border-2 border-[#22c55e] rounded-[30px] p-6 md:p-8 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.3)] mb-12 w-full max-w-xs text-center">
+            <i class="fas fa-satellite-dish text-[#22c55e] text-3xl md:text-4xl mb-3"></i>
+            <div class="text-[11px] font-black text-white uppercase tracking-widest">Local Core Node</div>
+            <div class="text-[9px] text-[#22c55e] uppercase mt-1 tracking-widest font-bold bg-[#22c55e]/10 px-3 py-1 rounded-md border border-[#22c55e]/30">${NeuralSync.deviceId}</div>
+        </div>
+        <div class="w-px h-12 bg-gradient-to-b from-[#22c55e] to-white/10 absolute top-[130px] md:top-[160px] z-10 hidden md:block"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10 w-full relative pt-8 border-t border-white/10 md:border-white/20">
+    `;
+
+    html += NeuralSync.history.sort((a,b) => b.lastSeen - a.lastSeen).map(node => {
+        const isLive = NeuralSync.activeConns[node.id] !== undefined;
+        const statusColor = isLive ? '#a855f7' : '#4b5563';
+        const glowClass = isLive ? 'shadow-[0_0_30px_rgba(168,85,247,0.3)] border-[#a855f7]' : 'border-white/10';
+        const dateStr = new Date(node.lastSeen).toLocaleDateString();
+        const timeStr = new Date(node.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        return `
+            <div class="relative flex flex-col items-center group">
+                <div class="hidden md:block absolute -top-10 left-1/2 w-px h-10 bg-white/10"></div>
+                <div class="bg-[#0a0c12] border ${glowClass} p-6 rounded-[30px] hover:border-[#a855f7]/50 transition-all w-full relative overflow-hidden group-hover:-translate-y-2 shadow-xl">
+                    <button onclick="removeTopologyNode('${node.id}')" class="absolute top-4 right-4 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:bg-pulse hover:text-white transition-all md:opacity-0 md:group-hover:opacity-100 z-20">
+                        <i class="fas fa-times text-[10px]"></i>
+                    </button>
+                    <div class="w-14 h-14 rounded-full border-2 border-[${statusColor}] flex items-center justify-center mb-4 mx-auto bg-dark shadow-inner">
+                        <i class="fas ${isLive ? 'fa-network-wired animate-pulse' : 'fa-server'} text-[${statusColor}] text-lg"></i>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-[12px] font-black uppercase text-white truncate px-4">${node.id}</div>
+                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-2 bg-white/5 py-1.5 rounded-lg border border-white/5">Sync: ${dateStr} ${timeStr}</div>
+                        ${isLive ? `<div class="text-[9px] text-[#a855f7] mt-3 uppercase font-black tracking-widest live-status" data-peer="${node.id}"><i class="fas fa-link mr-1"></i> Connected</div>` : ''}
+                    </div>
+                </div>
+                <button onclick="joinNeuralNetwork('${node.id}')" class="mt-4 px-6 py-3 w-[80%] bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase text-white hover:bg-[${statusColor}] transition-all flex items-center justify-center gap-2 shadow-lg">
+                    <i class="fas fa-plug"></i> Connect
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    html += `</div>`;
+    container.innerHTML = html;
+}
+
+window.removeTopologyNode = function(id) {
+    NeuralSync.history = NeuralSync.history.filter(n => n.id !== id);
+    localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
+    renderTopology();
+}
+
+// ------------------------------------------
+// UPGRADED: Modern Notification Purge
+// ------------------------------------------
+window.clearTopology = function() {
+    document.getElementById('networkPurgeModal').classList.remove('hidden');
+    if (typeof checkScrollLock === 'function') checkScrollLock();
+}
+
+window.closeNetworkPurgeModal = function() {
+    document.getElementById('networkPurgeModal').classList.add('hidden');
+    if (typeof checkScrollLock === 'function') checkScrollLock();
+}
+
+window.executeNetworkPurge = function() {
+    NeuralSync.history = [];
+    localStorage.setItem('cp_network_history', JSON.stringify([]));
+    renderTopology();
+    closeNetworkPurgeModal();
+    showNotification("Network Topology Purged.");
+}
+// ------------------------------------------
+
+let heartbeatInterval;
+function startHeartbeat() {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(() => {
+        const watching = state.db.find(i => i.status === 'Watching');
+        const statusMsg = watching ? `Watching: ${watching.title}` : 'System Idle';
+        
+        Object.values(NeuralSync.activeConns).forEach(conn => {
+            if (conn && conn.open) conn.send({ type: 'HEARTBEAT', status: statusMsg });
+        });
+    }, 10000);
+}
+
+// ==========================================
+// 5. CONNECTION HANDSHAKE & NEW P2P FEATURES
+// ==========================================
+function setupConnection(conn) {
+    conn.on('open', () => {
+        NeuralSync.activeConns[conn.peer] = conn;
+        showNotification(`Link Established with ${conn.peer}`);
+        saveToHistory(conn.peer);
+        
+        // Re-render modal to show the Network Actions if a modal is open
+        const netActions = document.getElementById('mNetworkActions');
+        if (netActions && !document.getElementById('modal').classList.contains('hidden')) {
+            netActions.classList.remove('hidden');
+            netActions.classList.add('flex');
+        }
+        
+        if (NeuralSync.role === 'node') {
+            conn.send({ type: 'SYNC_REQUEST', sender: NeuralSync.deviceId });
+        }
+    });
+
+    conn.on('data', (data) => {
+        // --- BASE SYNC PAYLOADS ---
+        if (data.type === 'SYNC_REQUEST') {
+            sendPayload(conn);
+            conn.send({ type: 'SYNC_REQUEST_REPLY', sender: NeuralSync.deviceId });
+        } 
+        else if (data.type === 'SYNC_REQUEST_REPLY') {
+            sendPayload(conn);
+        }
+        else if (data.type === 'SYNC_PROPOSAL') {
+            processIncomingData(data.payload, data.sender, conn);
+        } 
+        else if (data.type === 'SYNC_ACKNOWLEDGED') {
+            showNotification(`Remote Node (${data.sender}) committed changes.`);
+        } 
+        else if (data.type === 'HEARTBEAT') {
+            const el = document.querySelector(`.live-status[data-peer="${conn.peer}"]`);
+            if (el) el.innerHTML = `<i class="fas fa-eye"></i> Remote: ${data.status}`;
+        }
+        // --- NEW P2P FEATURES ---
+        else if (data.type === 'CAST_MEDIA') {
+            showNotification(`Command Received: Casting ${data.title}...`);
+            if (typeof autoMarkWatching === 'function') autoMarkWatching(data.id, data.mediaType);
+            window.location.href = `player.html?id=${data.id}&type=${data.mediaType}&title=${encodeURIComponent(data.title)}`;
+        }
+        else if (data.type === 'PING_MEDIA') {
+            if (typeof dispatchNotification === 'function') {
+                dispatchNotification(data.item, 'PEER PING', `Node recommended: ${data.item.title || data.item.name}`);
+            }
+        }
+        else if (data.type === 'MICRO_SYNC') {
+            const incoming = data.item;
+            const idx = state.db.findIndex(i => i.id === incoming.id);
+            if (idx !== -1) {
+                // Only merge if the incoming data is actually newer
+                if ((incoming.updatedAt || 0) > (state.db[idx].updatedAt || 0)) {
+                    state.db[idx] = incoming;
+                    if (typeof save === 'function') save(true); // true = skip broadcasting to avoid loops
+                }
+            } else {
+                state.db.push(incoming);
+                if (typeof save === 'function') save(true);
+            }
+            
+            // Live-update the UI if the user is looking at the same item!
+            if (state.active && state.active.id === incoming.id && !document.getElementById('modal').classList.contains('hidden')) {
+                document.getElementById('mStatus').value = incoming.status;
+                if(typeof setStars === 'function') setStars(incoming.score || 0);
+                if(typeof updateEpUI === 'function' && incoming.type !== 'movie') {
+                    document.getElementById('mEpRange').value = incoming.ep || 0;
+                    updateEpUI(incoming.ep || 0, incoming.max_ep);
+                    if(typeof renderSeasonsUI === 'function') renderSeasonsUI();
+                }
+            }
+        }
+    });
+
+    conn.on('close', () => {
+        delete NeuralSync.activeConns[conn.peer];
+        renderTopology();
+        showNotification(`Link Severed: ${conn.peer}`, true);
+        
+        // Hide Network actions if no connections left
+        if (Object.keys(NeuralSync.activeConns).length === 0) {
+            const netActions = document.getElementById('mNetworkActions');
+            if (netActions) {
+                netActions.classList.add('hidden');
+                netActions.classList.remove('flex');
+            }
+        }
+    });
+}
+
+// ------------------------------------------
+// NEW: Outbound P2P Actions
+// ------------------------------------------
+window.castToPeer = function() {
+    if (!state.active) return;
+    let sent = false;
+    Object.values(NeuralSync.activeConns).forEach(conn => {
+        if (conn && conn.open) {
+            conn.send({ 
+                type: 'CAST_MEDIA', 
+                id: state.active.id, 
+                mediaType: state.active.media_type || (state.active.title ? 'movie' : 'tv'), 
+                title: state.active.title || state.active.name 
+            });
+            sent = true;
+        }
+    });
+    if (sent) showNotification("Cast command transmitted to peer.");
+};
+
+window.pingPeer = function() {
+    if (!state.active) return;
+    let sent = false;
+    // Prepare a slimmed down item for the notification payload
+    const pingItem = {
+        id: state.active.id,
+        title: state.active.title || state.active.name,
+        poster: state.active.poster_path,
+        type: state.active.media_type || (state.active.title ? 'movie' : 'tv')
+    };
+    Object.values(NeuralSync.activeConns).forEach(conn => {
+        if (conn && conn.open) {
+            conn.send({ type: 'PING_MEDIA', item: pingItem });
+            sent = true;
+        }
+    });
+    if (sent) showNotification("Ping transmitted. Peer notified.");
+};
+
+// ==========================================
+// 6. DELTA RESOLUTION (Unchanged)
+// ==========================================
+function sendPayload(conn) {
+    if (conn && conn.open) {
+        let payload = state.db;
+        const filterCheckboxes = document.querySelectorAll('.sync-filter:checked');
+        if (document.querySelector('.sync-filter')) {
+            const filters = Array.from(filterCheckboxes).map(cb => cb.value);
+            if (filters.length < 6) payload = state.db.filter(i => filters.includes(i.type));
+        }
+        conn.send({ type: 'SYNC_PROPOSAL', sender: NeuralSync.deviceId, payload: payload });
+    }
+}
+
+function processIncomingData(remoteDb, senderId, conn) {
+    const localDb = state.db;
+    NeuralSync.pendingDiffs = [];
+    const localMap = new Map(localDb.map(item => [item.id, item]));
+
+    remoteDb.forEach(remoteItem => {
+        const localItem = localMap.get(remoteItem.id);
+        if (!localItem) {
+            NeuralSync.pendingDiffs.push({ type: 'add', remote: remoteItem, local: null });
+        } else {
+            let isNewer = false;
+            const rTime = remoteItem.updatedAt || remoteItem.added || 0;
+            const lTime = localItem.updatedAt || localItem.added || 0;
+
+            if (rTime > lTime) isNewer = true;
+            if (remoteItem.ep > localItem.ep) isNewer = true;
+            if (remoteItem.score !== localItem.score && rTime >= lTime) isNewer = true;
+            if (remoteItem.status === 'Finished' && localItem.status !== 'Finished') isNewer = true;
+
+            if (isNewer) {
+                NeuralSync.pendingDiffs.push({ type: 'update', remote: remoteItem, local: localItem, conn: conn });
+            }
+        }
+    });
+
+    if (NeuralSync.pendingDiffs.length > 0) {
+        showNotification("Delta differences detected. Awaiting manual resolution.");
+        openDiffOverlay(senderId, conn);
+    } else {
+        if (conn && conn.open) conn.send({ type: 'SYNC_ACKNOWLEDGED', sender: NeuralSync.deviceId });
+        showNotification("Timelines perfectly synchronized. No updates needed.");
+    }
+}
+
+window.openDiffOverlay = function(senderId, conn) {
+    if (!NeuralSync || !Array.isArray(NeuralSync.pendingDiffs) || NeuralSync.pendingDiffs.length === 0) {
+        return;
+    }
+
+    NeuralSync.activeMergeConn = conn;
+    const overlay = document.getElementById('neuralDiffOverlay');
+    document.getElementById('syncConnectionInfo').innerHTML = `<i class="fas fa-network-wired mr-2 text-pulse"></i> Payload from: <span class="text-white">${senderId}</span>`;
+    
+    const container = document.getElementById('diffCardsContainer');
+    document.getElementById('selectAllDiffs').checked = true;
+    container.innerHTML = ''; 
+
+    NeuralSync.pendingDiffs.forEach((diff, index) => {
+        const isAdd = diff.type === 'add';
+        const title = diff.remote.title || diff.remote.name;
+        const poster = diff.remote.poster ? `https://image.tmdb.org/t/p/w200${diff.remote.poster}` : 'https://via.placeholder.com/200x300';
+        
+        const localStats = isAdd ? `<span class="text-gray-600">No Local Archive</span>` : `<span class="text-gray-400">${diff.local.status}</span> <span class="mx-1 opacity-30">|</span> <span>EP: ${diff.local.ep}</span> <span class="mx-1 opacity-30">|</span> <span class="text-yellow-500">★ ${diff.local.score}</span>`;
+        const remoteStats = `<span class="text-[#22c55e]">${diff.remote.status}</span> <span class="mx-1 opacity-30">|</span> <span class="text-white">EP: ${diff.remote.ep}</span> <span class="mx-1 opacity-30">|</span> <span class="text-yellow-500">★ ${diff.remote.score}</span>`;
+
+        const cardHTML = `
+            <div class="diff-card-new group flex flex-col md:flex-row bg-dark/60 border border-white/10 rounded-2xl p-4 md:p-5 gap-4 items-start md:items-center relative overflow-hidden transition-all hover:border-pulse/50" 
+                 data-index="${index}" 
+                 style="animation-delay: ${index * 0.05}s"> 
+                
+                <div class="flex items-center gap-3 w-full md:w-auto border-b border-white/5 pb-3 md:border-0 md:pb-0 shrink-0">
+                    <input type="checkbox" class="diff-checkbox w-5 h-5 accent-pulse cursor-pointer shrink-0" value="${index}" checked onchange="toggleSingleDiff(this)">
+                    <div class="text-xs font-black uppercase text-white truncate flex-1 md:hidden">${title}</div>
+                </div>
+
+                <div class="flex flex-col md:flex-row md:items-center justify-between w-full gap-3 md:gap-4 mt-2 md:mt-0 min-w-0">
+                    <div class="flex-1 flex items-center gap-3 bg-black/40 p-3 rounded-xl border border-white/5 opacity-70 w-full min-w-0">
+                        <img src="${poster}" class="w-12 h-16 object-cover rounded shadow-md shrink-0">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-1">Local State</div>
+                            <div class="text-xs font-black uppercase text-white truncate hidden md:block mb-1">${title}</div>
+                            <div class="text-[9px] font-bold uppercase tracking-widest flex flex-wrap gap-y-1">${localStats}</div>
+                        </div>
+                    </div>
+                    <div class="flex justify-center w-full md:w-auto shrink-0">
+                        <i class="fas fa-arrow-down md:hidden text-pulse text-lg animate-pulse py-1"></i>
+                        <i class="fas fa-arrow-right hidden md:block text-pulse text-xl px-2 animate-pulse"></i>
+                    </div>
+                    <div class="flex-1 flex items-center gap-3 bg-[#22c55e]/5 p-3 rounded-xl border border-[#22c55e]/30 shadow-[inset_0_0_20px_rgba(34,197,94,0.05)] w-full min-w-0">
+                        <img src="${poster}" class="w-12 h-16 object-cover rounded shadow-md shrink-0">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[8px] text-[#22c55e] font-bold uppercase tracking-widest mb-1">${isAdd ? 'New Addition' : 'Payload Update'}</div>
+                            <div class="text-xs font-black uppercase text-white truncate hidden md:block mb-1">${title}</div>
+                            <div class="text-[9px] font-bold uppercase tracking-widest flex flex-wrap gap-y-1">${remoteStats}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', cardHTML);
+    });
+
+    // We no longer add .flex here. It acts as a standard block modal now.
+    overlay.classList.remove('hidden');
+    const searchBar = document.getElementById('searchBar');
+    if (searchBar) searchBar.classList.add('neural-diff-active');
+
+    if (typeof checkScrollLock === 'function') checkScrollLock();
+    
+    setTimeout(() => {
+        overlay.classList.remove('opacity-0');
+        // Scroll to the overlay when activated
+        overlay.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 10);
+}
+
+window.closeDiffOverlay = function() {
+    const overlay = document.getElementById('neuralDiffOverlay');
+    const card = document.getElementById('neuralDiffCard');
+    const searchBar = document.getElementById('searchBar');
+
+    if (card) card.classList.remove('scale-95');
+    if (searchBar) searchBar.classList.remove('neural-diff-active');
+    overlay.classList.add('opacity-0');
+
+    setTimeout(() => {
+        overlay.classList.add('hidden');
+        if (typeof checkScrollLock === 'function') checkScrollLock();
+    }, 300);
+}
+
+window.toggleAllDiffs = function(masterCheckbox) {
+    const isChecked = masterCheckbox.checked;
+    const checkboxes = Array.from(document.querySelectorAll('.diff-checkbox'));
+
+    checkboxes.forEach(cb => {
+        cb.checked = isChecked;
+        toggleSingleDiff(cb);
+    });
+
+    const actionTip = document.getElementById('neuralDiffActionTip');
+    if (actionTip) actionTip.textContent = isChecked ? 'Swipe right to approve selected' : 'Select items to approve';
+}
+
+window.toggleSingleDiff = function(cb) {
+    const card = cb.closest('.diff-card-new');
+    if (!card) return;
+
+    if (cb.checked) {
+        card.classList.remove('deselected');
+    } else {
+        card.classList.add('deselected');
+    }
+
+    const total = document.querySelectorAll('.diff-checkbox').length;
+    const checked = document.querySelectorAll('.diff-checkbox:checked').length;
+    const master = document.getElementById('selectAllDiffs');
+    if (master) master.checked = total > 0 && checked === total;
+    if (master) master.indeterminate = checked > 0 && checked < total;
+}
+
+function setupNeuralDiffOverlayGestures() {
+    const overlay = document.getElementById('neuralDiffOverlay');
+    if (!overlay || typeof Hammer === 'undefined') return;
+
+    const hammer = new Hammer(overlay);
+    hammer.get('swipe').set({ direction: Hammer.DIRECTION_HORIZONTAL, threshold: 12, velocity: 0.3 });
+
+    hammer.on('swiperight', () => {
+        if (overlay.classList.contains('hidden')) return;
+        executeSelectedMerges();
+    });
+    hammer.on('swipeleft', () => {
+        if (overlay.classList.contains('hidden')) return;
+        closeDiffOverlay();
+    });
+}
+
+window.executeSelectedMerges = function() {
+    const selectedIndices = Array.from(document.querySelectorAll('.diff-checkbox:checked')).map(cb => parseInt(cb.value));
+    if (selectedIndices.length === 0) return showNotification("No items selected to merge.", true);
+
+    const animContainer = document.getElementById('syncAnimationContainer');
+    const cardsContainer = document.getElementById('diffCardsContainer');
+    
+    cardsContainer.style.opacity = '0.2';
+    animContainer.innerHTML = '';
+    animContainer.classList.remove('hidden');
+    animContainer.classList.add('flex'); // Add flexbox dynamically
+
+    const animSet = selectedIndices.slice(0, 10);
+    animSet.forEach((idx, i) => {
+        const diff = NeuralSync.pendingDiffs[idx];
+        const img = document.createElement('img');
+        img.src = diff.remote.poster ? `https://image.tmdb.org/t/p/w300${diff.remote.poster}` : 'https://via.placeholder.com/300x450';
+        img.className = 'absolute w-32 h-48 rounded-2xl object-cover z-50 shadow-2xl shadow-pulse/40';
+        img.style.animation = `neuralSyncJump 1.5s cubic-bezier(0.4, 0, 0.2, 1) ${i * 0.15}s forwards`;
+        animContainer.appendChild(img);
+    });
+
+    const totalAnimTime = 1500 + (animSet.length * 150);
+    
+    setTimeout(() => {
+        applyMerges(selectedIndices);
+        animContainer.classList.remove('flex'); // Clean up flexbox
+        animContainer.classList.add('hidden');
+        cardsContainer.style.opacity = '1';
+        closeDiffOverlay();
+    }, totalAnimTime);
+}
+
+function applyMerges(indices) {
+    let updatesApplied = 0;
+
+    indices.forEach(idx => {
+        const diff = NeuralSync.pendingDiffs[idx];
+        if (diff.type === 'add') {
+            state.db.push(diff.remote);
+            updatesApplied++;
+        } else if (diff.type === 'update') {
+            const localIndex = state.db.findIndex(i => i.id === diff.remote.id);
+            if (localIndex !== -1) {
+                state.db[localIndex] = diff.remote;
+                updatesApplied++;
+            }
+        }
+    });
+
+    save(true); // Pass true to avoid micro-syncing these back immediately
+    
+    if (NeuralSync.activeMergeConn && NeuralSync.activeMergeConn.open) {
+        NeuralSync.activeMergeConn.send({ type: 'SYNC_ACKNOWLEDGED', sender: NeuralSync.deviceId });
+    }
+    
+    showNotification(`Timeline merged! ${updatesApplied} records secured.`);
+    if (state.view === 'mylist') renderList(); 
+    if (state.view === 'rhythmlab') runLab();
+}
+
+window.rejectAllChanges = function() {
+    closeDiffOverlay();
+    showNotification("Payload rejected. Local timeline preserved.");
+}
