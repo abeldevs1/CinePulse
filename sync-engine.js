@@ -62,7 +62,7 @@ window.initNeuralHost = function(optionalPeerId = null) {
                 });
             }
             NeuralSync.hostAttempt = 0;
-            showNotification(`Pulse Hub Opened: ${id}`);
+            showNotification(`Neural Hub Opened: ${id}`);
             startHeartbeat(); 
         });
 
@@ -492,7 +492,7 @@ window.openDiffOverlay = function(senderId, conn) {
     }
 
     NeuralSync.activeMergeConn = conn;
-    const overlay = document.getElementById('pulseDiffOverlay');
+    const overlay = document.getElementById('neuralDiffOverlay');
     document.getElementById('syncConnectionInfo').innerHTML = `<i class="fas fa-network-wired mr-2 text-pulse"></i> Payload from: <span class="text-white">${senderId}</span>`;
     
     const container = document.getElementById('diffCardsContainer');
@@ -547,7 +547,7 @@ window.openDiffOverlay = function(senderId, conn) {
     // We no longer add .flex here. It acts as a standard block modal now.
     overlay.classList.remove('hidden');
     const searchBar = document.getElementById('searchBar');
-    if (searchBar) searchBar.classList.add('pulse-diff-active');
+    if (searchBar) searchBar.classList.add('neural-diff-active');
 
     if (typeof checkScrollLock === 'function') checkScrollLock();
     
@@ -559,12 +559,12 @@ window.openDiffOverlay = function(senderId, conn) {
 }
 
 window.closeDiffOverlay = function() {
-    const overlay = document.getElementById('pulseDiffOverlay');
-    const card = document.getElementById('pulseDiffCard');
+    const overlay = document.getElementById('neuralDiffOverlay');
+    const card = document.getElementById('neuralDiffCard');
     const searchBar = document.getElementById('searchBar');
 
     if (card) card.classList.remove('scale-95');
-    if (searchBar) searchBar.classList.remove('pulse-diff-active');
+    if (searchBar) searchBar.classList.remove('neural-diff-active');
     overlay.classList.add('opacity-0');
 
     setTimeout(() => {
@@ -582,7 +582,7 @@ window.toggleAllDiffs = function(masterCheckbox) {
         toggleSingleDiff(cb);
     });
 
-    const actionTip = document.getElementById('pulseDiffActionTip');
+    const actionTip = document.getElementById('neuralDiffActionTip');
     if (actionTip) actionTip.textContent = isChecked ? 'Swipe right to approve selected' : 'Select items to approve';
 }
 
@@ -603,8 +603,8 @@ window.toggleSingleDiff = function(cb) {
     if (master) master.indeterminate = checked > 0 && checked < total;
 }
 
-function setupPulseDiffOverlayGestures() {
-    const overlay = document.getElementById('pulseDiffOverlay');
+function setupNeuralDiffOverlayGestures() {
+    const overlay = document.getElementById('neuralDiffOverlay');
     if (!overlay || typeof Hammer === 'undefined') return;
 
     const hammer = new Hammer(overlay);

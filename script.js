@@ -517,7 +517,7 @@ window.checkScrollLock = function() {
     const modalIds = [
         'modal', 'personModal', 'sagaModal', 'pickerModal', 'advancedIOModal', 
         'networkPurgeModal', 'factoryResetModal', 'watchModal', 'watchOptionsModal', 
-        'qrScannerModal', 'pulseDiffOverlay', 'purgeModal', 'temporalArchiveModal' // <--- Added here
+        'qrScannerModal', 'neuralDiffOverlay', 'purgeModal', 'temporalArchiveModal' // <--- Added here
     ];
     
     
@@ -530,7 +530,7 @@ window.checkScrollLock = function() {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-    setupPulseDiffOverlayGestures();
+    setupNeuralDiffOverlayGestures();
 });
  
 // Add this new function
@@ -3622,7 +3622,7 @@ function showToast(notif) {
     document.getElementById('toastTitle').innerText = notif.item.title;
     document.getElementById('toastMsg').innerText = notif.msg;
     
-    const toast = document.getElementById('pulseToast');
+    const toast = document.getElementById('neuralToast');
     toast.classList.remove('hidden');
     
     // Auto hide after 8 seconds
@@ -3631,12 +3631,12 @@ function showToast(notif) {
 
 function closeToast(e) {
     e.stopPropagation();
-    document.getElementById('pulseToast').classList.add('hidden');
+    document.getElementById('neuralToast').classList.add('hidden');
 }
 
 function handleToastClick() {
     if (currentToastItem) {
-        document.getElementById('pulseToast').classList.add('hidden');
+        document.getElementById('neuralToast').classList.add('hidden');
         openModal(currentToastItem.id, currentToastItem.type === 'movie' ? 'movie' : 'tv');
     }
 }
@@ -5512,7 +5512,7 @@ async function loadForgeRecommendations() {
     if (!container) return;
     
     if (activeForgeItems.length === 0) {
-        container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">Add an entity to see pulse suggestions.</div>';
+        container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">Add an entity to see neural suggestions.</div>';
         return;
     }
 
