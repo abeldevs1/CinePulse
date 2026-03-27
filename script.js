@@ -517,8 +517,9 @@ window.checkScrollLock = function() {
     const modalIds = [
         'modal', 'personModal', 'sagaModal', 'pickerModal', 'advancedIOModal', 
         'networkPurgeModal', 'factoryResetModal', 'watchModal', 'watchOptionsModal', 
-        'qrScannerModal', 'neuralDiffOverlay', 'purgeModal'
+        'qrScannerModal', 'pulseDiffOverlay', 'purgeModal', 'temporalArchiveModal' // <--- Added here
     ];
+    
     
     const isAnyModalOpen = modalIds.some(id => {
         const el = document.getElementById(id);
@@ -529,7 +530,7 @@ window.checkScrollLock = function() {
 };
 
 window.addEventListener('DOMContentLoaded', () => {
-    setupNeuralDiffOverlayGestures();
+    setupPulseDiffOverlayGestures();
 });
  
 // Add this new function
@@ -1032,16 +1033,6 @@ async function openModal(id, type, isBack = false) {
             originalRenderMasterpieces();
             return;
         }
-    const netActions = document.getElementById('mNetworkActions');
-    if (netActions) {
-        if (typeof NeuralSync !== 'undefined' && Object.keys(NeuralSync.activeConns).length > 0) {
-            netActions.classList.remove('hidden');
-            netActions.classList.add('flex');
-        } else {
-            netActions.classList.add('hidden');
-            netActions.classList.remove('flex');
-        }
-    }
     const container = document.getElementById('mpContainer');
     const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
     const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish', asian: 'Asian Drama' };
@@ -1098,7 +1089,7 @@ async function openModal(id, type, isBack = false) {
     }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">No crowned items in this category.</div>';
     
     container.innerHTML = html;
-};
+    };
     document.getElementById('mBackdrop').src = IMG_HD + (details.backdrop_path || details.poster_path);
     document.getElementById('mTitle').innerText = (details.title || details.name);
     document.getElementById('mOverview').innerText = details.overview || "Narrative archive encrypted.";
@@ -1203,7 +1194,7 @@ async function openModal(id, type, isBack = false) {
     const tr = vids.results.find(v => v.type === 'Trailer');
     document.getElementById('mTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
 
-document.getElementById('mStatus').value = local ? local.status : '';
+    document.getElementById('mStatus').value = local ? local.status : '';
     populateSagaDropdown(local ? local.sagaId : null);
     document.getElementById('mProgressBox').classList.toggle('hidden', type !== 'tv' || !local);
     
@@ -1234,6 +1225,18 @@ document.getElementById('mStatus').value = local ? local.status : '';
     updateRatingCard(local);
 
     document.getElementById('mRemoveBtn').classList.toggle('hidden', !local);
+    // --- P2P UI VISIBILITY LOGIC ---
+    // This checks if the NeuralSync engine is running and has active peers
+    const netActions = document.getElementById('mNetworkActions');
+    if (netActions) {
+        if (typeof NeuralSync !== 'undefined' && Object.keys(NeuralSync.activeConns).length > 0) {
+            netActions.classList.remove('hidden');
+            netActions.classList.add('flex');
+        } else {
+            netActions.classList.add('hidden');
+            netActions.classList.remove('flex');
+        }
+    }
     document.getElementById('modal').classList.remove('hidden');
     checkScrollLock();
     document.body.style.overflow = 'hidden';
@@ -2649,6 +2652,7 @@ function executeAdvancedImport(event) {
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
+            TemporalEngine.commit("Pre-Import Anchor");
             let importedCount = 0; let updatedCount = 0; let skippedCount = 0;
 
             // 1. Database Processing
@@ -3618,7 +3622,7 @@ function showToast(notif) {
     document.getElementById('toastTitle').innerText = notif.item.title;
     document.getElementById('toastMsg').innerText = notif.msg;
     
-    const toast = document.getElementById('neuralToast');
+    const toast = document.getElementById('pulseToast');
     toast.classList.remove('hidden');
     
     // Auto hide after 8 seconds
@@ -3627,12 +3631,12 @@ function showToast(notif) {
 
 function closeToast(e) {
     e.stopPropagation();
-    document.getElementById('neuralToast').classList.add('hidden');
+    document.getElementById('pulseToast').classList.add('hidden');
 }
 
 function handleToastClick() {
     if (currentToastItem) {
-        document.getElementById('neuralToast').classList.add('hidden');
+        document.getElementById('pulseToast').classList.add('hidden');
         openModal(currentToastItem.id, currentToastItem.type === 'movie' ? 'movie' : 'tv');
     }
 }
@@ -4387,6 +4391,7 @@ function setupLongPressCopy() {
         }
 
         function executePurge() {
+            TemporalEngine.commit("Pre-Purge Backup");
             // 1. Wipe the data
             state.db = []; 
             
@@ -5507,7 +5512,7 @@ async function loadForgeRecommendations() {
     if (!container) return;
     
     if (activeForgeItems.length === 0) {
-        container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">Add an entity to see neural suggestions.</div>';
+        container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">Add an entity to see pulse suggestions.</div>';
         return;
     }
 
@@ -5929,14 +5934,20 @@ document.getElementById('watchOptionsModal').addEventListener('click', function(
     if (e.target === this) closeWatchOptions();
 });
 
-function launchInternalPlayer(id, tmdbType, title) {
+function launchInternalPlayer(id, tmdbType, title, sameTab = false) {
     document.getElementById('watchModal').classList.add('hidden');
-    const safeTitle = encodeURIComponent(title);
-    
+    const safeTitle = encodeURIComponent(title || '');
+
     // TRIGER NEURAL AUTO-MARK
     autoMarkWatching(id, tmdbType);
 
-    window.location.href = `player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+    if (sameTab) {
+        // Open in same tab for cast media so it's a direct player flow
+        window.location.href = `player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+    } else {
+        // Existing behavior: preserve main app by opening in a new tab
+        window.open(`player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`, '_blank');
+    }
 }
 
 function renderPlayerEpisodes(seasonNum) {
@@ -6009,4 +6020,138 @@ function closePlayerAndReturn() {
 function closeFactoryResetModal() {
     document.getElementById('factoryResetModal').classList.add('hidden');
     checkScrollLock();
+}
+
+
+// --- TEMPORAL ARCHIVE (VERSION CONTROL) ENGINE ---
+const TemporalEngine = {
+    maxCommits: 15, // Keeps the last 15 states to save storage space
+    
+    getHistory: () => JSON.parse(localStorage.getItem('cp_temporal_archive')) || [],
+    saveHistory: (h) => localStorage.setItem('cp_temporal_archive', JSON.stringify(h)),
+
+    // Creates a snapshot of the current state
+    commit: (message = "Manual Commit") => {
+        const history = TemporalEngine.getHistory();
+        const snapshot = {
+            id: 'commit_' + Date.now(),
+            timestamp: Date.now(),
+            message: message,
+            itemCount: state.db.length,
+            data: JSON.parse(JSON.stringify(state.db)) // Deep copy to prevent reference mutation
+        };
+        
+        history.unshift(snapshot); // Add to the top of the timeline
+        if (history.length > TemporalEngine.maxCommits) history.pop(); // Trim oldest
+        
+        TemporalEngine.saveHistory(history);
+        
+        // Only show notification if it's a manual commit
+        if (message === "Manual Commit") showNotification(`Timeline Committed: ${message}`);
+        
+        // Live-update UI if the modal is open
+        const modal = document.getElementById('temporalArchiveModal');
+        if (modal && !modal.classList.contains('hidden')) renderTemporalArchive();
+    },
+
+    // Reverts the database to a specific snapshot
+    revert: (commitId) => {
+        const history = TemporalEngine.getHistory();
+        const target = history.find(c => c.id === commitId);
+        
+        if (!target) return showNotification("Temporal coordinates lost.", true);
+
+        // 1. Safety Net: Auto-commit the present state before reverting so the user can "Redo"
+        const backupMsg = `Pre-Revert Backup (from ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
+        
+        const currentSnapshot = {
+            id: 'commit_' + Date.now(),
+            timestamp: Date.now(),
+            message: backupMsg,
+            itemCount: state.db.length,
+            data: JSON.parse(JSON.stringify(state.db))
+        };
+        history.unshift(currentSnapshot);
+        if (history.length > TemporalEngine.maxCommits) history.pop();
+        TemporalEngine.saveHistory(history);
+
+        // 2. Apply the old state
+        state.db = JSON.parse(JSON.stringify(target.data));
+        save(true); // Save to local storage silently
+        
+        showNotification(`Timeline shifted to: ${target.message}`);
+        closeTemporalArchive();
+        
+        // 3. Force UI refresh
+        if (state.view === 'mylist') renderList();
+        if (state.view === 'rhythmlab') runLab();
+        if (state.view === 'masterpieces') renderMasterpieces();
+        if (state.view === 'sagamatrix') renderMySagas();
+        updateCounters();
+    }
+};
+
+// UI Triggers
+window.openTemporalArchive = function() {
+    renderTemporalArchive();
+    document.getElementById('temporalArchiveModal').classList.remove('hidden');
+    if (typeof checkScrollLock === 'function') checkScrollLock();
+}
+
+window.closeTemporalArchive = function() {
+    document.getElementById('temporalArchiveModal').classList.add('hidden');
+    if (typeof checkScrollLock === 'function') checkScrollLock();
+}
+
+window.renderTemporalArchive = function() {
+    const container = document.getElementById('temporalTimeline');
+    const history = TemporalEngine.getHistory();
+
+    if (history.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-20 opacity-50">
+                <i class="fas fa-history text-4xl mb-4 text-gray-600 block"></i>
+                <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">No timeline data recorded.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = history.map((commit, index) => {
+        const date = new Date(commit.timestamp);
+        const dateStr = date.toLocaleDateString();
+        const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        // The newest commit gets a special glowing node
+        const isLatest = index === 0;
+        const nodeClass = isLatest ? "bg-pulse shadow-[0_0_15px_rgba(255,45,85,0.8)] animate-pulse" : "bg-gray-600";
+        const borderClass = isLatest ? "border-pulse/50 shadow-lg shadow-pulse/10" : "border-white/5";
+
+        return `
+        <div class="relative pl-8 md:pl-10 pb-8 group">
+            ${index !== history.length - 1 ? `<div class="absolute left-[11px] md:left-[15px] top-8 bottom-0 w-0.5 bg-white/10 group-hover:bg-pulse/30 transition-colors"></div>` : ''}
+            
+            <div class="absolute left-1 md:left-2 top-2 w-5 h-5 rounded-full border-4 border-[#0a0c12] ${nodeClass} z-10 transition-colors group-hover:bg-pulse"></div>
+
+            <div class="bg-white/5 border ${borderClass} rounded-2xl p-4 md:p-5 hover:bg-white/10 transition-all cursor-default">
+                <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                    <div>
+                        <div class="flex items-center gap-3 mb-1">
+                            <h4 class="text-sm font-black uppercase text-white tracking-widest">${commit.message}</h4>
+                            ${isLatest ? `<span class="bg-pulse/20 text-pulse px-2 py-0.5 rounded text-[8px] font-black tracking-widest uppercase">Latest</span>` : ''}
+                        </div>
+                        <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">
+                            <i class="fas fa-clock mr-1 text-gray-600"></i> ${dateStr} • ${timeStr} 
+                            <span class="mx-2 text-white/20">|</span> 
+                            <i class="fas fa-database mr-1 text-gray-600"></i> ${commit.itemCount} Records
+                        </div>
+                    </div>
+                    
+                    <button onclick="TemporalEngine.revert('${commit.id}')" class="w-full md:w-auto px-6 py-3 bg-dark border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-pulse hover:border-pulse transition-all flex items-center justify-center gap-2 group/btn">
+                        <i class="fas fa-history group-hover/btn:-rotate-180 transition-transform duration-500"></i> Revert Here
+                    </button>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
 }

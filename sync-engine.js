@@ -19,8 +19,12 @@ document.addEventListener('DOMContentLoaded', renderTopology);
 // ==========================================
 // 1. HOST MODE (PRIMARY NODE)
 // ==========================================
-window.initNeuralHost = function() {
+window.initNeuralHost = function(optionalPeerId = null) {
     if (typeof Peer === 'undefined') return showNotification("P2P Module failed to load.", true);
+    NeuralSync.hostAttempt = (NeuralSync.hostAttempt || 0) + 1;
+    if (NeuralSync.hostAttempt > 5) {
+        return showNotification("Unable to establish host after several retries. Try a different name.", true);
+    }
 
     const nameInput = document.getElementById('deviceNameInput');
     const customName = (nameInput && nameInput.value) ? nameInput.value : NeuralSync.deviceId;
@@ -33,14 +37,18 @@ window.initNeuralHost = function() {
     }
 
     try {
-        const sanitizedId = customName.replace(/\s+/g, '-').toUpperCase();
+        const baseName = customName || NeuralSync.deviceId;
+        const sanitizedId = baseName.replace(/[^a-zA-Z0-9\-_]/g, '-').slice(0, 20).toUpperCase();
+        const peerId = (optionalPeerId || sanitizedId || `CP-HUB-${Math.floor(Math.random() * 100000)}`).toUpperCase();
+
         if (NeuralSync.peer) NeuralSync.peer.destroy();
-        
-        NeuralSync.peer = new Peer(sanitizedId);
+
+        NeuralSync.peer = new Peer(peerId);
 
         NeuralSync.peer.on('open', (id) => {
             NeuralSync.role = 'host';
-            if (hostStatus) hostStatus.innerText = `Hub Active: ${id}`;
+            localStorage.setItem('cp_neural_role', 'host');
+            localStorage.setItem('cp_neural_host_id', id);
             if (qrContainer) qrContainer.classList.remove('hidden');
             
             const qrCanvas = document.getElementById('qrCanvas');
@@ -53,12 +61,19 @@ window.initNeuralHost = function() {
                     correctLevel: QRCode.CorrectLevel.H 
                 });
             }
-            showNotification(`Neural Hub Opened: ${id}`);
+            NeuralSync.hostAttempt = 0;
+            showNotification(`Pulse Hub Opened: ${id}`);
             startHeartbeat(); 
         });
 
         NeuralSync.peer.on('error', (err) => {
-            showNotification(err.type === 'unavailable-id' ? "ID taken. Try a different Node Name." : `Network Error: ${err.type}`, true);
+            if (err.type === 'unavailable-id') {
+                const retryId = `${peerId}-${Math.floor(Math.random() * 100000)}`;
+                showNotification(`ID taken. Retrying with ${retryId}`, true);
+                setTimeout(() => initNeuralHost(retryId), 600);
+                return;
+            }
+            showNotification(`Network Error: ${err.type}`, true);
         });
 
         NeuralSync.peer.on('connection', (conn) => {
@@ -79,15 +94,23 @@ window.joinNeuralNetwork = function(targetId = null) {
     showNotification(`Initializing connection to ${hostId}...`);
 
     if (NeuralSync.peer) NeuralSync.peer.destroy();
-    NeuralSync.peer = new Peer(NeuralSync.deviceId);
+    const clientId = `${NeuralSync.deviceId}-${Math.floor(Math.random()*10000)}`;
+    NeuralSync.peer = new Peer(clientId);
 
     NeuralSync.peer.on('open', (id) => {
         NeuralSync.role = 'node';
+        localStorage.setItem('cp_neural_role', 'node');
+        localStorage.setItem('cp_neural_host_id', hostId);
         const conn = NeuralSync.peer.connect(hostId);
         setupConnection(conn);
     });
 
     NeuralSync.peer.on('error', (err) => {
+        if (err.type === 'unavailable-id') {
+            showNotification(`Node ID ${clientId} unavailable, retrying...`, true);
+            setTimeout(() => joinNeuralNetwork(hostId), 500);
+            return;
+        }
         showNotification(`Connection Error: ${err.type}`, true);
     });
 };
@@ -95,30 +118,57 @@ window.joinNeuralNetwork = function(targetId = null) {
 // ==========================================
 // 3. QR SCANNER INTEGRATION
 // ==========================================
-let html5QrcodeScanner;
-window.startQRScanner = function() {
-    if (typeof Html5QrcodeScanner === 'undefined') return showNotification("Scanner library not loaded.", true);
-    
+let html5QrCode;
+window.startQRScanner = async function() {
+    if (typeof Html5Qrcode === 'undefined') return showNotification("Scanner library not loaded.", true);
+
     const modal = document.getElementById('qrScannerModal');
     modal.classList.remove('hidden');
     if (typeof checkScrollLock === 'function') checkScrollLock();
-    
-    setTimeout(() => {
-        if (!html5QrcodeScanner) {
-            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 250} }, false);
-            html5QrcodeScanner.render((decodedText) => {
-                closeQRScanner();
-                document.getElementById('manualPeerId').value = decodedText;
-                joinNeuralNetwork(decodedText);
-            }, (errorMessage) => { });
+
+    setTimeout(async () => {
+        try {
+            if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader");
+
+            const cameras = await Html5Qrcode.getCameras();
+            if (!cameras || !cameras.length) throw new Error("No camera devices found");
+
+            let selectedCamera = cameras[0];
+            const preferred = cameras.find(c => /back|rear|environment/i.test(c.label));
+            if (preferred) selectedCamera = preferred;
+
+            await html5QrCode.start(
+                selectedCamera.id,
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    closeQRScanner();
+                    document.getElementById('manualPeerId').value = decodedText;
+                    joinNeuralNetwork(decodedText);
+                },
+                (errorMessage) => {
+                    // Silent continuous scan errors; keep user experience fast.
+                }
+            );
+
+            showNotification("Quick scan activated. Point camera at Hub QR code.");
+
+        } catch (err) {
+            console.error(err);
+            showNotification(err.message || "Unable to start scanner.", true);
+            closeQRScanner();
         }
     }, 100);
 };
 
-window.closeQRScanner = function() {
-    if (html5QrcodeScanner) {
-        html5QrcodeScanner.clear().catch(e => console.log(e));
-        html5QrcodeScanner = null;
+window.closeQRScanner = async function() {
+    if (html5QrCode) {
+        try {
+            await html5QrCode.stop();
+            await html5QrCode.clear();
+        } catch (e) {
+            console.log("QR cleanup error:", e);
+        }
+        html5QrCode = null;
     }
     document.getElementById('qrScannerModal').classList.add('hidden');
     if (typeof checkScrollLock === 'function') checkScrollLock();
@@ -210,6 +260,8 @@ window.closeNetworkPurgeModal = function() {
 window.executeNetworkPurge = function() {
     NeuralSync.history = [];
     localStorage.setItem('cp_network_history', JSON.stringify([]));
+    localStorage.removeItem('cp_neural_role');
+    localStorage.removeItem('cp_neural_host_id');
     renderTopology();
     closeNetworkPurgeModal();
     showNotification("Network Topology Purged.");
@@ -270,10 +322,30 @@ function setupConnection(conn) {
             if (el) el.innerHTML = `<i class="fas fa-eye"></i> Remote: ${data.status}`;
         }
         // --- NEW P2P FEATURES ---
-        else if (data.type === 'CAST_MEDIA') {
-            showNotification(`Command Received: Casting ${data.title}...`);
+       else if (data.type === 'CAST_MEDIA') {
+            showNotification(`Incoming Cast for ${data.title}. Launching player...`);
+
             if (typeof autoMarkWatching === 'function') autoMarkWatching(data.id, data.mediaType);
-            window.location.href = `player.html?id=${data.id}&type=${data.mediaType}&title=${encodeURIComponent(data.title)}`;
+
+            setTimeout(() => {
+                if (typeof launchInternalPlayer === 'function') {
+                    // prefer built-in player launch
+                    launchInternalPlayer(data.id, data.mediaType, data.title || '', true);
+                    return;
+                }
+
+                if (typeof openModal === 'function') {
+                    openModal(data.id, data.mediaType);
+                    return;
+                }
+
+                if (typeof openWatchOptions === 'function') {
+                    openWatchOptions(data.id, data.mediaType, data.title || '');
+                    return;
+                }
+
+                window.location.href = `player.html?id=${data.id}&type=${data.mediaType}&title=${encodeURIComponent(data.title || '')}`;
+            }, 1200);
         }
         else if (data.type === 'PING_MEDIA') {
             if (typeof dispatchNotification === 'function') {
@@ -346,24 +418,27 @@ window.castToPeer = function() {
 window.pingPeer = function() {
     if (!state.active) return;
     let sent = false;
-    // Prepare a slimmed down item for the notification payload
+    
+    // Construct a payload that perfectly matches your Notification UI requirements
     const pingItem = {
         id: state.active.id,
         title: state.active.title || state.active.name,
-        poster: state.active.poster_path,
+        poster: state.active.poster_path, 
         type: state.active.media_type || (state.active.title ? 'movie' : 'tv')
     };
+    
     Object.values(NeuralSync.activeConns).forEach(conn => {
         if (conn && conn.open) {
             conn.send({ type: 'PING_MEDIA', item: pingItem });
             sent = true;
         }
     });
+    
     if (sent) showNotification("Ping transmitted. Peer notified.");
 };
 
 // ==========================================
-// 6. DELTA RESOLUTION (Unchanged)
+// 6. DELTA RESOLUTION AND MANUAL MERGE INTERFACE
 // ==========================================
 function sendPayload(conn) {
     if (conn && conn.open) {
@@ -417,7 +492,7 @@ window.openDiffOverlay = function(senderId, conn) {
     }
 
     NeuralSync.activeMergeConn = conn;
-    const overlay = document.getElementById('neuralDiffOverlay');
+    const overlay = document.getElementById('pulseDiffOverlay');
     document.getElementById('syncConnectionInfo').innerHTML = `<i class="fas fa-network-wired mr-2 text-pulse"></i> Payload from: <span class="text-white">${senderId}</span>`;
     
     const container = document.getElementById('diffCardsContainer');
@@ -472,7 +547,7 @@ window.openDiffOverlay = function(senderId, conn) {
     // We no longer add .flex here. It acts as a standard block modal now.
     overlay.classList.remove('hidden');
     const searchBar = document.getElementById('searchBar');
-    if (searchBar) searchBar.classList.add('neural-diff-active');
+    if (searchBar) searchBar.classList.add('pulse-diff-active');
 
     if (typeof checkScrollLock === 'function') checkScrollLock();
     
@@ -484,12 +559,12 @@ window.openDiffOverlay = function(senderId, conn) {
 }
 
 window.closeDiffOverlay = function() {
-    const overlay = document.getElementById('neuralDiffOverlay');
-    const card = document.getElementById('neuralDiffCard');
+    const overlay = document.getElementById('pulseDiffOverlay');
+    const card = document.getElementById('pulseDiffCard');
     const searchBar = document.getElementById('searchBar');
 
     if (card) card.classList.remove('scale-95');
-    if (searchBar) searchBar.classList.remove('neural-diff-active');
+    if (searchBar) searchBar.classList.remove('pulse-diff-active');
     overlay.classList.add('opacity-0');
 
     setTimeout(() => {
@@ -507,7 +582,7 @@ window.toggleAllDiffs = function(masterCheckbox) {
         toggleSingleDiff(cb);
     });
 
-    const actionTip = document.getElementById('neuralDiffActionTip');
+    const actionTip = document.getElementById('pulseDiffActionTip');
     if (actionTip) actionTip.textContent = isChecked ? 'Swipe right to approve selected' : 'Select items to approve';
 }
 
@@ -528,8 +603,8 @@ window.toggleSingleDiff = function(cb) {
     if (master) master.indeterminate = checked > 0 && checked < total;
 }
 
-function setupNeuralDiffOverlayGestures() {
-    const overlay = document.getElementById('neuralDiffOverlay');
+function setupPulseDiffOverlayGestures() {
+    const overlay = document.getElementById('pulseDiffOverlay');
     if (!overlay || typeof Hammer === 'undefined') return;
 
     const hammer = new Hammer(overlay);
@@ -580,7 +655,7 @@ window.executeSelectedMerges = function() {
 
 function applyMerges(indices) {
     let updatesApplied = 0;
-
+    if (typeof TemporalEngine !== 'undefined') TemporalEngine.commit("Pre-Sync Anchor");
     indices.forEach(idx => {
         const diff = NeuralSync.pendingDiffs[idx];
         if (diff.type === 'add') {
@@ -610,3 +685,30 @@ window.rejectAllChanges = function() {
     closeDiffOverlay();
     showNotification("Payload rejected. Local timeline preserved.");
 }
+
+// ==========================================
+// 7. AUTO-RESTORE ENGINE
+// ==========================================
+window.autoRestoreNeuralLink = function() {
+    const savedRole = localStorage.getItem('cp_neural_role');
+    const savedHostId = localStorage.getItem('cp_neural_host_id');
+
+    if (savedRole === 'host') {
+        showNotification("Restoring Primary Hub...");
+        initNeuralHost(); // Restarts the host server
+    } else if (savedRole === 'node' && savedHostId) {
+        showNotification("Re-establishing link to Hub...");
+        joinNeuralNetwork(savedHostId); // Reconnects to the host
+    }
+};
+
+// Attach to your existing DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+    renderTopology();
+    // Wait 1 second for PeerJS library to fully initialize, then reconnect
+    setTimeout(autoRestoreNeuralLink, 1000); 
+});
+
+// Optional: Add to your clearTopology/Purge function to wipe saved states
+// localStorage.removeItem('cp_neural_role');
+// localStorage.removeItem('cp_neural_host_id');
