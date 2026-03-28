@@ -226,9 +226,48 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
     text-shadow: 0 0 15px rgba(255,45,85,0.6);
 }
 
+/* --- RESPONSIVE DIFF CARDS (MOBILE FIXES) --- */
+@media (max-width: 768px) {
+    .diff-card-new {
+        flex-direction: column !important;
+        padding: 1rem !important;
+        gap: 0.75rem !important;
+    }
+    .diff-card-new .min-w-0 {
+        min-width: 0 !important;
+    }
+    .diff-card-new img {
+        width: 3rem !important;
+        height: 4.5rem !important;
+    }
+    .diff-card-new .gap-x-2 {
+        column-gap: 0.5rem !important;
+        row-gap: 0.25rem !important;
+    }
+}
+
 /* --- RHYTHM LAB (MOBILE CLEANUP) --- */
 #labCounters {
     display: none !important; /* Hides counters on mobile only for a slicker UI */
+}
+
+/* Make Delta action controls always visible on mobile */
+@media (max-width: 768px) {
+    #neuralDiffOverlay .sticky, #neuralDiffOverlay .sticky .relative {
+        position: sticky !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        z-index: 40 !important;
+    }
+    #neuralDiffOverlay .sticky button {
+        min-width: 45% !important;
+        font-size: 11px !important;
+        display: inline-flex !important;
+    }
+    #neuralDiffOverlay .sticky .flex-col {
+        flex-direction: column !important;
+    }
 }
 
 /* --- MASTERPIECES MOBILE OVERHAUL --- */

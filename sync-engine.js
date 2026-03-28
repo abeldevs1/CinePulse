@@ -1,20 +1,83 @@
 /**
- * CINEPULSE NEURAL LINK - P2P SYNC ENGINE (ELITE V4.1)
- * Refined Diff Resolutions, Network Payloads, and Transitions
+ * CINEPULSE NEURAL LINK - P2P SYNC ENGINE (ELITE V4.2)
+ * Smart Topology, Quick Connect, Cast Fixes, & UI Boosts
  */
+
+// --- 1. SMART DEVICE DETECTION ---
+function getDevicePlatform() {
+    const ua = navigator.userAgent;
+    let os = 'UNK';
+    if (/Windows/i.test(ua)) os = 'WIN';
+    else if (/Mac OS X/i.test(ua)) os = 'MAC';
+    else if (/Android/i.test(ua)) os = 'AND';
+    else if (/Linux/i.test(ua)) os = 'LIN';
+    else if (/iPhone|iPad|iPod/i.test(ua)) os = 'IOS';
+
+    let type = 'PC';
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) type = 'TAB';
+    else if (/Mobile|iP(hone|od)|IEMobile|BlackBerry|Kindle|Opera M(obi|ini)/i.test(ua)) type = 'MOB';
+
+    return `${os}-${type}`;
+}
 
 const NeuralSync = {
     peer: null,
-    activeConns: {}, // Tracks live presence
+    activeConns: {}, 
     role: 'standalone',
-    deviceId: localStorage.getItem('cp_device_id') || `CP-NODE-${Math.floor(Math.random() * 10000)}`,
+    deviceId: localStorage.getItem('cp_device_id') || `${getDevicePlatform()}-${Math.floor(Math.random() * 10000)}`,
     pendingDiffs: [],
     history: JSON.parse(localStorage.getItem('cp_network_history')) || []
 };
 
+let reconnectInterval = null;
+
+// --- TRUE AUTO-RECONNECT ENGINE ---
+function startAutoReconnectLoop() {
+    if (reconnectInterval) clearInterval(reconnectInterval);
+    reconnectInterval = setInterval(() => {
+        const savedRole = localStorage.getItem('cp_neural_role');
+        const savedHostId = localStorage.getItem('cp_neural_host_id');
+
+        if (savedRole === 'node' && savedHostId) {
+            const conn = NeuralSync.activeConns[savedHostId];
+            const peerDead = !NeuralSync.peer || NeuralSync.peer.disconnected || NeuralSync.peer.destroyed;
+            const connDead = !conn || !conn.open;
+
+            if (peerDead || connDead) {
+                console.log("Neural Link severed. Auto-reconnecting to Hub...");
+                joinNeuralNetwork(savedHostId, true);
+            }
+        }
+    }, 8000);
+}
+
 localStorage.setItem('cp_device_id', NeuralSync.deviceId);
 
-document.addEventListener('DOMContentLoaded', renderTopology);
+document.addEventListener('DOMContentLoaded', () => {
+    renderTopology();
+    renderQuickConnect();
+});
+
+// --- 2. QUICK CONNECT ENGINE ---
+window.renderQuickConnect = function() {
+    const savedHostId = localStorage.getItem('cp_neural_host_id');
+    const savedRole = localStorage.getItem('cp_neural_role');
+    const manualInput = document.getElementById('manualPeerId');
+
+    if (manualInput && savedHostId && savedRole === 'node') {
+        let qcBtn = document.getElementById('quickConnectBtn');
+        if (!qcBtn) {
+            const container = manualInput.parentElement.parentElement;
+            qcBtn = document.createElement('button');
+            qcBtn.id = 'quickConnectBtn';
+            qcBtn.className = "w-full bg-pulse/10 border border-pulse/30 text-pulse py-4 mt-2 mb-4 rounded-2xl font-black uppercase text-[10px] tracking-widest hover:bg-pulse hover:text-white transition-all shadow-[0_10px_20px_rgba(255,45,85,0.2)] flex items-center justify-center gap-2";
+            container.insertBefore(qcBtn, manualInput.parentElement);
+        }
+        qcBtn.innerHTML = `<i class="fas fa-bolt"></i> Quick Reconnect: ${savedHostId}`;
+        qcBtn.onclick = () => joinNeuralNetwork(savedHostId);
+        qcBtn.classList.remove('hidden');
+    }
+}
 
 // ==========================================
 // 1. HOST MODE (PRIMARY NODE)
@@ -63,7 +126,8 @@ window.initNeuralHost = function(optionalPeerId = null) {
             }
             NeuralSync.hostAttempt = 0;
             showNotification(`Neural Hub Opened: ${id}`);
-            startHeartbeat(); 
+            startHeartbeat();
+            renderQuickConnect();
         });
 
         NeuralSync.peer.on('error', (err) => {
@@ -86,32 +150,42 @@ window.initNeuralHost = function(optionalPeerId = null) {
 // ==========================================
 // 2. CLIENT MODE (SECONDARY NODE)
 // ==========================================
-window.joinNeuralNetwork = function(targetId = null) {
-    const hostId = targetId || document.getElementById('manualPeerId').value.trim();
-    if (!hostId) return showNotification("Please enter a Host Key.", true);
-    if (typeof Peer === 'undefined') return showNotification("P2P Module blocked.", true);
+window.joinNeuralNetwork = function(targetId = null, isSilent = false) {
+    const hostId = targetId || document.getElementById('manualPeerId')?.value.trim();
+    if (!hostId) return !isSilent && showNotification("Please enter a Host Key.", true);
+    if (typeof Peer === 'undefined') return !isSilent && showNotification("P2P Module blocked.", true);
 
-    showNotification(`Initializing connection to ${hostId}...`);
+    if (!isSilent) showNotification(`Establishing link to ${hostId}...`);
 
     if (NeuralSync.peer) NeuralSync.peer.destroy();
-    const clientId = `${NeuralSync.deviceId}-${Math.floor(Math.random()*10000)}`;
+
+    // FIX: Use a Stable Client ID instead of randomizing on every reconnect
+    let clientId = localStorage.getItem('cp_neural_client_id');
+    if (!clientId) {
+        clientId = `${NeuralSync.deviceId}-NODE`;
+        localStorage.setItem('cp_neural_client_id', clientId);
+    }
+
     NeuralSync.peer = new Peer(clientId);
 
     NeuralSync.peer.on('open', (id) => {
         NeuralSync.role = 'node';
         localStorage.setItem('cp_neural_role', 'node');
         localStorage.setItem('cp_neural_host_id', hostId);
+        renderQuickConnect();
         const conn = NeuralSync.peer.connect(hostId);
         setupConnection(conn);
+        startAutoReconnectLoop();
     });
 
     NeuralSync.peer.on('error', (err) => {
         if (err.type === 'unavailable-id') {
-            showNotification(`Node ID ${clientId} unavailable, retrying...`, true);
-            setTimeout(() => joinNeuralNetwork(hostId), 500);
+            const newClientId = `${NeuralSync.deviceId}-${Math.floor(Math.random()*1000)}`;
+            localStorage.setItem('cp_neural_client_id', newClientId);
+            setTimeout(() => joinNeuralNetwork(hostId, isSilent), 500);
             return;
         }
-        showNotification(`Connection Error: ${err.type}`, true);
+        if (!isSilent) showNotification(`Connection Error: ${err.type}`, true);
     });
 };
 
@@ -178,9 +252,20 @@ window.closeQRScanner = async function() {
 // 4. TOPOLOGY (HISTORY & LIVE PRESENCE)
 // ==========================================
 function saveToHistory(peerId) {
+    // FIX: Extract the base device ID (e.g., WIN-PC-1234) to group duplicates
+    const baseIdMatch = peerId.match(/^(.*?-\w+-\d+)/);
+    const baseId = baseIdMatch ? baseIdMatch[1] : peerId;
+
+    // Purge any ghost entries that share this base ID but have different random suffixes
+    NeuralSync.history = NeuralSync.history.filter(h => !h.id.startsWith(baseId) || h.id === peerId);
+
     const existing = NeuralSync.history.find(h => h.id === peerId);
-    if (existing) existing.lastSeen = Date.now();
-    else NeuralSync.history.push({ id: peerId, lastSeen: Date.now() });
+    if (existing) {
+        existing.lastSeen = Date.now();
+    } else {
+        NeuralSync.history.push({ id: peerId, lastSeen: Date.now() });
+    }
+
     localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
     renderTopology();
 }
@@ -194,22 +279,32 @@ function renderTopology() {
         return;
     }
 
+    const localIsMob = NeuralSync.deviceId.includes('MOB');
+    const localIsTab = NeuralSync.deviceId.includes('TAB');
+    const localIcon = localIsMob ? 'fa-mobile-alt' : (localIsTab ? 'fa-tablet-alt' : 'fa-desktop');
+
     let html = `
         <div class="relative z-20 bg-dark border-2 border-[#22c55e] rounded-[30px] p-6 md:p-8 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.3)] mb-12 w-full max-w-xs text-center">
-            <i class="fas fa-satellite-dish text-[#22c55e] text-3xl md:text-4xl mb-3"></i>
-            <div class="text-[11px] font-black text-white uppercase tracking-widest">Local Core Node</div>
+            <i class="fas ${localIcon} text-[#22c55e] text-3xl md:text-4xl mb-3"></i>
+            <div class="text-[11px] font-black text-white uppercase tracking-widest">Local Node</div>
             <div class="text-[9px] text-[#22c55e] uppercase mt-1 tracking-widest font-bold bg-[#22c55e]/10 px-3 py-1 rounded-md border border-[#22c55e]/30">${NeuralSync.deviceId}</div>
         </div>
         <div class="w-px h-12 bg-gradient-to-b from-[#22c55e] to-white/10 absolute top-[130px] md:top-[160px] z-10 hidden md:block"></div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10 w-full relative pt-8 border-t border-white/10 md:border-white/20">
     `;
 
-    html += NeuralSync.history.sort((a,b) => b.lastSeen - a.lastSeen).map(node => {
+    const uniqueHistory = Array.from(new Map(NeuralSync.history.map(item => [item.id, item])).values());
+
+    html += uniqueHistory.sort((a,b) => b.lastSeen - a.lastSeen).map(node => {
         const isLive = NeuralSync.activeConns[node.id] !== undefined;
         const statusColor = isLive ? '#a855f7' : '#4b5563';
         const glowClass = isLive ? 'shadow-[0_0_30px_rgba(168,85,247,0.3)] border-[#a855f7]' : 'border-white/10';
         const dateStr = new Date(node.lastSeen).toLocaleDateString();
         const timeStr = new Date(node.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        const isMob = node.id.includes('MOB');
+        const isTab = node.id.includes('TAB');
+        const icon = isMob ? 'fa-mobile-alt' : (isTab ? 'fa-tablet-alt' : 'fa-desktop');
 
         return `
             <div class="relative flex flex-col items-center group">
@@ -219,16 +314,16 @@ function renderTopology() {
                         <i class="fas fa-times text-[10px]"></i>
                     </button>
                     <div class="w-14 h-14 rounded-full border-2 border-[${statusColor}] flex items-center justify-center mb-4 mx-auto bg-dark shadow-inner">
-                        <i class="fas ${isLive ? 'fa-network-wired animate-pulse' : 'fa-server'} text-[${statusColor}] text-lg"></i>
+                        <i class="fas ${icon} ${isLive ? 'animate-pulse' : ''} text-[${statusColor}] text-lg"></i>
                     </div>
                     <div class="text-center">
                         <div class="text-[12px] font-black uppercase text-white truncate px-4">${node.id}</div>
-                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-2 bg-white/5 py-1.5 rounded-lg border border-white/5">Sync: ${dateStr} ${timeStr}</div>
+                        <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-2 bg-white/5 py-1.5 rounded-lg border border-white/5">Sync: ${dateStr}</div>
                         ${isLive ? `<div class="text-[9px] text-[#a855f7] mt-3 uppercase font-black tracking-widest live-status" data-peer="${node.id}"><i class="fas fa-link mr-1"></i> Connected</div>` : ''}
                     </div>
                 </div>
                 <button onclick="joinNeuralNetwork('${node.id}')" class="mt-4 px-6 py-3 w-[80%] bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase text-white hover:bg-[${statusColor}] transition-all flex items-center justify-center gap-2 shadow-lg">
-                    <i class="fas fa-plug"></i> Connect
+                    <i class="fas fa-bolt"></i> Connect
                 </button>
             </div>
         `;
@@ -275,8 +370,14 @@ function startHeartbeat() {
         const watching = state.db.find(i => i.status === 'Watching');
         const statusMsg = watching ? `Watching: ${watching.title}` : 'System Idle';
         
-        Object.values(NeuralSync.activeConns).forEach(conn => {
-            if (conn && conn.open) conn.send({ type: 'HEARTBEAT', status: statusMsg });
+        Object.keys(NeuralSync.activeConns).forEach(peerId => {
+            const conn = NeuralSync.activeConns[peerId];
+            if (conn && conn.open) {
+                conn.send({ type: 'HEARTBEAT', status: statusMsg });
+            } else {
+                delete NeuralSync.activeConns[peerId];
+                renderTopology();
+            }
         });
     }, 10000);
 }
@@ -320,32 +421,21 @@ function setupConnection(conn) {
         else if (data.type === 'HEARTBEAT') {
             const el = document.querySelector(`.live-status[data-peer="${conn.peer}"]`);
             if (el) el.innerHTML = `<i class="fas fa-eye"></i> Remote: ${data.status}`;
+            saveToHistory(conn.peer);
         }
         // --- NEW P2P FEATURES ---
-       else if (data.type === 'CAST_MEDIA') {
-            showNotification(`Incoming Cast for ${data.title}. Launching player...`);
-
+        else if (data.type === 'CAST_MEDIA') {
+            showNotification(`Incoming Cast for ${data.title}. Opening player...`);
             if (typeof autoMarkWatching === 'function') autoMarkWatching(data.id, data.mediaType);
-
             setTimeout(() => {
                 if (typeof launchInternalPlayer === 'function') {
-                    // prefer built-in player launch
+                    // FIX: Pass true so it uses same-tab behavior
                     launchInternalPlayer(data.id, data.mediaType, data.title || '', true);
                     return;
                 }
-
-                if (typeof openModal === 'function') {
-                    openModal(data.id, data.mediaType);
-                    return;
-                }
-
-                if (typeof openWatchOptions === 'function') {
-                    openWatchOptions(data.id, data.mediaType, data.title || '');
-                    return;
-                }
-
+                // FIX: use same-tab navigation to avoid popup blocks
                 window.location.href = `player.html?id=${data.id}&type=${data.mediaType}&title=${encodeURIComponent(data.title || '')}`;
-            }, 1200);
+            }, 600);
         }
         else if (data.type === 'PING_MEDIA') {
             if (typeof dispatchNotification === 'function') {
@@ -377,6 +467,13 @@ function setupConnection(conn) {
                 }
             }
         }
+        else if (data.type === 'NODE_DISCONNECTING') {
+            delete NeuralSync.activeConns[data.id];
+            NeuralSync.history = NeuralSync.history.filter(h => h.id !== data.id);
+            localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
+            renderTopology();
+            showNotification("A device has left the network.");
+        }
     });
 
     conn.on('close', () => {
@@ -394,6 +491,39 @@ function setupConnection(conn) {
         }
     });
 }
+
+window.disconnectNeuralLink = function() {
+    // 1. Notify peers, if this device was a node
+    if (NeuralSync.role === 'node') {
+        Object.values(NeuralSync.activeConns).forEach(conn => {
+            if (conn && conn.open) {
+                conn.send({ type: 'NODE_DISCONNECTING', id: NeuralSync.peer?.id || '' });
+            }
+        });
+    }
+
+    // 2. Destroy peer instance
+    if (NeuralSync.peer) {
+        NeuralSync.peer.destroy();
+        NeuralSync.peer = null;
+    }
+
+    // 3. WIPE THE MEMORY and prevent auto reconnect
+    localStorage.removeItem('cp_neural_role');
+    localStorage.removeItem('cp_neural_host_id');
+    localStorage.removeItem('cp_neural_client_id');
+    localStorage.removeItem('cp_node_identity');
+
+    // 4. Reset local state
+    NeuralSync.role = 'standalone';
+    NeuralSync.activeConns = {};
+
+    showNotification("Neural Link Severed. Auto-connect disabled.");
+
+    // 5. Refresh UI
+    renderTopology();
+    if (typeof renderQuickConnect === 'function') renderQuickConnect();
+};
 
 // ------------------------------------------
 // NEW: Outbound P2P Actions
@@ -414,6 +544,8 @@ window.castToPeer = function() {
     });
     if (sent) showNotification("Cast command transmitted to peer.");
 };
+
+
 
 window.pingPeer = function() {
     if (!state.active) return;
@@ -508,34 +640,36 @@ window.openDiffOverlay = function(senderId, conn) {
         const remoteStats = `<span class="text-[#22c55e]">${diff.remote.status}</span> <span class="mx-1 opacity-30">|</span> <span class="text-white">EP: ${diff.remote.ep}</span> <span class="mx-1 opacity-30">|</span> <span class="text-yellow-500">★ ${diff.remote.score}</span>`;
 
         const cardHTML = `
-            <div class="diff-card-new group flex flex-col md:flex-row bg-dark/60 border border-white/10 rounded-2xl p-4 md:p-5 gap-4 items-start md:items-center relative overflow-hidden transition-all hover:border-pulse/50" 
+            <div class="diff-card-new group flex flex-col md:flex-row bg-dark/60 border border-white/10 rounded-2xl p-4 md:p-5 gap-3 md:gap-4 items-start md:items-center relative overflow-hidden transition-all hover:border-pulse/50" 
                  data-index="${index}" 
                  style="animation-delay: ${index * 0.05}s"> 
                 
                 <div class="flex items-center gap-3 w-full md:w-auto border-b border-white/5 pb-3 md:border-0 md:pb-0 shrink-0">
                     <input type="checkbox" class="diff-checkbox w-5 h-5 accent-pulse cursor-pointer shrink-0" value="${index}" checked onchange="toggleSingleDiff(this)">
-                    <div class="text-xs font-black uppercase text-white truncate flex-1 md:hidden">${title}</div>
+                    <div class="text-xs font-black uppercase text-white truncate flex-1 md:hidden pr-2">${title}</div>
                 </div>
 
-                <div class="flex flex-col md:flex-row md:items-center justify-between w-full gap-3 md:gap-4 mt-2 md:mt-0 min-w-0">
-                    <div class="flex-1 flex items-center gap-3 bg-black/40 p-3 rounded-xl border border-white/5 opacity-70 w-full min-w-0">
-                        <img src="${poster}" class="w-12 h-16 object-cover rounded shadow-md shrink-0">
+                <div class="flex flex-col md:flex-row md:items-center justify-between w-full gap-3 md:gap-4 mt-1 md:mt-0 min-w-0">
+                    <div class="flex-1 flex items-center gap-3 md:gap-4 bg-black/40 p-3 rounded-xl border border-white/5 opacity-70 w-full min-w-0">
+                        <img src="${poster}" class="w-14 h-20 md:w-12 md:h-16 object-cover rounded-lg shadow-md shrink-0">
                         <div class="min-w-0 flex-1">
                             <div class="text-[8px] text-gray-500 font-bold uppercase tracking-widest mb-1">Local State</div>
                             <div class="text-xs font-black uppercase text-white truncate hidden md:block mb-1">${title}</div>
-                            <div class="text-[9px] font-bold uppercase tracking-widest flex flex-wrap gap-y-1">${localStats}</div>
+                            <div class="text-[9px] font-bold uppercase tracking-widest flex flex-wrap gap-x-2 gap-y-1 leading-relaxed">${localStats}</div>
                         </div>
                     </div>
-                    <div class="flex justify-center w-full md:w-auto shrink-0">
-                        <i class="fas fa-arrow-down md:hidden text-pulse text-lg animate-pulse py-1"></i>
-                        <i class="fas fa-arrow-right hidden md:block text-pulse text-xl px-2 animate-pulse"></i>
+                    
+                    <div class="flex justify-center w-full md:w-auto shrink-0 py-1 md:py-0 opacity-50">
+                        <i class="fas fa-chevron-down md:hidden text-pulse text-lg animate-pulse"></i>
+                        <i class="fas fa-chevron-right hidden md:block text-pulse text-xl px-2 animate-pulse"></i>
                     </div>
-                    <div class="flex-1 flex items-center gap-3 bg-[#22c55e]/5 p-3 rounded-xl border border-[#22c55e]/30 shadow-[inset_0_0_20px_rgba(34,197,94,0.05)] w-full min-w-0">
-                        <img src="${poster}" class="w-12 h-16 object-cover rounded shadow-md shrink-0">
+                    
+                    <div class="flex-1 flex items-center gap-3 md:gap-4 bg-[#22c55e]/5 p-3 rounded-xl border border-[#22c55e]/30 shadow-[inset_0_0_20px_rgba(34,197,94,0.05)] w-full min-w-0">
+                        <img src="${poster}" class="w-14 h-20 md:w-12 md:h-16 object-cover rounded-lg shadow-md shrink-0">
                         <div class="min-w-0 flex-1">
                             <div class="text-[8px] text-[#22c55e] font-bold uppercase tracking-widest mb-1">${isAdd ? 'New Addition' : 'Payload Update'}</div>
                             <div class="text-xs font-black uppercase text-white truncate hidden md:block mb-1">${title}</div>
-                            <div class="text-[9px] font-bold uppercase tracking-widest flex flex-wrap gap-y-1">${remoteStats}</div>
+                            <div class="text-[9px] font-bold uppercase tracking-widest flex flex-wrap gap-x-2 gap-y-1 leading-relaxed">${remoteStats}</div>
                         </div>
                     </div>
                 </div>
@@ -689,24 +823,34 @@ window.rejectAllChanges = function() {
 // ==========================================
 // 7. AUTO-RESTORE ENGINE
 // ==========================================
+// Optional legacy method; no longer required but kept for compatibility
 window.autoRestoreNeuralLink = function() {
     const savedRole = localStorage.getItem('cp_neural_role');
     const savedHostId = localStorage.getItem('cp_neural_host_id');
 
-    if (savedRole === 'host') {
+    if (savedRole === 'host' && savedHostId) {
         showNotification("Restoring Primary Hub...");
-        initNeuralHost(); // Restarts the host server
+        initNeuralHost(savedHostId);
     } else if (savedRole === 'node' && savedHostId) {
         showNotification("Re-establishing link to Hub...");
-        joinNeuralNetwork(savedHostId); // Reconnects to the host
+        joinNeuralNetwork(savedHostId, true);
     }
 };
 
 // Attach to your existing DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     renderTopology();
-    // Wait 1 second for PeerJS library to fully initialize, then reconnect
-    setTimeout(autoRestoreNeuralLink, 1000); 
+    // Auto-boot previously established connections
+    setTimeout(() => {
+        const savedRole = localStorage.getItem('cp_neural_role');
+        const savedHostId = localStorage.getItem('cp_neural_host_id');
+        if (savedRole === 'host' && savedHostId) {
+            initNeuralHost(savedHostId);
+        } else if (savedRole === 'node' && savedHostId) {
+            joinNeuralNetwork(savedHostId, true);
+        }
+        startAutoReconnectLoop();
+    }, 1000);
 });
 
 // Optional: Add to your clearTopology/Purge function to wipe saved states
