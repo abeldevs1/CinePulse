@@ -37,12 +37,50 @@ const NeuralSync = {
     activeConns: {},
     role: 'standalone',
     deviceId: localStorage.getItem('cp_device_id') || `${getDevicePlatform()}-${Math.floor(Math.random() * 10000)}`,
+    deviceName: localStorage.getItem('cp_device_name') || 'Local Node',
+    deviceType: getDevicePlatform(),
     pendingDiffs: [],
     history: JSON.parse(localStorage.getItem('cp_network_history')) || []
 };
 
-let reconnectInterval = null;
+// Migrate old history to new schema
+NeuralSync.history = NeuralSync.history.map(h => {
+    if (!h.deviceId) {
+        const baseIdMatch = h.id.match(/^(.*?-\w+-\d+)/);
+        h.deviceId = baseIdMatch ? baseIdMatch[1] : h.id;
+        h.name = h.id;
+        h.type = h.id.includes('MOB') ? 'MOB' : (h.id.includes('TAB') ? 'TAB' : 'PC');
+    }
+    return h;
+});
 
+window.editLocalNodeName = function() {
+    const curr = NeuralSync.deviceName;
+    const res = prompt("Enter a name for this device:", curr);
+    if(res && res.trim().length > 0) {
+        NeuralSync.deviceName = res.trim();
+        localStorage.setItem('cp_device_name', NeuralSync.deviceName);
+        renderTopology();
+    }
+}
+
+window.editTopologyNodeName = function(dId) {
+    const aliases = JSON.parse(localStorage.getItem('cp_network_aliases')) || {};
+    const curr = aliases[dId] || dId;
+    const res = prompt("Enter a custom alias for this device:", curr);
+    if(res && res.trim().length > 0) {
+        aliases[dId] = res.trim();
+        localStorage.setItem('cp_network_aliases', JSON.stringify(aliases));
+        // Update history immediately if it exists
+        const histItem = NeuralSync.history.find(h => h.deviceId === dId);
+        if (histItem) histItem.name = res.trim();
+        localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
+        renderTopology();
+    }
+}
+
+
+let reconnectInterval = null;
 // --- TRUE AUTO-RECONNECT ENGINE ---
 function startAutoReconnectLoop() {
     if (reconnectInterval) clearInterval(reconnectInterval);
@@ -263,20 +301,29 @@ window.closeQRScanner = async function () {
 // ==========================================
 // 4. TOPOLOGY (HISTORY & LIVE PRESENCE)
 // ==========================================
-function saveToHistory(peerId) {
-    // FIX: Extract the base device ID (e.g., WIN-PC-1234) to group duplicates
-    const baseIdMatch = peerId.match(/^(.*?-\w+-\d+)/);
-    const baseId = baseIdMatch ? baseIdMatch[1] : peerId;
-
-    // Purge any ghost entries that share this base ID but have different random suffixes
-    NeuralSync.history = NeuralSync.history.filter(h => !h.id.startsWith(baseId) || h.id === peerId);
-
-    const existing = NeuralSync.history.find(h => h.id === peerId);
-    if (existing) {
-        existing.lastSeen = Date.now();
-    } else {
-        NeuralSync.history.push({ id: peerId, lastSeen: Date.now() });
+function saveToHistory(peerId, explicitDeviceId, explicitName, explicitType) {
+    let dId = explicitDeviceId || peerId;
+    if (!explicitDeviceId) {
+        const baseIdMatch = peerId.match(/^(.*?-\w+-\d+)/);
+        if (baseIdMatch) dId = baseIdMatch[1];
     }
+    
+    const aliases = JSON.parse(localStorage.getItem('cp_network_aliases')) || {};
+    const localAlias = aliases[dId];
+    const dName = localAlias ? localAlias : (explicitName && explicitName !== 'Local Node' ? explicitName : dId);
+    const dType = explicitType || (dId.includes('MOB') ? 'MOB' : (dId.includes('TAB') ? 'TAB' : 'PC'));
+
+    NeuralSync.history = NeuralSync.history.filter(h => h.deviceId !== dId && h.id !== peerId);
+    
+    const isLive = NeuralSync.activeConns[peerId] !== undefined;
+    
+    NeuralSync.history.push({ 
+        id: peerId, 
+        deviceId: dId, 
+        name: dName, 
+        type: dType, 
+        lastSeen: Date.now() 
+    });
 
     localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
     renderTopology();
@@ -291,21 +338,34 @@ function renderTopology() {
         return;
     }
 
-    const localIsMob = NeuralSync.deviceId.includes('MOB');
-    const localIsTab = NeuralSync.deviceId.includes('TAB');
+    const localIsMob = NeuralSync.deviceType.includes('MOB');
+    const localIsTab = NeuralSync.deviceType.includes('TAB');
     const localIcon = localIsMob ? 'fa-mobile-alt' : (localIsTab ? 'fa-tablet-alt' : 'fa-desktop');
 
     let html = `
-        <div class="relative z-20 bg-dark border-2 border-[#22c55e] rounded-[30px] p-6 md:p-8 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.3)] mb-12 w-full max-w-xs text-center">
-            <i class="fas ${localIcon} text-[#22c55e] text-3xl md:text-4xl mb-3"></i>
-            <div class="text-[11px] font-black text-white uppercase tracking-widest">Local Node</div>
-            <div class="text-[9px] text-[#22c55e] uppercase mt-1 tracking-widest font-bold bg-[#22c55e]/10 px-3 py-1 rounded-md border border-[#22c55e]/30">${NeuralSync.deviceId}</div>
+        <div class="relative z-20 bg-dark border-2 border-[#22c55e] rounded-[30px] p-6 md:p-8 flex flex-col items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.3)] mb-12 w-full max-w-xs text-center group">
+            <button onclick="editLocalNodeName()" class="absolute top-4 right-4 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:bg-pulse hover:text-white transition-all md:opacity-0 md:group-hover:opacity-100 z-20">
+                <i class="fas fa-pen text-[10px]"></i>
+            </button>
+            <i onclick="showLocalQR()" class="fas ${localIcon} text-[#22c55e] text-3xl md:text-4xl mb-3 cursor-pointer hover:scale-110 hover:drop-shadow-[0_0_15px_rgba(34,197,94,0.6)] transition-all"></i>
+            <div class="text-[11px] font-black text-white uppercase tracking-widest">${NeuralSync.deviceName}</div>
+            <div class="text-[7px] text-gray-500 uppercase mt-2 tracking-widest font-bold"><i class="fas fa-qrcode mr-1"></i> Tap icon for QR Code</div>
         </div>
         <div class="w-px h-12 bg-gradient-to-b from-[#22c55e] to-white/10 absolute top-[130px] md:top-[160px] z-10 hidden md:block"></div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-10 w-full relative pt-8 border-t border-white/10 md:border-white/20">
     `;
 
-    const uniqueHistory = Array.from(new Map(NeuralSync.history.map(item => [item.id, item])).values());
+    // Grouping uniquely by deviceId so we don't display duplicates with the same name.
+    const uniqueHistoryMap = new Map();
+    NeuralSync.history.forEach(item => {
+        // If we already have this device in map, check if this object's lastSeen is newer
+        const existing = uniqueHistoryMap.get(item.deviceId);
+        if (!existing || item.lastSeen > existing.lastSeen) {
+            uniqueHistoryMap.set(item.deviceId, item);
+        }
+    });
+    
+    const uniqueHistory = Array.from(uniqueHistoryMap.values());
 
     html += uniqueHistory.sort((a, b) => b.lastSeen - a.lastSeen).map(node => {
         const isLive = NeuralSync.activeConns[node.id] !== undefined;
@@ -314,8 +374,8 @@ function renderTopology() {
         const dateStr = new Date(node.lastSeen).toLocaleDateString();
         const timeStr = new Date(node.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        const isMob = node.id.includes('MOB');
-        const isTab = node.id.includes('TAB');
+        const isMob = node.type && node.type.includes('MOB');
+        const isTab = node.type && node.type.includes('TAB');
         const icon = isMob ? 'fa-mobile-alt' : (isTab ? 'fa-tablet-alt' : 'fa-desktop');
 
         return `
@@ -325,18 +385,24 @@ function renderTopology() {
                     <button onclick="removeTopologyNode('${node.id}')" class="absolute top-4 right-4 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:bg-pulse hover:text-white transition-all md:opacity-0 md:group-hover:opacity-100 z-20">
                         <i class="fas fa-times text-[10px]"></i>
                     </button>
+                    <button onclick="editTopologyNodeName('${node.deviceId}')" class="absolute top-4 left-4 w-8 h-8 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:bg-[#3b82f6] hover:text-white transition-all md:opacity-0 md:group-hover:opacity-100 z-20" title="Edit Alias">
+                        <i class="fas fa-pen text-[10px]"></i>
+                    </button>
                     <div class="w-14 h-14 rounded-full border-2 border-[${statusColor}] flex items-center justify-center mb-4 mx-auto bg-dark shadow-inner">
                         <i class="fas ${icon} ${isLive ? 'animate-pulse' : ''} text-[${statusColor}] text-lg"></i>
                     </div>
                     <div class="text-center">
-                        <div class="text-[12px] font-black uppercase text-white truncate px-4">${node.id}</div>
+                        <div class="text-[12px] font-black uppercase text-white truncate px-4">${node.name}</div>
                         <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-2 bg-white/5 py-1.5 rounded-lg border border-white/5">Sync: ${dateStr}</div>
                         ${isLive ? `<div class="text-[9px] text-[#a855f7] mt-3 uppercase font-black tracking-widest live-status" data-peer="${node.id}"><i class="fas fa-link mr-1"></i> Connected</div>` : ''}
                     </div>
                 </div>
-                <button onclick="joinNeuralNetwork('${node.id}')" class="mt-4 px-6 py-3 w-[80%] bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase text-white hover:bg-[${statusColor}] transition-all flex items-center justify-center gap-2 shadow-lg">
-                    <i class="fas fa-bolt"></i> Connect
-                </button>
+                <!-- Remove connect button entirely if already live, looks much cleaner -->
+                ${!isLive ? `
+                    <button onclick="joinNeuralNetwork('${node.id}')" class="mt-4 px-6 py-3 w-[80%] bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase text-white hover:bg-[#4b5563] transition-all flex items-center justify-center gap-2 shadow-lg">
+                        <i class="fas fa-bolt"></i> Reconnect
+                    </button>
+                ` : '<div class="mt-4 px-6 py-3 border border-transparent h-[40px]"></div>'}
             </div>
         `;
     }).join('');
@@ -346,7 +412,10 @@ function renderTopology() {
 }
 
 window.removeTopologyNode = function (id) {
-    NeuralSync.history = NeuralSync.history.filter(n => n.id !== id);
+    const node = NeuralSync.history.find(n => n.id === id);
+    if(node) NeuralSync.history = NeuralSync.history.filter(n => n.deviceId !== node.deviceId);
+    else NeuralSync.history = NeuralSync.history.filter(n => n.id !== id);
+    
     localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
     renderTopology();
 }
@@ -385,7 +454,13 @@ function startHeartbeat() {
         Object.keys(NeuralSync.activeConns).forEach(peerId => {
             const conn = NeuralSync.activeConns[peerId];
             if (conn && conn.open) {
-                conn.send({ type: 'HEARTBEAT', status: statusMsg });
+                conn.send({ 
+                    type: 'HEARTBEAT', 
+                    status: statusMsg,
+                    deviceId: NeuralSync.deviceId,
+                    deviceName: NeuralSync.deviceName,
+                    deviceType: NeuralSync.deviceType
+                });
             } else {
                 delete NeuralSync.activeConns[peerId];
                 renderTopology();
@@ -411,17 +486,31 @@ function setupConnection(conn) {
         }
 
         if (NeuralSync.role === 'node') {
-            conn.send({ type: 'SYNC_REQUEST', sender: NeuralSync.deviceId });
+            conn.send({ 
+                type: 'SYNC_REQUEST', 
+                sender: NeuralSync.deviceId,
+                deviceId: NeuralSync.deviceId,
+                deviceName: NeuralSync.deviceName,
+                deviceType: NeuralSync.deviceType
+            });
         }
     });
 
     conn.on('data', (data) => {
         // --- BASE SYNC PAYLOADS ---
         if (data.type === 'SYNC_REQUEST') {
+            if (data.deviceId) saveToHistory(conn.peer, data.deviceId, data.deviceName, data.deviceType);
             sendPayload(conn);
-            conn.send({ type: 'SYNC_REQUEST_REPLY', sender: NeuralSync.deviceId });
+            conn.send({ 
+                type: 'SYNC_REQUEST_REPLY', 
+                sender: NeuralSync.deviceId,
+                deviceId: NeuralSync.deviceId,
+                deviceName: NeuralSync.deviceName,
+                deviceType: NeuralSync.deviceType
+            });
         }
         else if (data.type === 'SYNC_REQUEST_REPLY') {
+            if (data.deviceId) saveToHistory(conn.peer, data.deviceId, data.deviceName, data.deviceType);
             sendPayload(conn);
         }
         else if (data.type === 'SYNC_PROPOSAL') {
@@ -433,7 +522,7 @@ function setupConnection(conn) {
         else if (data.type === 'HEARTBEAT') {
             const el = document.querySelector(`.live-status[data-peer="${conn.peer}"]`);
             if (el) el.innerHTML = `<i class="fas fa-eye"></i> Remote: ${data.status}`;
-            saveToHistory(conn.peer);
+            saveToHistory(conn.peer, data.deviceId, data.deviceName, data.deviceType);
         }
         // --- NEW P2P FEATURES ---
         else if (data.type === 'CAST_MEDIA') {

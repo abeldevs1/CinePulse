@@ -47,6 +47,39 @@ function sanitize(str) {
         navigator.serviceWorker.register('sw.js');
     });
 }
+
+function checkPWADisplay() {
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone || document.referrer.includes('android-app://');
+    
+    // Check if dismissed within the last 3 days (3 * 24 * 60 * 60 * 1000 ms)
+    const lastDismissed = parseInt(localStorage.getItem('cp_dismissed_install_time') || '0', 10);
+    const isSnoozed = (Date.now() - lastDismissed) < 259200000;
+    
+    const lnk = document.getElementById('mobileInstallLink');
+    const crd = document.getElementById('installReminderCard');
+    
+    if (isStandalone || isSnoozed) {
+        if (lnk) lnk.classList.add('hidden');
+        if (crd) crd.classList.add('hidden');
+    } else {
+        if (lnk) lnk.classList.remove('hidden');
+        if (crd) crd.classList.remove('hidden');
+    }
+}
+window.addEventListener('DOMContentLoaded', checkPWADisplay);
+window.matchMedia('(display-mode: standalone)').addEventListener('change', checkPWADisplay);
+
+window.dismissInstallReminder = function(event) {
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    localStorage.setItem('cp_dismissed_install_time', Date.now().toString());
+    const crd = document.getElementById('installReminderCard');
+    const lnk = document.getElementById('mobileInstallLink');
+    if (crd) crd.classList.add('hidden');
+    if (lnk) lnk.classList.add('hidden');
+};
   const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
         const BASE = 'https://api.themoviedb.org/3';
         const IMG = 'https://image.tmdb.org/t/p/w500';
@@ -5788,7 +5821,7 @@ function getContinueWatchingHTML() {
         const type = item.tmdb_type || (item.type === 'Series' || item.type === 'Anime' ? 'tv' : 'movie');
         
         html += `
-        <div onclick="window.location.href='player.html?id=${item.id}&type=${type}'" class="relative w-48 sm:w-56 shrink-0 group cursor-pointer">
+        <div onclick="window.location.href='pages/player.html?id=${item.id}&type=${type}'" class="relative w-48 sm:w-56 shrink-0 group cursor-pointer">
             <div class="aspect-video rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg group-hover:shadow-[0_0_20px_rgba(255,45,85,0.3)] transition-all bg-dark">
                 <img src="${IMG}${item.poster}" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity">
                 
@@ -5903,7 +5936,7 @@ function openWatchOptions(id, type, title) {
     // 1. Setup Internal Player Route
     const safeTitle = encodeURIComponent(displayTitle);
     btnInternal.onclick = () => {
-        window.location.href = `player.html?id=${id}&type=${type}&title=${safeTitle}`;
+        window.location.href = `pages/player.html?id=${id}&type=${type}&title=${safeTitle}`;
     };
 
     // 2. Setup External Fallback Links
@@ -5934,20 +5967,21 @@ document.getElementById('watchOptionsModal').addEventListener('click', function(
     if (e.target === this) closeWatchOptions();
 });
 
-function launchInternalPlayer(id, tmdbType, title, sameTab = false) {
+function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     document.getElementById('watchModal').classList.add('hidden');
     const safeTitle = encodeURIComponent(title || '');
 
     // TRIGER NEURAL AUTO-MARK
     autoMarkWatching(id, tmdbType);
 
-    if (sameTab) {
-        // Open in same tab for cast media so it's a direct player flow
-        window.location.href = `player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
-    } else {
-        // Existing behavior: preserve main app by opening in a new tab
-        window.open(`player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`, '_blank');
+    if (typeof showNotification === 'function') {
+        showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream for ${title}...`, false);
     }
+
+    // ALWAYS open in the same tab to preserve PWA seamless experience
+    setTimeout(() => {
+        window.location.href = `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+    }, 800);
 }
 
 function renderPlayerEpisodes(seasonNum) {
