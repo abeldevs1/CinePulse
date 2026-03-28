@@ -20,6 +20,18 @@ function getDevicePlatform() {
     return `${os}-${type}`;
 }
 
+const P2P_CONFIG = {
+    config: {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun3.l.google.com:19302' },
+            { urls: 'stun:stun4.l.google.com:19302' }
+        ]
+    }
+};
+
 const NeuralSync = {
     peer: null,
     activeConns: {}, 
@@ -106,7 +118,7 @@ window.initNeuralHost = function(optionalPeerId = null) {
 
         if (NeuralSync.peer) NeuralSync.peer.destroy();
 
-        NeuralSync.peer = new Peer(peerId);
+        NeuralSync.peer = new Peer(peerId, P2P_CONFIG);
 
         NeuralSync.peer.on('open', (id) => {
             NeuralSync.role = 'host';
@@ -166,7 +178,7 @@ window.joinNeuralNetwork = function(targetId = null, isSilent = false) {
         localStorage.setItem('cp_neural_client_id', clientId);
     }
 
-    NeuralSync.peer = new Peer(clientId);
+    NeuralSync.peer = new Peer(clientId, P2P_CONFIG);
 
     NeuralSync.peer.on('open', (id) => {
         NeuralSync.role = 'node';
