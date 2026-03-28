@@ -151,5 +151,5 @@ Distributed under the MIT License. See [LICENSE](docs/LICENSE) for more informat
 ---
 
 <p align="center">
-  Built with ❤️ by the CinePulse Team
+  Built with ❤️ by the @abeldevs1
 </p>
