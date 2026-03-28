@@ -1746,3 +1746,7 @@ body.modal-open {
     position: fixed;
     width: 100%;
 }
+/* style.css */
+.card-checkbox.hidden {
+    display: none !important;
+}
