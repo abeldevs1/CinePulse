@@ -810,20 +810,7 @@
             </div>
     </div>
 </div>
-<div id="qrScannerModal" class="fixed inset-0 z-[500] hidden bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
-    <div class="w-full max-w-md bg-[#0a0c12] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
-        <button onclick="closeQRScanner()" class="absolute top-4 right-4 z-50 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-pulse transition-colors">
-            <i class="fas fa-times"></i>
-        </button>
-        <div class="p-6 text-center border-b border-white/10">
-            <h3 class="text-xl font-black italic uppercase text-white tracking-widest">Optical Scanner</h3>
-            <p class="text-[9px] text-pulse uppercase font-bold tracking-widest mt-1">Point camera at Hub QR Code</p>
-        </div>
-        <div class="p-4 bg-black relative min-h-[300px] flex items-center justify-center">
-             <div id="qr-reader" class="w-full relative z-10"></div>
-        </div>
-    </div>
-</div>
+
 
 
 <div id="neuralDiffOverlay" class="hidden opacity-0 transition-all duration-300 ease-out w-full max-w-6xl mx-auto my-6 md:my-8 bg-gradient-to-br from-[#0a0c12] via-[#0d0f14] to-[#0a0c12] border border-white/20 rounded-3xl shadow-2xl overflow-hidden backdrop-blur-sm max-h-[calc(100vh-80px)]">
@@ -985,6 +972,22 @@
 </div>
 
     </main>
+
+    <div id="qrScannerModal" class="fixed inset-0 z-[500] hidden bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-4">
+        <div class="w-full max-w-md bg-[#0a0c12] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
+            <button onclick="closeQRScanner()" class="absolute top-4 right-4 z-50 w-10 h-10 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-pulse transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="p-6 text-center border-b border-white/10">
+                <h3 class="text-xl font-black italic uppercase text-white tracking-widest">Optical Scanner</h3>
+                <p class="text-[9px] text-pulse uppercase font-bold tracking-widest mt-1">Point camera at Hub QR Code</p>
+            </div>
+            <div class="p-4 bg-black relative min-h-[300px] flex items-center justify-center">
+                 <div id="qr-reader" class="w-full relative z-10"></div>
+            </div>
+        </div>
+    </div>
+    
     <div id="personModal" class="fixed inset-0 z-[250] hidden bg-dark overflow-y-auto">
     <div class="relative min-h-screen flex flex-col lg:flex-row">
         <button onclick="closePersonModal()" class="fixed top-6 right-6 z-[260] w-12 h-12 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
