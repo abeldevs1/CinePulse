@@ -72,6 +72,10 @@
             <div id="iframeContainer" class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-black">
                 <div class="iframe-loader spinner"></div>
                 <iframe id="neuralIframe" class="w-full h-full border-none absolute inset-0" allowfullscreen="true" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox" referrerpolicy="origin"></iframe>
+                <!-- Sandbox Permission Indicator -->
+                <div id="sandboxIndicator" class="hidden absolute top-3 right-3 z-20 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1.5">
+                    <i class="fas fa-unlock text-[9px]"></i> Sandbox Open
+                </div>
             </div>
 
             <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 backdrop-blur-md">
@@ -113,26 +117,75 @@
                 <div class="lg:col-span-2 bg-white/5 border border-white/10 rounded-[30px] p-6 md:p-8 backdrop-blur-xl shadow-xl flex flex-col gap-6">
                     <div class="flex justify-between items-center border-b border-white/10 pb-4">
                         <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-widest"><i class="fas fa-server mr-2 text-pulse"></i> Source Engine</h4>
-                        <div id="animeControls" class="hidden flex bg-dark border border-white/10 rounded-lg p-1">
-                            <button id="btnSub" onclick="setAudioMode('sub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white">Sub</button>
-                            <button id="btnDub" onclick="setAudioMode('dub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white">Dub</button>
+                        <div class="flex items-center gap-3">
+                            <div id="animeControls" class="hidden flex bg-dark border border-white/10 rounded-lg p-1">
+                                <button id="btnSub" onclick="setAudioMode('sub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white">Sub</button>
+                                <button id="btnDub" onclick="setAudioMode('dub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white">Dub</button>
+                            </div>
+                            <!-- Sandbox Toggle Button -->
+                            <button id="sandboxToggleBtn" onclick="toggleIframeSandbox()" class="px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10" title="Toggle iframe sandbox permissions">
+                                <i class="fas fa-lock mr-2"></i> Sandbox: Locked
+                            </button>
                         </div>
                     </div>
                     
                     <div id="serverList" class="flex flex-wrap items-center gap-3"></div>
 
                     <div class="mt-4 border-t border-white/5 pt-4">
-                        <button onclick="document.getElementById('playerTips').classList.toggle('hidden')" class="text-[9px] font-bold text-gray-500 hover:text-white uppercase tracking-widest flex items-center gap-2 transition-colors w-full text-left">
-                            <i class="fas fa-lightbulb text-yellow-500"></i> Toggle Neural Player Tips
+                        <style>
+                            @keyframes tipGlow {
+                                0% { box-shadow: 0 0 5px rgba(255, 45, 85, 0.2); border-color: rgba(255, 255, 255, 0.1); }
+                                50% { box-shadow: 0 0 15px rgba(255, 45, 85, 0.4); border-color: rgba(255, 45, 85, 0.3); }
+                                100% { box-shadow: 0 0 5px rgba(255, 45, 85, 0.2); border-color: rgba(255, 255, 255, 0.1); }
+                            }
+                            .tip-glow-card { animation: tipGlow 3s infinite ease-in-out; cursor: pointer; transition: all 0.3s ease; }
+                            .tip-glow-card:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.05); }
+                        </style>
+
+                        <button onclick="document.getElementById('playerTips').classList.toggle('hidden')" class="tip-glow-card bg-white/5 border border-white/10 p-4 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-between transition-all w-full text-left mb-4">
+                            <span class="flex items-center gap-3">
+                                <i class="fas fa-lightbulb text-yellow-500 animate-pulse"></i>
+                                <span>Neural Player Intelligence & Tips</span>
+                            </span>
+                            <i class="fas fa-chevron-down text-gray-600"></i>
                         </button>
-                        <div id="playerTips" class="hidden mt-4 p-5 bg-dark/60 border border-white/5 rounded-2xl space-y-4">
-                            <p class="text-[10px] text-gray-400 leading-relaxed">
-                                    <span class="text-pulse font-black uppercase"><i class="fas fa-server"></i> Server Selection:</span> 
-                                    If you are using a Multi-Server source (like Nexus Stream or Global Relay), click the server list inside the video frame and select <strong class="text-white bg-white/10 px-1 rounded">Server 2</strong> for the fastest, most reliable connection.
+
+                        <div id="playerTips" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-4 duration-300">
+                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5 class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="fas fa-server"></i> Server Selection
+                                </h5>
+                                <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
+                                    For Multi-Server sources, click the internal server menu and select <strong>Server 2</strong> for optimal Neural Link stability.
                                 </p>
-                            <p class="text-[10px] text-gray-400 leading-relaxed"><span class="text-pulse font-black uppercase">Audio / Subtitles:</span> If the manual Sub/Dub buttons above don't work, look for the 'CC' or Gear Icon ⚙️ inside the video player frame to change languages natively.</p>
-                            <p class="text-[10px] text-gray-400 leading-relaxed"><span class="text-pulse font-black uppercase">Buffering:</span> If a stream buffers excessively, pause it for 30 seconds to load, or select a different Source Engine button.</p>
-                            <p class="text-[10px] text-gray-400 leading-relaxed"><span class="text-pulse font-black uppercase">Pop-ups:</span> External source engines may contain hidden ads. Using a native ad-blocker like uBlock Origin is highly recommended.</p>
+                            </div>
+
+                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5 class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="fas fa-language"></i> Audio / Subs
+                                </h5>
+                                <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
+                                    If manual buttons fail, use the <strong>Gear Icon ⚙️</strong> inside the video frame to toggle native sub/dub tracks.
+                                </p>
+                            </div>
+
+                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5 class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="fas fa-bolt"></i> Buffering
+                                </h5>
+                                <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
+                                    Pause for 30 seconds to allow the stream buffer to initialize, or switch <strong>Source Engines</strong> if issues persist.
+                                </p>
+                            </div>
+
+                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5 class="text-[9px] font-black text-yellow-500 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="fas fa-unlock"></i> Full Access Mode
+                                </h5>
+                                <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
+                                    If the player is blank, toggle <strong>Access: Full</strong> above to bypass relay-server sandboxing restrictions.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>

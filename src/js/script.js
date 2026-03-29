@@ -51,6 +51,9 @@ function sanitize(str) {
 function checkPWADisplay() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone || document.referrer.includes('android-app://');
     
+    // Permanent hide: app was installed at some point
+    const isPermanentlyInstalled = localStorage.getItem('cp_pwa_installed') === '1';
+    
     // Check if dismissed within the last 3 days (3 * 24 * 60 * 60 * 1000 ms)
     const lastDismissed = parseInt(localStorage.getItem('cp_dismissed_install_time') || '0', 10);
     const isSnoozed = (Date.now() - lastDismissed) < 259200000;
@@ -58,7 +61,8 @@ function checkPWADisplay() {
     const lnk = document.getElementById('mobileInstallLink');
     const crd = document.getElementById('installReminderCard');
     
-    if (isStandalone || isSnoozed) {
+    // Permanent hide takes priority over snooze
+    if (isStandalone || isPermanentlyInstalled || isSnoozed) {
         if (lnk) lnk.classList.add('hidden');
         if (crd) crd.classList.add('hidden');
     } else {
@@ -68,6 +72,15 @@ function checkPWADisplay() {
 }
 window.addEventListener('DOMContentLoaded', checkPWADisplay);
 window.matchMedia('(display-mode: standalone)').addEventListener('change', checkPWADisplay);
+
+// Permanent hide on successful PWA install
+window.addEventListener('appinstalled', () => {
+    localStorage.setItem('cp_pwa_installed', '1');
+    const lnk = document.getElementById('mobileInstallLink');
+    const crd = document.getElementById('installReminderCard');
+    if (lnk) lnk.classList.add('hidden');
+    if (crd) crd.classList.add('hidden');
+});
 
 window.dismissInstallReminder = function(event) {
     if (event) {
@@ -119,8 +132,40 @@ function hideLoader() {
 }
 // Smart Mobile Scroll Observer
 const navEl = document.getElementById('sidebarNav');
+const scrollHint = document.getElementById('sidebarScrollHint');
+
 if (navEl) {
+    // 1. Show hint if not dismissed in this session and on mobile
+    if (window.innerWidth < 1024 && !sessionStorage.getItem('cp_sidebar_hint_seen')) {
+        if (scrollHint) {
+            scrollHint.classList.remove('hidden');
+            // Allow CSS transition to fire
+            requestAnimationFrame(() => {
+                scrollHint.style.opacity = '1';
+                scrollHint.style.transform = 'translateX(-50%) translateY(0)';
+            });
+        }
+    }
+
+    // 2. Dismiss logic
+    const dismissHint = () => {
+        if (scrollHint && !scrollHint.classList.contains('hidden')) {
+            scrollHint.style.opacity = '0';
+            scrollHint.style.transform = 'translateX(-50%) translateY(20px)';
+            scrollHint.style.pointerEvents = 'none';
+            sessionStorage.setItem('cp_sidebar_hint_seen', 'true');
+            
+            // Clean up DOM after animation
+            setTimeout(() => {
+                scrollHint.classList.add('hidden');
+            }, 600);
+        }
+    };
+
     navEl.addEventListener('scroll', () => {
+        // Dismiss hint on first scroll
+        dismissHint();
+
         // Check if user reached the right side (within 10px)
         const isAtEnd = navEl.scrollLeft + navEl.clientWidth >= navEl.scrollWidth - 10;
         if (isAtEnd) {
@@ -129,6 +174,9 @@ if (navEl) {
             navEl.parentElement.classList.remove('nav-at-end');
         }
     }, { passive: true });
+
+    // Also dismiss on touch
+    navEl.addEventListener('touchstart', dismissHint, { passive: true });
 }
 // Intercept fetchAPI to trigger the loader automatically
 const originalFetch = window.fetch;
@@ -336,6 +384,9 @@ document.addEventListener('DOMContentLoaded', () => {
             deepSearch(searchQuery);
         }, 500);
     }
+
+    // --- NEW: Check Install Reminder Snooze State ---
+    checkInstallSnooze();
 });
         // api helper 
 function getTodayAPI() {
@@ -414,7 +465,34 @@ function navigate(view, skipHistory = false) {
         console.log("Neural Link View Initialized");
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(hideLoader, 300); 
+    setTimeout(hideLoader, 300);
+
+    // --- Back-to-Top/Bottom button visibility ---
+    const topBtn = document.getElementById('backToTopBtn');
+    const botBtn = document.getElementById('backToBotBtn');
+    if (topBtn && botBtn) {
+        if (view === 'mylist' || view === 'rhythmlab') {
+            // Show buttons when scrolled past 400px
+            const scrollHandler = () => {
+                const visible = window.scrollY > 400;
+                topBtn.classList.toggle('opacity-0', !visible);
+                topBtn.classList.toggle('pointer-events-none', !visible);
+                botBtn.classList.toggle('opacity-0', !visible);
+                botBtn.classList.toggle('pointer-events-none', !visible);
+            };
+            // Remove any existing listener before re-adding
+            window.removeEventListener('scroll', window._cpScrollHandler);
+            window._cpScrollHandler = scrollHandler;
+            window.addEventListener('scroll', scrollHandler, { passive: true });
+            scrollHandler(); // run immediately
+            topBtn.classList.remove('hidden');
+            botBtn.classList.remove('hidden');
+        } else {
+            topBtn.classList.add('hidden');
+            botBtn.classList.add('hidden');
+            window.removeEventListener('scroll', window._cpScrollHandler);
+        }
+    }
 }
 
         // Search Behavior
@@ -513,7 +591,13 @@ function setupSearchBehavior() {
 
         if (state.view === 'search') {
             drop.classList.add('hidden'); 
-            searchTimeout = setTimeout(() => { deepSearch(q); }, 500); 
+            searchTimeout = setTimeout(() => { 
+                if (state.searchMode === 'filter') {
+                    applySearchFilters(false); 
+                } else {
+                    deepSearch(q); 
+                }
+            }, 500); 
         } else {
             if(!q) { drop.classList.add('hidden'); return; }
             searchTimeout = setTimeout(async () => {
@@ -683,6 +767,13 @@ function resetSearchMode() {
 
 
 async function openPersonModal(id) {
+    const pModal = document.getElementById('personModal');
+    if (pModal) pModal.scrollTop = 0;
+
+    // Save current scroll before opening
+    if (pModal.classList.contains('hidden')) {
+        window._cpModalScrollY = window.scrollY;
+    }
     document.getElementById('searchDrop').classList.add('hidden');
     const [person, credits] = await Promise.all([
         fetchAPI(`/person/${id}`),
@@ -922,37 +1013,61 @@ async function applySearchFilters(append = false) {
     const activeType = state.discoverFilters.type;
     const apiType = (activeType === 'tv' || activeType === 'anime' || activeType === 'kdrama' || activeType === 'turkish' || activeType === 'asian') ? 'tv' : 'movie';
     
-   let path = `/discover/${apiType}?sort_by=${sort}&page=${state.filterPage}`;
+    const query = document.getElementById('mainSearch').value.trim();
     
-    // THE ASIAN FILTER OVERRIDE FIX
-    if (activeType === 'asian') {
-        path += `&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
-    } else if (activeType === 'anime') {
-        path += `&with_genres=16&with_original_language=ja`;
-    } else if (activeType === 'kdrama') {
-        path += `&with_original_language=ko`;
-    } else if (activeType === 'turkish') {
-        path += `&with_original_language=tr`;
-    }
-    
-    // Apply Year (TMDB uses different parameters for Movies vs TV)
-    if(year) {
-        if (apiType === 'movie') path += `&primary_release_year=${year}`;
-        else path += `&first_air_date_year=${year}`;
-    }
-    
-    // Apply Country
-    if(country) {
-        path += `&with_origin_country=${country}`;
-    }
+    // Determine path based on if we have a search query or just filters
+    let path = "";
+    if (query) {
+        path = `/search/${apiType}?query=${encodeURIComponent(query)}&page=${state.filterPage}`;
+        if (year) {
+            if (apiType === 'movie') path += `&primary_release_year=${year}`;
+            else path += `&first_air_date_year=${year}`;
+        }
+        // Search API doesn't support genres/country in the same call, 
+        // local filter (applyDiscoverLocalFilters) will handle them.
+    } else {
+        path = `/discover/${apiType}?sort_by=${sort}&page=${state.filterPage}`;
+        
+        // THE ASIAN FILTER OVERRIDE FIX
+        if (activeType === 'asian') {
+            path += `&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
+        } else if (activeType === 'anime') {
+            path += `&with_genres=16&with_original_language=ja`;
+        } else if (activeType === 'kdrama') {
+            path += `&with_original_language=ko`;
+        } else if (activeType === 'turkish') {
+            path += `&with_original_language=tr`;
+        }
+        
+        // Apply Year
+        if(year) {
+            if (apiType === 'movie') path += `&primary_release_year=${year}`;
+            else path += `&first_air_date_year=${year}`;
+        }
+        
+        // Apply Country
+        if(country) {
+            path += `&with_origin_country=${country}`;
+        }
 
-    // Capture genres from the new pill system if any are active
-    if (state.discoverFilters.genres && state.discoverFilters.genres.length > 0) {
-        path += `&with_genres=${state.discoverFilters.genres.join(',')}`;
+        // Apply Genres
+        if (state.discoverFilters.genres && state.discoverFilters.genres.length > 0) {
+            path += `&with_genres=${state.discoverFilters.genres.join(',')}`;
+        }
     }
     
     try {
         const data = await fetchAPI(path);
+        
+        // If we have a query, we might need extra local filtering as search API is less restrictive
+        if (query) {
+            state.discoverDataRaw = data.results;
+            applyDiscoverLocalFilters();
+        } else {
+            renderGrid('searchGrid', data.results, apiType, !append);
+            applyLayoutToGrid();
+        }
+
         renderGrid('searchGrid', data.results, apiType, !append);
         applyLayoutToGrid();
         
@@ -1018,9 +1133,17 @@ async function applySearchFilters(append = false) {
         // Modal Logic
 async function openModal(id, type, isBack = false) {
     let modalCountdownInterval;
-   // Push history state so the Back Button works safely
+    // Save current scroll before opening (used to restore when modal is closed via Back)
+    if (!isBack && document.getElementById('modal').classList.contains('hidden')) {
+        window._cpModalScrollY = window.scrollY;
+    }
+    // Ensure modal starts at the top
+    const modalEl = document.getElementById('modal');
+    if (modalEl) modalEl.scrollTop = 0;
+    
+    // Push history state so the Back Button works safely
     if (!isBack) {
-        if (!document.getElementById('modal').classList.contains('hidden')) {
+        if (!modalEl.classList.contains('hidden')) {
             window.history.replaceState({ modalOpen: true }, '', window.location.hash);
         } else {
             window.history.pushState({ modalOpen: true }, '', window.location.hash);
@@ -2350,6 +2473,11 @@ function closeModal(fromPopState = false) {
     
     checkScrollLock(); // Replaces document.body.style.overflow = 'auto'
     
+    // If closed via browser Back button, restore scroll position
+    if (fromPopState && typeof window._cpModalScrollY === 'number') {
+        setTimeout(() => window.scrollTo({ top: window._cpModalScrollY, behavior: 'instant' }), 50);
+    }
+    
     // If closed manually via X button, reverse the history to clean the stack
     if (!fromPopState) window.history.back();
 }
@@ -2357,6 +2485,11 @@ function closeModal(fromPopState = false) {
 function closePersonModal(fromPopState = false) {
     document.getElementById('personModal').classList.add('hidden');
     checkScrollLock(); // Replaces document.body.style.overflow = 'auto'
+    
+    // If closed via browser Back button, restore scroll position
+    if (fromPopState && typeof window._cpModalScrollY === 'number') {
+        setTimeout(() => window.scrollTo({ top: window._cpModalScrollY, behavior: 'instant' }), 50);
+    }
     
     if (!fromPopState) window.history.back();
 }
@@ -2430,25 +2563,52 @@ async function loadUpcomingPage() {
 
     const today = new Date().toISOString().split('T')[0];
     let future = new Date();
-    future.setMonth(future.getMonth() + 6);
+    future.setMonth(future.getMonth() + 9); // Look further ahead
     const futureDate = future.toISOString().split('T')[0];
 
-    document.getElementById('upcomingRecommendationsGrid').innerHTML = '<div class="page-loader"></div>';
-    document.getElementById('upcomingMainGrid').innerHTML = '<div class="page-loader"></div>';
+    // Helper to clear grids and show loaders
+    const grids = [
+        'upcomingRecommendationsGrid', 'upcomingSeriesGrid', 'upcomingAnimeGrid', 
+        'upcomingKdramaGrid', 'upcomingTurkishGrid', 'upcomingMainGrid'
+    ];
+    grids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '<div class="page-loader"></div>';
+    });
 
     try {
+        // 1. Highly Anticipated Movies
         const anticipatedRes = await fetch(`${BASE}/discover/movie?api_key=${API_KEY}&primary_release_date.gte=${today}&primary_release_date.lte=${futureDate}&sort_by=popularity.desc`);
         const anticipatedData = await anticipatedRes.json();
-        
-        renderGrid('upcomingRecommendationsGrid', anticipatedData.results.slice(0, 10), 'movie', true);
+        const futureMovies = anticipatedData.results.filter(m => m.release_date >= today);
+        renderGrid('upcomingRecommendationsGrid', futureMovies.slice(0, 12), 'movie', true);
 
+        // 2. Upcoming Series
+        const seriesRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&first_air_date.lte=${futureDate}&sort_by=popularity.desc&with_original_language=en`);
+        const seriesData = await seriesRes.json();
+        renderGrid('upcomingSeriesGrid', seriesData.results.slice(0, 12), 'tv', true);
+
+        // 3. Upcoming Anime
+        const animeRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`);
+        const animeData = await animeRes.json();
+        renderGrid('upcomingAnimeGrid', animeData.results.slice(0, 12), 'tv', true);
+
+        // 4. K-Drama Radar
+        const kdramaRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&with_original_language=ko&sort_by=popularity.desc`);
+        const kdramaData = await kdramaRes.json();
+        renderGrid('upcomingKdramaGrid', kdramaData.results.slice(0, 6), 'tv', true);
+
+        // 5. Turkish Wave
+        const turkishRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&with_original_language=tr&sort_by=popularity.desc`);
+        const turkishData = await turkishRes.json();
+        renderGrid('upcomingTurkishGrid', turkishData.results.slice(0, 6), 'tv', true);
+
+        // 6. General Releasing Soon (Mix)
         const mainRes = await fetch(`${BASE}/movie/upcoming?api_key=${API_KEY}`);
         const mainData = await mainRes.json();
-        
-        const topIds = anticipatedData.results.slice(0, 10).map(m => m.id);
-        const filteredMain = mainData.results.filter(m => !topIds.includes(m.id));
-        
+        const filteredMain = mainData.results.filter(m => m.release_date >= today);
         renderGrid('upcomingMainGrid', filteredMain.slice(0, 18), 'movie', true);
+
     } catch (err) {
         console.error("Neural fetch failed for Upcoming page.", err);
     }
@@ -2755,6 +2915,7 @@ function executeAdvancedImport(event) {
                 }
                 localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
             }
+
 
             // 5. Settings / Prefs
             if (impPrefs && data.prefs) {
@@ -3761,6 +3922,24 @@ async function toggleDiscoverFilter(type, val) {
     const grid = document.getElementById('searchGrid');
     grid.innerHTML = '<div class="page-loader"></div>';
     
+    // --- Smart mode awareness ---
+    if (state.searchMode === 'search') {
+        // Re-run the current search query with the new type filter applied
+        const rawHeader = document.getElementById('searchHeader').innerText;
+        const currentQuery = rawHeader.startsWith('Results: ') ? rawHeader.replace('Results: ', '').trim() : '';
+        if (currentQuery) {
+            // deepSearch re-fetches, stores in state.discoverDataRaw, then applyDiscoverLocalFilters
+            // filters by the now-updated state.discoverFilters.type automatically
+            await deepSearch(currentQuery);
+            return;
+        }
+    } else if (state.searchMode === 'filter') {
+        // Re-run TMDB discover with the new type
+        await applySearchFilters(false);
+        return;
+    }
+    
+    // Default: fetch fresh discover data for the selected type
     await fetchDiscoverData(false);
 }
 
@@ -4806,6 +4985,8 @@ let inlineSearchTimer = null;
 
 async function openSaga(id, isEditing = false) {
     const modal = document.getElementById('sagaModal');
+    if (modal) modal.scrollTop = 0;
+    
     const isCustomId = String(id).startsWith('custom_');
 
     if (!isEditing || !currentSagaViewContext) {
@@ -4903,7 +5084,8 @@ async function openSaga(id, isEditing = false) {
             </div>
         `;
         modal.classList.remove('hidden');
-        renderInlineSagaList(); // <-- ADD THIS LINE
+        modal.scrollTop = 0; // Scroll to top of the saga modal container
+        renderInlineSagaList();
         return;
     }
 
@@ -6188,4 +6370,144 @@ window.renderTemporalArchive = function() {
         </div>
         `;
     }).join('');
+}
+// ============================================================
+// --- PAGE INFO MODAL SYSTEM ---
+// ============================================================
+const PAGE_INFO_DATA = {
+    search: { icon:'fa-search', color:'#ff2d55', title:'Discover & Search', desc:'Your gateway to the entire cinematic universe. Search millions of titles or browse curated trending content.', features:['<b>Type Filters</b> — Instantly switch between Movies, Series, Anime, K-Drama, Turkish & Asian.','<b>Search + Filter</b> — Type a query then use type pills to narrow results to a specific category.','<b>Genre Pills</b> — Click Genres to expand genre pills for deep filtering.','<b>Year & Region</b> — Use the dropdowns to filter by release year or country of origin.','<b>Layout Toggle</b> — Switch between grid densities or list view in the top-right controls.','<b>Load More</b> — Scroll to the bottom and hit Load More to fetch additional results.'] },
+    mylist: { icon:'fa-layer-group', color:'#3b82f6', title:'My Library', desc:'Your personal neural database. Every title you track lives here with full status, score, and episode tracking.', features:['<b>Status Tracking</b> — Mark titles as Watching, Plan to Watch, Ongoing, or Finished.','<b>Star Ratings</b> — Score each title 0–5 stars. Crowned titles appear in Masterpieces.','<b>Import / Export</b> — Back up or migrate your library using the Import/Export tools.','<b>Timeline</b> — Use Version Control to view and revert to past library snapshots.','<b>Multi-Select</b> — Long-press or click Select to batch-edit or delete entries.','<b>Random Picker</b> — Let the neural engine pick what to watch next.'] },
+    upcoming: { icon:'fa-calendar-alt', color:'#a855f7', title:'Coming Soon', desc:'Track unreleased movies and shows. Get notified when episodes drop and monitor active season schedules.', features:['<b>Radar Tracking</b> — Add any title to your Radar to track its release.','<b>Episode Alerts</b> — Actively airing shows you track show the next episode countdown.','<b>Search Future Releases</b> — Use the search bar to find and track any upcoming title.','<b>Highly Anticipated</b> — Discover the most buzzed-about upcoming releases.'] },
+    sagamatrix: { icon:'fa-cubes', color:'#ff2d55', title:'Saga Matrix', desc:'Map cinematic universes, trilogies, and multi-part sagas. Forge custom universes with your own watch order.', features:['<b>Discover Sagas</b> — Browse pre-built cinematic universes with recommended watch orders.','<b>My Sagas</b> — View custom universes you have forged.','<b>Universe Forge</b> — Build your own saga by searching and arranging any titles in order.','<b>Drag & Drop</b> — Re-order entries inside the canvas to set your timeline.','<b>Mainline vs Spin-off</b> — Scale entries to indicate their importance in the saga.'] },
+    masterpieces: { icon:'fa-crown', color:'#eab308', title:'Masterpieces', desc:'Your hall of fame. Perfect scores and crowned titles curated from your library.', features:['<b>Crowned</b> — Titles you manually marked with the crown icon from their detail card.','<b>Perfect 5/5s</b> — Every title you rated a full 5 stars.','<b>Rankings</b> — A sorted leaderboard of your entire library by your personal score.','<b>Add a Masterpiece</b> — Open any title detail and use the Crown button to add it here.'] },
+    rhythmlab: { icon:'fa-layer-group', color:'#ff2d55', title:'Collection', desc:'A high-density view of your entire library organized with advanced filtering and sorting.', features:['<b>Type & Genre Filters</b> — Drill into specific categories using the type and genre pills.','<b>Advanced Filters</b> — Access status, year, IMDb score, and personal score filters.','<b>Local Search</b> — Instantly search your collection by title.','<b>Grid / List View</b> — Toggle between compact grid and expanded list view.','<b>Back to Top / Bottom</b> — Floating buttons appear when scrolled for quick navigation.'] },
+    sync: { icon:'fa-magic', color:'#22c55e', title:'For You', desc:'AI-powered neural recommendations based on what you have watched and tracked in your library.', features:['<b>Smart Matching</b> — Recommendations are generated from your library genres and patterns.','<b>Resync</b> — Hit Resync to regenerate fresh recommendations.','<b>Safe Mode</b> — Toggle Safe Mode to filter adult content from recommendations.','<b>Direct Add</b> — Add recommended titles to your library directly from this view.'] },
+    sources: { icon:'fa-satellite-dish', color:'#ff2d55', title:'Sources', desc:'Browse all available streaming source engines that CinePulse uses to serve content in the Player.', features:['<b>Source Cards</b> — Each card shows source capabilities (Movies, TV, Anime, etc.).','<b>Test Link</b> — Open any source in a new tab to verify it is operational.','<b>Player Integration</b> — Sources map directly to the Source Engine buttons in the Player.','<b>Sandbox Mode</b> — Use the Sandbox Toggle in the Player if a source shows a blank screen.'] },
+    neurallink: { icon:'fa-microchip', color:'#3b82f6', title:'Neural Link', desc:'Peer-to-peer library synchronization. Share your entire database between devices in real-time with no cloud needed.', features:['<b>Primary Hub</b> — Generate a Sync Key on your main device to broadcast your library.','<b>Secondary Node</b> — Join a hub via QR scan or by pasting the Host Key.','<b>Payload Filters</b> — Choose which types to share before syncing.','<b>Network Topology</b> — View all connected devices and their status.','<b>Merge Strategy</b> — Choose to merge incoming data or replace your local library.'] }
+};
+
+window.openPageInfo = function(pageId) {
+    var data = PAGE_INFO_DATA[pageId];
+    if (!data) return;
+    var overlay = document.getElementById('pageInfoOverlay');
+    document.getElementById('pageInfoIcon').innerHTML = '<i class="fas ' + data.icon + ' text-2xl" style="color:' + data.color + '"></i>';
+    var titleEl = document.getElementById('pageInfoTitle');
+    titleEl.innerText = data.title;
+    titleEl.style.color = data.color;
+    document.getElementById('pageInfoDesc').innerText = data.desc;
+    document.getElementById('pageInfoList').innerHTML = data.features.map(function(f) {
+        return '<li class="flex items-start gap-3 text-[11px] text-gray-300 leading-relaxed"><i class="fas fa-chevron-right text-[8px] mt-1 shrink-0" style="color:' + data.color + '"></i><span>' + f + '</span></li>';
+    }).join('');
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    var card = document.getElementById('pageInfoCard');
+    if (card) card.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+};
+
+window.closePageInfo = function() {
+    var overlay = document.getElementById('pageInfoOverlay');
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+    document.body.style.overflow = 'auto';
+};
+
+window.scrollToTop = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+window.scrollToBottom = function() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
+
+// Setup Global Scroll Interaction Observer
+(function() {
+    const scrollObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const isVisible = !entry.isIntersecting;
+            const opacity = isVisible ? '1' : '0';
+            const pointerEvents = isVisible ? 'auto' : 'none';
+            
+            ['pcBackToTop', 'pcBackToBot', 'mobileBackToTop', 'mobileBackToBot'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.opacity = opacity;
+                    el.style.pointerEvents = pointerEvents;
+                }
+            });
+        });
+    }, { threshold: 0 });
+
+    const anchor = document.getElementById('topScrollAnchor');
+    if (anchor) scrollObserver.observe(anchor);
+    
+    // Horizontal Scroll Hints Initiation
+    setTimeout(initScrollHints, 2000); 
+})();
+
+function initScrollHints() {
+    const scrollables = document.querySelectorAll('.overflow-x-auto');
+    const seenHints = new Set();
+
+    const hintObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const el = entry.target;
+                if (seenHints.has(el)) return;
+                
+                // Only show if actually scrollable
+                if (el.scrollWidth > el.clientWidth) {
+                    showSwipeHint(el);
+                    seenHints.add(el);
+                }
+            }
+        });
+    }, { threshold: 0.2 });
+
+    scrollables.forEach(s => hintObserver.observe(s));
+}
+
+function showSwipeHint(container) {
+    const hint = document.createElement('div');
+    hint.className = 'scroll-hint-container animate-in fade-in duration-500';
+    hint.innerHTML = `
+        <i class="fas fa-hand-pointer text-pulse text-lg scroll-hint-icon"></i>
+        <span class="text-[9px] font-black uppercase text-white tracking-widest">Swipe for more</span>
+    `;
+    
+    // Ensure container is relative for absolute positioning of hint
+    const originalPosition = window.getComputedStyle(container).position;
+    if (originalPosition === 'static') container.style.position = 'relative';
+    
+    container.appendChild(hint);
+    
+    setTimeout(() => {
+        hint.classList.replace('fade-in', 'fade-out');
+        setTimeout(() => hint.remove(), 1000);
+    }, 4000);
+}
+
+// --- NEW: Install Reminder Logic ---
+function dismissInstallReminder(e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    // Hide only the floating card (sidebar version removed per request)
+    const floatCard = document.getElementById('installReminderCard');
+    if (floatCard) floatCard.classList.add('hidden');
+    
+    // Set snooze for 3 days (in milliseconds)
+    const snoozeUntil = Date.now() + (3 * 24 * 60 * 60 * 1000);
+    localStorage.setItem('cp_install_dismissed_until', snoozeUntil);
+}
+
+function checkInstallSnooze() {
+    const snoozeUntil = localStorage.getItem('cp_install_dismissed_until');
+    const floatCard = document.getElementById('installReminderCard');
+
+    if (snoozeUntil && Date.now() < parseInt(snoozeUntil)) {
+        if (floatCard) floatCard.classList.add('hidden');
+    } else {
+        // Only show floating card on mobile viewports if not PWA already
+        if (window.innerWidth < 1024 && floatCard && !window.matchMedia('(display-mode: standalone)').matches) {
+            floatCard.classList.remove('hidden');
+        }
+    }
 }

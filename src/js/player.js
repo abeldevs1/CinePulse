@@ -242,8 +242,31 @@ function setAudioMode(mode) {
 
 // Top Nav Actions
 function goBackToModal() {
-    // Send them to index.html with a query to immediately open the info modal
-    window.location.href = `index.html?open=${state.id}&type=${state.type}`;
+    // Fix: from pages/player.html, go up one level to reach root index.html
+    window.location.href = `../index.html?open=${state.id}&type=${state.type}`;
+}
+
+// --- SANDBOX TOGGLE ENGINE ---
+let sandboxExtended = false;
+function toggleIframeSandbox() {
+    sandboxExtended = !sandboxExtended;
+    const iframe = document.getElementById('neuralIframe');
+    const btn = document.getElementById('sandboxToggleBtn');
+    const indicator = document.getElementById('sandboxIndicator');
+
+    if (sandboxExtended) {
+        // FULL ACCESS: Remove sandbox attribute completely for max compatibility
+        iframe.removeAttribute('sandbox');
+        btn.className = 'px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-yellow-500/20 text-yellow-500 border-yellow-500 shadow-lg shadow-yellow-500/20';
+        btn.innerHTML = '<i class="fas fa-unlock mr-2"></i> Access: Full';
+        if (indicator) indicator.classList.remove('hidden');
+    } else {
+        // RESTRICTED: Standard safe box
+        iframe.setAttribute('sandbox', 'allow-scripts allow-presentation allow-forms allow-same-origin');
+        btn.className = 'px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10';
+        btn.innerHTML = '<i class="fas fa-lock mr-2"></i> Access: Safe';
+        if (indicator) indicator.classList.add('hidden');
+    }
 }
 
 // Search Redirect
@@ -309,50 +332,7 @@ function initPlayerLibraryState() {
         iconEl.className = "w-10 h-10 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 flex items-center justify-center";
     }
 }
-
-async function initPlayer() {
-    const urlParams = new URLSearchParams(window.location.search);
-    state.id = urlParams.get('id');
-    state.type = urlParams.get('type') || 'movie';
-
-    if (!state.id) {
-        window.location.href = 'index.html';
-        return;
-    }
-
-    try {
-        const [details, credits, recs] = await Promise.all([
-            fetch(`${BASE}/${state.type}/${state.id}?api_key=${API_KEY}`).then(r => r.json()),
-            fetch(`${BASE}/${state.type}/${state.id}/credits?api_key=${API_KEY}`).then(r => r.json()),
-            fetch(`${BASE}/${state.type}/${state.id}/recommendations?api_key=${API_KEY}`).then(r => r.json())
-        ]);
-
-        state.data = details;
-        state.category = detectCategory(details);
-        
-        buildUI(details, credits.cast, recs.results);
-        buildServers();
-        
-        if (state.type === 'tv' && details.seasons) {
-            buildSeasons();
-        }
-
-        updateStream();
-        
-        // FIX: Initialize the library state instantly on load
-        initPlayerLibraryState(); 
-
-        setTimeout(() => {
-            const preloader = document.getElementById('preloader');
-            preloader.style.opacity = '0';
-            setTimeout(() => preloader.style.display = 'none', 500);
-        }, 800);
-
-    } catch (err) {
-        console.error(err);
-        document.getElementById('headerTitle').innerText = "Failed to load data.";
-    }
-}
+// (duplicate initPlayer removed — single definition above at line 40)
 
 function togglePlayerLibraryStatus() {
     let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];

@@ -343,25 +343,49 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
         scroll-snap-align: start;
         width: 70px;
     }
-/* The Scroll Hint Sign */
+/* The Scroll Hint Sign - Refined Animated Indicator */
     .scroll-indicator-hint {
         position: absolute;
-        top: -24px;
-        right: 15px;
-        display: flex;
+        bottom: 85px; /* Sits above the navigation bar */
+        left: 50%;
+        transform: translateX(-50%) translateY(10px);
+        z-index: 200;
+        display: none;
         align-items: center;
-        gap: 6px;
-        font-size: 9px;
+        gap: 12px;
+        padding: 10px 22px;
+        background: rgba(10, 12, 18, 0.95);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 45, 85, 0.5);
+        border-radius: 100px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 45, 85, 0.2);
+        pointer-events: none;
+        transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        opacity: 0;
+    }
+
+    .scroll-indicator-hint i {
+        color: #ff2d55;
+        font-size: 18px;
+        filter: drop-shadow(0 0 8px rgba(255, 45, 85, 0.8));
+        animation: hintSwipeMotion 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .scroll-indicator-hint span {
+        font-size: 10px;
         font-weight: 900;
         text-transform: uppercase;
-        letter-spacing: 2px;
-        color: #ff2d55;
-        animation: slideHint 2s infinite;
-        pointer-events: none;
+        letter-spacing: 3px;
+        color: white;
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
     }
-@keyframes slideHint {
-        0%, 100% { opacity: 0.4; transform: translateX(0); }
-        50% { opacity: 1; transform: translateX(-5px); text-shadow: 0 0 10px rgba(255,45,85,0.6); }
+
+    @keyframes hintSwipeMotion {
+        0% { transform: translateX(20px) scale(1); opacity: 0; }
+        20% { opacity: 1; }
+        80% { opacity: 1; }
+        100% { transform: translateX(-30px) scale(0.8); opacity: 0; }
     }
 
     /* --- LAB COUNTER REMOVAL (MOBILE ONLY) --- */
@@ -1130,22 +1154,16 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
 
     /* 2. Floating Swipe Hint Centered Above Nav */
     .scroll-indicator-hint {
-        top: -36px !important;
-        right: 50% !important;
-        transform: translateX(50%) !important;
-        background: rgba(10, 12, 18, 0.85);
-        padding: 6px 16px;
-        border-radius: 20px;
-        border: 1px solid rgba(255, 45, 85, 0.4);
-        backdrop-filter: blur(8px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        bottom: 85px !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
         display: flex !important;
         animation: gentlePulse 2s infinite !important;
     }
 
     @keyframes gentlePulse {
-        0%, 100% { opacity: 0.8; transform: translateX(50%) translateY(0); }
-        50% { opacity: 1; transform: translateX(50%) translateY(-3px); border-color: #ff2d55; text-shadow: 0 0 10px rgba(255,45,85,0.8); }
+        0%, 100% { opacity: 0.8; transform: translateX(-50%) translateY(0); }
+        50% { opacity: 1; transform: translateX(-50%) translateY(-3px); border-color: #ff2d55; box-shadow: 0 0 15px rgba(255, 45, 85, 0.3); }
     }
 }
 /* Mobile State: "Collapsed" */
@@ -1219,7 +1237,8 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
         right: 20px !important;
         z-index: 100 !important;
         background: rgba(0, 0, 0, 0.5) !important; /* Darker for better contrast on images */
-        backdrop-blur: 10px !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
         width: 44px !important; /* Slightly larger touch target for thumbs */
         height: 44px !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -1270,7 +1289,8 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
         right: 40px !important;
         z-index: 999 !important;
         background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-blur: 12px !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
         width: 54px !important;
         height: 54px !important;
         cursor: pointer !important;
@@ -1296,7 +1316,8 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
         right: 20px !important;
         z-index: 999 !important;
         background: rgba(0, 0, 0, 0.7) !important;
-        backdrop-blur: 15px !important;
+        backdrop-filter: blur(15px) !important;
+        -webkit-backdrop-filter: blur(15px) !important;
         width: 48px !important;
         height: 48px !important;
         border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -1310,6 +1331,7 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
 #pBio {
     display: -webkit-box;
     -webkit-line-clamp: 4; /* Limits description to 4 lines */
+    line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1321,6 +1343,7 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
 /* Optional: Expand on hover if you want users to read more */
 #pBio:hover {
     -webkit-line-clamp: 12;
+    line-clamp: 12;
     max-height: 300px;
     overflow-y: auto;
 }
@@ -1584,20 +1607,25 @@ nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
 }
 /* --- MINIMALIST MOBILE NAV SCROLL --- */
 @media (max-width: 1024px) {
-    /* The Fade Effect on the right side */
+    /*    /* 1. The Fade Effect on the right side - Improved Frost Mask */
     .nav-edge-mask {
         position: absolute;
         top: 0;
         right: 0;
         height: 100%;
-        width: 40px;
-        /* Fades the nav buttons into the background on the right */
-        background: linear-gradient(to right, transparent, #0a0c12);
+        width: 60px;
+        /* Deep frosted gradient that signals more content */
+        background: linear-gradient(to right, transparent, rgba(10, 12, 18, 0.95));
         z-index: 10;
-        transition: opacity 0.3s ease;
+        transition: opacity 0.4s ease, width 0.4s ease;
+        pointer-events: none;
+        border-radius: 0 20px 20px 0;
     }
-
-    /* Logic to hide the fade when they reach the end */
+    
+    .nav-at-end .nav-edge-mask {
+        opacity: 0;
+        width: 0;
+    }
     .nav-at-end .nav-edge-mask {
         opacity: 0;
     }
