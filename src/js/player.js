@@ -3,47 +3,6 @@ const BASE = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p/w500';
 const IMG_HD = 'https://image.tmdb.org/t/p/original';
 
-// They automatically source K-Drama, Turkish, and Anime based on the TMDB ID.
-const INTERNAL_PLAYERS = {
-    apiEndpoints: [
-        {
-            name: 'UpCloud API',
-            fetch: async (tmdbId, type, season, episode) => {
-                try {
-                    const res = await fetch(`https://upcloud.to/api/v1/movie/${tmdbId}`);
-                    const data = await res.json();
-                    if (data?.link) return data.link;
-                } catch (e) { return null; }
-                return null;
-            }
-        },
-        {
-            name: 'StreamBolt',
-            fetch: async (tmdbId, type, season, episode) => {
-                try {
-                    const res = await fetch(`https://api.streambolt.io/v1/stream/${tmdbId}?type=${type}`);
-                    const data = await res.json();
-                    if (data?.url) return data.url;
-                } catch (e) { return null; }
-                return null;
-            }
-        },
-        {
-            name: 'VidStack API',
-            fetch: async (tmdbId, type, season, episode) => {
-                try {
-                    const res = await fetch(`https://api.vidstack.io/stream/${tmdbId}?s=${season}&e=${episode}`);
-                    const data = await res.json();
-                    if (data?.sources?.length > 0) {
-                        return data.sources[0].url;
-                    }
-                } catch (e) { return null; }
-                return null;
-            }
-        }
-    ]
-};
-
 const SERVERS = {
     default: [
         { name: 'VidSrc CC', build: (t, id, s, e) => `https://vidsrc.cc/v2/embed/${t}/${id}${t === 'tv' ? `/${s}/${e}` : ''}`, type: 'embed' },
@@ -78,7 +37,7 @@ let state = {
     season: 1, episode: 1, absoluteEp: 1,
     serverIdx: 0, audioMode: 'sub', data: null
 };
-// Start
+
 async function initPlayer() {
     const urlParams = new URLSearchParams(window.location.search);
     state.id = urlParams.get('id');
@@ -102,25 +61,36 @@ async function initPlayer() {
         state.category = detectCategory(details);
         const savedItem = loadSavedWatchState();
 
-        // Simple logic: Use URL params, or saved DB state, or default to S1:E1
-        // NO auto-advancing - player starts exactly where tracker says
         if (urlSeason && urlEpisode) {
+            // Direct launch from user changing the slider in the modal
             state.season = parseInt(urlSeason) || 1;
             state.episode = parseInt(urlEpisode) || 1;
         } else if (savedItem && state.type === 'tv') {
-            // Check season progress for this specific season
-            const seasonProgressKey = `cp_season_progress_${state.id}`;
-            const seasonProgress = JSON.parse(localStorage.getItem(seasonProgressKey) || '{}');
-            const savedSeason = savedItem.season || 1;
+            // Launch from Quick Watch or Continue Watching - Calculate precisely from DB
+            let targetAbsolute = savedItem.ep || 0;
+            let targetAbsoluteToPlay = Math.max(1, targetAbsolute); // Never play ep 0
 
-            // If we have progress for this season, use it
-            if (seasonProgress[savedSeason]) {
-                state.season = savedSeason;
-                state.episode = seasonProgress[savedSeason];
+            if (details.seasons) {
+                const validSeasons = details.seasons.filter(s => s.season_number > 0);
+                let accumulated = 0;
+                let foundSeason = validSeasons.length > 0 ? validSeasons[0].season_number : 1;
+                let foundRelativeEp = 1;
+
+                for (let s of validSeasons) {
+                    if (targetAbsoluteToPlay <= accumulated + s.episode_count) {
+                        foundSeason = s.season_number;
+                        foundRelativeEp = targetAbsoluteToPlay - accumulated;
+                        break;
+                    }
+                    accumulated += s.episode_count;
+                }
+
+                state.season = foundSeason;
+                state.episode = foundRelativeEp;
             } else {
-                // Otherwise use saved episode directly
-                state.season = savedSeason;
-                state.episode = Math.max(1, savedItem.ep || 1);
+                // Failsafe for missing API data
+                state.season = Math.max(1, savedItem.season || 1);
+                state.episode = 1;
             }
         } else {
             state.season = 1;
@@ -135,20 +105,8 @@ async function initPlayer() {
         }
 
         updateStream();
-
-        // FIX: Initialize the library state instantly on load
         initPlayerLibraryState();
-
-        // Save starting episode for progress tracking when closing
-        const startKey = `cp_player_start_${state.id}`;
-        localStorage.setItem(startKey, JSON.stringify({
-            season: state.season,
-            episode: state.episode,
-            savedAt: Date.now()
-        }));
-
-        // Start tracking position
-        startPositionTracking();
+        initSmartNextButton();
 
         setTimeout(() => {
             const preloader = document.getElementById('preloader');
@@ -164,8 +122,7 @@ async function initPlayer() {
 
 function loadSavedWatchState() {
     const db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
-    const item = db.find(i => String(i.id) === String(state.id));
-    return item || null;
+    return db.find(i => String(i.id) === String(state.id)) || null;
 }
 
 function detectCategory(details) {
@@ -177,6 +134,7 @@ function detectCategory(details) {
     if (lang === 'tr') return 'turkish';
     return 'default';
 }
+
 function calculateAbsoluteEpisode(season, episode) {
     if (!state.data || !state.data.seasons) return episode;
     let abs = 0;
@@ -187,39 +145,34 @@ function calculateAbsoluteEpisode(season, episode) {
     return abs + episode;
 }
 
-// Update DOM Text and Images
 function buildUI(details, cast, recs) {
     const title = details.title || details.name;
     const year = (details.release_date || details.first_air_date || '').split('-')[0];
 
-    // Header & Backdrop
     document.title = `Watching: ${title}`;
     document.getElementById('headerTitle').innerText = title;
     document.getElementById('headerSubtitle').innerText = `${state.type === 'tv' ? 'Series' : 'Movie'} • ${year} • ★ ${details.vote_average?.toFixed(1)}`;
     document.getElementById('backdropSection').style.backgroundImage = `url('${IMG_HD + (details.backdrop_path || details.poster_path)}')`;
 
-    // Details Section
     document.getElementById('detailPoster').src = IMG + details.poster_path;
     document.getElementById('detailOverview').innerText = details.overview || "No synopsis available.";
 
     document.getElementById('detailGenres').innerHTML = (details.genres || []).map(g =>
-        `<button onclick="window.location.href='index.html?search=${encodeURIComponent(g.name)}'" class="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[9px] font-bold uppercase text-gray-300 hover:text-white hover:border-pulse hover:bg-pulse/20 transition-all cursor-pointer">${g.name}</button>`
+        `<button onclick="window.location.href='../index.html?search=${encodeURIComponent(g.name)}'" class="bg-white/5 border border-white/10 px-3 py-1 rounded-full text-[9px] font-bold uppercase text-gray-300 hover:text-white hover:border-pulse hover:bg-pulse/20 transition-all cursor-pointer">${g.name}</button>`
     ).join('');
 
     let productionText = `Status: <span class="text-white">${details.status}</span><br>`;
     if (details.production_companies?.length > 0) productionText += `Studio: <span class="text-white">${details.production_companies[0].name}</span>`;
     document.getElementById('detailProduction').innerHTML = productionText;
 
-    // Cast Row
     document.getElementById('detailCast').innerHTML = cast.slice(0, 10).map(c => `
-    <div onclick="window.location.href='index.html?search=${encodeURIComponent(c.name)}'" class="flex-none w-20 text-center cursor-pointer group">
+    <div onclick="window.location.href='../index.html?search=${encodeURIComponent(c.name)}'" class="flex-none w-20 text-center cursor-pointer group" title="Search for ${c.name}">
         <img src="${c.profile_path ? IMG + c.profile_path : 'https://via.placeholder.com/150'}" class="w-16 h-16 rounded-full object-cover mx-auto mb-2 border border-white/10 group-hover:border-pulse group-hover:shadow-[0_0_15px_rgba(255,45,85,0.4)] transition-all">
         <div class="text-[9px] font-black uppercase text-white line-clamp-1 group-hover:text-pulse transition-colors">${c.name}</div>
         <div class="text-[7px] text-gray-500 uppercase mt-1 line-clamp-1">${c.character}</div>
     </div>
-`).join('');
+    `).join('');
 
-    // Recommendations Grid
     document.getElementById('detailRecs').innerHTML = recs.slice(0, 4).map(r => `
         <div class="group cursor-pointer" onclick="window.location.href='player.html?id=${r.id}&type=${state.type}'">
             <div class="aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-white/5 group-hover:border-pulse transition-all relative">
@@ -233,12 +186,10 @@ function buildUI(details, cast, recs) {
     `).join('');
 }
 
-// Server Buttons
 function buildServers() {
     const container = document.getElementById('serverList');
     const activeServers = SERVERS[state.category] || SERVERS['default'];
 
-    // Toggle Anime Controls
     const animeControls = document.getElementById('animeControls');
     if (animeControls) {
         animeControls.classList.toggle('hidden', state.category !== 'anime');
@@ -257,9 +208,6 @@ function switchServer(idx) {
     updateStream();
 }
 
-
-
-// Episode Grid
 function buildSeasons() {
     document.getElementById('episodeSection').classList.remove('hidden');
     document.getElementById('episodeSection').classList.add('flex');
@@ -270,36 +218,20 @@ function buildSeasons() {
 
     sel.value = state.season;
 
-    // Add change listener to save season
     sel.onchange = function () {
         const newSeason = parseInt(this.value);
-
-        // Check if user already has a saved episode for this season in the database
         let continueFromEpisode = 1;
-
-        // Get current episode for each season from localStorage tracking
         const seasonProgressKey = `cp_season_progress_${state.id}`;
         const seasonProgress = JSON.parse(localStorage.getItem(seasonProgressKey) || '{}');
 
         if (seasonProgress[newSeason]) {
             continueFromEpisode = seasonProgress[newSeason];
         } else if (newSeason === state.season) {
-            // Same season, keep current episode
             continueFromEpisode = state.episode;
         } else {
-            // If it's a completely new/unwatched season, ALWAYS start at Episode 1
             continueFromEpisode = 1;
         }
 
-        // Update starting point when user manually changes season
-        const startKey = `cp_player_start_${state.id}`;
-        localStorage.setItem(startKey, JSON.stringify({
-            season: newSeason,
-            episode: continueFromEpisode,
-            savedAt: Date.now()
-        }));
-
-        // Save current season/episode progress before switching
         seasonProgress[state.season] = state.episode;
         localStorage.setItem(seasonProgressKey, JSON.stringify(seasonProgress));
 
@@ -327,36 +259,22 @@ function renderEpisodes(seasonNum) {
             ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.4)]'
             : 'bg-dark border-white/10 text-gray-400 hover:border-white/30 hover:text-white';
 
-        // Removed fixed w-12 h-12 and added aspect-square w-full so it naturally fills the CSS grid beautifully
         html += `<button onclick="switchEpisode(${i})" class="w-full aspect-square rounded-xl border flex items-center justify-center text-xs font-black transition-all shrink-0 ${btnClass}">${i}</button>`;
     }
     document.getElementById('episodeGrid').innerHTML = html;
 }
 
 function switchEpisode(epNum) {
-    // Save progress for current season before switching episode
     const seasonProgressKey = `cp_season_progress_${state.id}`;
     const seasonProgress = JSON.parse(localStorage.getItem(seasonProgressKey) || '{}');
     seasonProgress[state.season] = state.episode;
     localStorage.setItem(seasonProgressKey, JSON.stringify(seasonProgress));
 
-    // When user manually switches, update the starting point to current
-    // This prevents incorrect "episodes watched" calculations
-    const startKey = `cp_player_start_${state.id}`;
-    localStorage.setItem(startKey, JSON.stringify({
-        season: state.season,
-        episode: parseInt(epNum),
-        savedAt: Date.now()
-    }));
-
     state.episode = parseInt(epNum);
     state.absoluteEp = calculateAbsoluteEpisode(state.season, state.episode);
     renderEpisodes(state.season);
     updateStream();
-
-    // Update database with new episode
     saveCurrentEpisodeToDb();
-    checkAndShowResumePrompt();
 }
 
 function saveCurrentEpisodeToDb() {
@@ -364,449 +282,110 @@ function saveCurrentEpisodeToDb() {
     const existingIdx = db.findIndex(i => String(i.id) === String(state.id));
 
     if (existingIdx !== -1) {
-        db[existingIdx].ep = state.episode;
+        db[existingIdx].ep = calculateAbsoluteEpisode(state.season, state.episode);
         db[existingIdx].season = state.season;
+        db[existingIdx].status = 'Watching';
         db[existingIdx].updatedAt = Date.now();
         localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
     }
 }
-// --- UPDATED STREAM ROUTING ---
-function updateStream() {
-    // 1. Get the correct server list based on detected category
-    const serverList = SERVERS[state.category] || SERVERS['default'];
 
-    // 2. Failsafe if serverIdx is out of bounds
+function updateStream() {
+    const serverList = SERVERS[state.category] || SERVERS['default'];
     if (state.serverIdx >= serverList.length) state.serverIdx = 0;
     const srv = serverList[state.serverIdx];
 
-    // 3. Ensure absolute episode is calculated for anime logic
     state.absoluteEp = calculateAbsoluteEpisode(state.season, state.episode);
-
-    // 4. Build the URL passing the Sub/Dub state
     const url = srv.build(state.type, state.id, state.season, state.episode, state.absoluteEp, state.audioMode);
 
-    // 5. Inject into Iframe
     document.getElementById('neuralIframe').src = url;
 
-    // 6. Check for saved timestamp and show resume prompt
-    checkAndShowResumePrompt();
-}
-
-function getWatchPositionKey() {
-    return `cp_watch_pos_${state.id}_${state.type}_s${state.season}_e${state.episode}`;
-}
-
-function saveCurrentPosition(currentTime) {
-    if (!state.id || !state.type) return;
-
-    const key = getWatchPositionKey();
-    const positionData = {
-        id: state.id,
-        type: state.type,
-        season: state.season,
-        episode: state.episode,
-        timestamp: currentTime,
-        duration: document.getElementById('neuralIframe').duration || 0,
-        savedAt: Date.now()
-    };
-
-    try {
-        localStorage.setItem(key, JSON.stringify(positionData));
-        updateDbWithTimestamp(currentTime);
-    } catch (e) {
-        console.warn('Failed to save position:', e);
+    const nextBtn = document.getElementById('smartNextBtn');
+    if (nextBtn) {
+        nextBtn.innerHTML = '<span>Next Ep</span> <i class="fas fa-step-forward"></i>';
+        nextBtn.classList.remove('bg-pulse', 'border-pulse');
     }
+
+    initSmartNextButton();
 }
 
-function updateDbWithTimestamp(currentTime) {
-    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
-    const existingIdx = db.findIndex(i => String(i.id) === String(state.id));
-
-    if (existingIdx !== -1) {
-        db[existingIdx].timestamp = currentTime;
-        db[existingIdx].updatedAt = Date.now();
-        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-    }
-}
-
-let positionSaveInterval;
-function startPositionTracking() {
-    if (positionSaveInterval) clearInterval(positionSaveInterval);
-
-    positionSaveInterval = setInterval(() => {
-        try {
-            const iframe = document.getElementById('neuralIframe');
-            if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({ type: 'GET_CURRENT_TIME' }, '*');
-            }
-        } catch (e) { }
-    }, 10000);
-}
-
-window.addEventListener('message', (event) => {
-    if (event.data && event.data.type === 'CURRENT_TIME') {
-        const currentTime = event.data.currentTime;
-        if (currentTime && currentTime > 0) {
-            saveCurrentPosition(currentTime);
+window.toggleNeuralFullscreen = function () {
+    const container = document.getElementById('iframeContainer');
+    if (!document.fullscreenElement) {
+        if (container.requestFullscreen) {
+            container.requestFullscreen();
+        } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
         }
-    }
-    if (event.data && event.data.type === 'VIDEO_ENDED') {
-        handleVideoEnded();
-    }
-});
-
-function checkAndShowResumePrompt() {
-    if (!state.id) return;
-
-    const key = getWatchPositionKey();
-    const savedData = localStorage.getItem(key);
-
-    // First check database for saved timestamp
-    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
-    const savedItem = db.find(i => String(i.id) === String(state.id));
-    const dbTimestamp = savedItem?.timestamp || 0;
-
-    if (savedData) {
-        try {
-            const data = JSON.parse(savedData);
-            const effectiveTimestamp = (data.timestamp > dbTimestamp) ? data.timestamp : dbTimestamp;
-            if (effectiveTimestamp > 30) {
-                setTimeout(() => {
-                    showResumePrompt(effectiveTimestamp);
-                }, 1500);
-                return;
-            }
-        } catch (e) { }
-    } else if (dbTimestamp > 30) {
-        setTimeout(() => {
-            showResumePrompt(dbTimestamp);
-        }, 1500);
-    }
-}
-
-function showResumePrompt(savedTime) {
-    const resumeModal = document.getElementById('resumePromptModal');
-    if (resumeModal) resumeModal.remove();
-
-    const modal = document.createElement('div');
-    modal.id = 'resumePromptModal';
-    modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm';
-    modal.innerHTML = `
-        <div class="bg-[#0a0c12] border border-pulse/30 rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl shadow-pulse/20">
-            <div class="text-center mb-6">
-                <i class="fas fa-play-circle text-pulse text-5xl mb-4"></i>
-                <h3 class="text-lg font-black uppercase text-white tracking-widest">Resume Watching?</h3>
-                <p class="text-gray-400 text-sm mt-2">You left off at <span class="text-pulse font-bold">${formatTime(savedTime)}</span></p>
-            </div>
-            <div class="flex gap-3 mb-4">
-                <button onclick="resumeFromTimestamp(0)" class="flex-1 py-3 bg-white/10 border border-white/20 text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-white/20 transition-all">
-                    Start Over
-                </button>
-                <button onclick="resumeFromTimestamp(${savedTime})" class="flex-1 py-3 bg-pulse border border-pulse text-white rounded-xl font-bold uppercase text-xs tracking-widest hover:bg-pulse/80 transition-all">
-                    Resume
-                </button>
-            </div>
-            <div class="border-t border-white/10 pt-4">
-                <p class="text-[10px] text-gray-500 text-center mb-2">Embed players can't detect position. Where did you leave off?</p>
-                <div class="flex gap-2">
-                    <input type="text" id="manualTimeInput" placeholder="e.g. 1:30:00 or 45:30" 
-                        class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:border-pulse focus:outline-none">
-                    <button onclick="applyManualTimestamp()" class="px-4 py-2 bg-pulse/20 border border-pulse/50 text-pulse rounded-lg text-xs font-bold uppercase hover:bg-pulse hover:text-white transition-all">
-                        Go
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    // Close on background click
-    modal.onclick = function (e) {
-        if (e.target === modal) {
-            modal.remove();
-        }
-    };
-}
-
-function applyManualTimestamp() {
-    const input = document.getElementById('manualTimeInput');
-    const timeStr = input?.value?.trim();
-    if (!timeStr) return;
-
-    const seconds = parseTimeString(timeStr);
-    if (seconds > 0) {
-        const modal = document.getElementById('resumePromptModal');
-        if (modal) modal.remove();
-        playerShowNotification('Position saved! Click play to resume from ' + formatTime(seconds));
-
-        // Save the timestamp
-        let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
-        const idx = db.findIndex(i => String(i.id) === String(state.id));
-        if (idx !== -1) {
-            db[idx].timestamp = seconds;
-            db[idx].updatedAt = Date.now();
-            localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-        }
-
-        // Also save to position key
-        const key = getWatchPositionKey();
-        const positionData = {
-            id: state.id,
-            type: state.type,
-            season: state.season,
-            episode: state.episode,
-            timestamp: seconds,
-            savedAt: Date.now()
-        };
-        localStorage.setItem(key, JSON.stringify(positionData));
-    }
-}
-
-function parseTimeString(timeStr) {
-    const parts = timeStr.split(':').map(p => parseInt(p) || 0);
-    if (parts.length === 3) {
-        return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    } else if (parts.length === 2) {
-        return parts[0] * 60 + parts[1];
-    } else if (parts.length === 1) {
-        return parts[0];
-    }
-    return 0;
-}
-
-window.resumeFromTimestamp = function (timestamp) {
-    const modal = document.getElementById('resumePromptModal');
-    if (modal) modal.remove();
-
-    if (timestamp > 0) {
-        const iframe = document.getElementById('neuralIframe');
-        if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage({ type: 'SEEK_TO', seconds: timestamp }, '*');
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
         }
     }
 };
 
-function formatTime(seconds) {
-    if (!seconds || isNaN(seconds)) return '0:00';
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
+window.playNextEpisode = function () {
+    if (state.type !== 'tv') return;
 
-    if (hrs > 0) {
-        return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
-
-function handleVideoEnded() {
     let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
     const existingIdx = db.findIndex(i => String(i.id) === String(state.id));
 
-    if (existingIdx !== -1) {
-        const item = db[existingIdx];
+    const validSeasons = state.data?.seasons?.filter(s => s.season_number > 0) || [];
+    const currentSeasonData = validSeasons.find(s => s.season_number === state.season);
+    const seasonMaxEp = currentSeasonData?.episode_count || 1;
 
-        if (state.type === 'tv') {
-            const validSeasons = state.data?.seasons?.filter(s => s.season_number > 0) || [];
-            const currentSeasonData = validSeasons.find(s => s.season_number === state.season);
-            const seasonMaxEp = currentSeasonData?.episode_count || 1;
+    let nextSeason = state.season;
+    let nextEp = state.episode + 1;
 
-            let nextSeason = state.season;
-            let nextEp = state.episode + 1;
-
-            // Check if we need to move to next season
-            if (nextEp > seasonMaxEp) {
-                const nextSeasonData = validSeasons.find(s => s.season_number === state.season + 1);
-                if (nextSeasonData) {
-                    nextSeason = state.season + 1;
-                    nextEp = 1;
-                    playerShowNotification(`Season ${state.season} complete! Moving to Season ${nextSeason}`);
-                } else {
-                    // No more seasons - series is finished
-                    db[existingIdx].status = 'Finished';
-                    db[existingIdx].season = state.season;
-                    db[existingIdx].ep = state.episode;
-                    db[existingIdx].timestamp = 0;
-                    db[existingIdx].updatedAt = Date.now();
-                    localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-                    playerShowNotification('Series completed! Marked as Finished.');
-                    localStorage.removeItem(getWatchPositionKey());
-                    return;
-                }
-            } else {
-                playerShowNotification(`Episode ${state.episode} complete! Next: S${nextSeason}:E${nextEp}`);
-            }
-
-            // CRITICAL FIX: Convert next episode to Absolute before saving
-            const nextAbs = getAbsoluteEpisode(nextSeason, nextEp);
-            db[existingIdx].ep = nextAbs;
-            db[existingIdx].season = nextSeason;
-            db[existingIdx].timestamp = 0;
-            db[existingIdx].updatedAt = Date.now();
-            localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-
-            // Auto-play next episode after notification
-            setTimeout(() => {
-                state.season = nextSeason;
-                state.episode = nextEp;
-                state.absoluteEp = nextAbs; // Keep state in sync
-                renderEpisodes(state.season);
-                if (document.getElementById('seasonSelect')) {
-                    document.getElementById('seasonSelect').value = state.season;
-                }
-                updateStream();
-            }, 2500);
+    if (nextEp > seasonMaxEp) {
+        const nextSeasonData = validSeasons.find(s => s.season_number === state.season + 1);
+        if (nextSeasonData) {
+            nextSeason = state.season + 1;
+            nextEp = 1;
+            playerShowNotification(`Season ${state.season} complete! Moving to Season ${nextSeason}`);
         } else {
-            db[existingIdx].status = 'Finished';
-            db[existingIdx].timestamp = 0;
-            playerShowNotification('Movie completed! Marked as Finished.');
-            db[existingIdx].updatedAt = Date.now();
-            localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+            if (existingIdx !== -1) {
+                db[existingIdx].status = 'Finished';
+                db[existingIdx].updatedAt = Date.now();
+                localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+            }
+            playerShowNotification('Series completed! Marked as Finished.');
+            return;
         }
-
-        localStorage.removeItem(getWatchPositionKey());
     }
-}
+
+    state.season = nextSeason;
+    state.episode = nextEp;
+    state.absoluteEp = calculateAbsoluteEpisode(nextSeason, nextEp);
+
+    if (document.getElementById('seasonSelect')) {
+        document.getElementById('seasonSelect').value = state.season;
+    }
+
+    renderEpisodes(state.season);
+    updateStream();
+    saveCurrentEpisodeToDb();
+    playerShowNotification(`Playing S${state.season}:E${state.episode}`);
+};
 
 function playerShowNotification(message) {
     const existing = document.querySelector('.player-notification');
     if (existing) existing.remove();
 
     const notif = document.createElement('div');
-    notif.className = 'player-notification fixed top-6 left-1/2 -translate-x-1/2 bg-[#22c55e]/90 text-white px-6 py-3 rounded-xl shadow-2xl z-[9999] font-bold text-sm tracking-wider transition-all duration-300 transform -translate-y-4 opacity-0';
+    notif.className = 'player-notification fixed top-6 left-1/2 -translate-x-1/2 bg-[#22c55e]/90 text-white px-6 py-3 rounded-xl shadow-2xl z-[9999] font-bold text-sm tracking-wider transition-all duration-300 transform -translate-y-4 opacity-0 pointer-events-none';
     notif.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ${message}`;
     document.body.appendChild(notif);
 
-    setTimeout(() => {
-        notif.classList.remove('-translate-y-4', 'opacity-0');
-    }, 10);
-
+    setTimeout(() => notif.classList.remove('-translate-y-4', 'opacity-0'), 10);
     setTimeout(() => {
         notif.classList.add('-translate-y-4', 'opacity-0');
         setTimeout(() => notif.remove(), 300);
     }, 4000);
 }
 
-// Save position when leaving page
-window.addEventListener('beforeunload', () => {
-    // Calculate and save episode progress
-    calculateAndSaveEpisodeProgress();
-    // Try to get time from iframe if possible
-    try {
-        const iframe = document.getElementById('neuralIframe');
-        if (iframe && iframe.contentWindow) {
-            iframe.contentWindow.postMessage({ type: 'GET_CURRENT_TIME_SAVE' }, '*');
-        }
-    } catch (e) { }
-});
-
-// Also save when navigating away
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-        calculateAndSaveEpisodeProgress();
-        try {
-            const iframe = document.getElementById('neuralIframe');
-            if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({ type: 'GET_CURRENT_TIME_SAVE' }, '*');
-            }
-        } catch (e) { }
-    }
-});
-
-function savePositionToDb(timestamp = 0) {
-    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
-    const idx = db.findIndex(i => String(i.id) === String(state.id));
-    if (idx !== -1) {
-        db[idx].timestamp = timestamp || db[idx].timestamp || 0;
-        db[idx].season = state.season;
-        db[idx].ep = state.episode;
-        db[idx].updatedAt = Date.now();
-        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-    }
-}
-
-// Manual position save function - can be called from UI
-window.savePositionManually = function () {
-    const input = prompt('Enter your current position (e.g., 1:30:00 or 45:30):');
-    if (input) {
-        const seconds = parseTimeString(input);
-        if (seconds > 0) {
-            savePositionToDb(seconds);
-            playerShowNotification('Position saved at ' + formatTime(seconds));
-        }
-    }
-};
-
-// Ensure the UI buttons actually trigger the update
-function setAudioMode(mode) {
-    state.audioMode = mode;
-    document.getElementById('btnSub').className = mode === 'sub' ? "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white" : "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white";
-    document.getElementById('btnDub').className = mode === 'dub' ? "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white" : "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white";
-
-    // Refresh the iframe when audio mode changes
-    updateStream();
-}
-
-// Top Nav Actions
-function goBackToModal() {
-    // Calculate the new episode based on current player state
-    calculateAndSaveEpisodeProgress();
-    window.location.href = `../index.html?open=${state.id}&type=${state.type}`;
-}
-
-function calculateAndSaveEpisodeProgress() {
-    // Get saved starting episode from before user opened player
-    const startKey = `cp_player_start_${state.id}`;
-    const startData = localStorage.getItem(startKey);
-    let startSeason = 1;
-    let startEpisode = 1;
-
-    if (startData) {
-        try {
-            const parsed = JSON.parse(startData);
-            startSeason = parsed.season || 1;
-            startEpisode = parsed.episode || 1;
-        } catch (e) { }
-    }
-
-    // Current episode in player
-    const currentSeason = state.season;
-    const currentEpisode = state.episode;
-
-    // Calculate total episodes watched
-    // Convert both to absolute episode numbers and calculate difference
-    const startAbs = getAbsoluteEpisode(startSeason, startEpisode);
-    const currentAbs = getAbsoluteEpisode(currentSeason, currentEpisode);
-    const episodesWatched = currentAbs - startAbs + 1; // +1 because current episode counts
-
-    // Get database item
-    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
-    const idx = db.findIndex(i => String(i.id) === String(state.id));
-
-    if (idx !== -1) {
-        const playerCurrentAbs = getAbsoluteEpisode(currentSeason, currentEpisode);
-
-        // Only update if current player episode is >= saved in DB
-        if (playerCurrentAbs >= (db[idx].ep || 0)) {
-            db[idx].season = currentSeason;
-            db[idx].ep = playerCurrentAbs; // CRITICAL FIX: Saved as absolute!
-            db[idx].updatedAt = Date.now();
-            localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-        }
-    }
-
-    // Save season-specific progress so we remember where user left off in each season
-    const seasonProgressKey = `cp_season_progress_${state.id}`;
-    const seasonProgress = JSON.parse(localStorage.getItem(seasonProgressKey) || '{}');
-    seasonProgress[currentSeason] = currentEpisode;
-    localStorage.setItem(seasonProgressKey, JSON.stringify(seasonProgress));
-
-    // Clear start data
-    localStorage.removeItem(startKey);
-}
-
 function getAbsoluteEpisode(season, episode) {
     if (!state.data || !state.data.seasons) return episode;
-
     let abs = 0;
     const validSeasons = state.data.seasons.filter(s => s.season_number > 0 && s.season_number < season);
     for (let s of validSeasons) {
@@ -815,7 +394,17 @@ function getAbsoluteEpisode(season, episode) {
     return abs + episode;
 }
 
-// --- SANDBOX TOGGLE ENGINE ---
+function setAudioMode(mode) {
+    state.audioMode = mode;
+    document.getElementById('btnSub').className = mode === 'sub' ? "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white" : "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white";
+    document.getElementById('btnDub').className = mode === 'dub' ? "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white" : "px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white";
+    updateStream();
+}
+
+function goBackToModal() {
+    window.location.href = `../index.html?open=${state.id}&type=${state.type}`;
+}
+
 let sandboxExtended = false;
 function toggleIframeSandbox() {
     sandboxExtended = !sandboxExtended;
@@ -824,13 +413,11 @@ function toggleIframeSandbox() {
     const indicator = document.getElementById('sandboxIndicator');
 
     if (sandboxExtended) {
-        // FULL ACCESS: Remove sandbox attribute completely for max compatibility
         iframe.removeAttribute('sandbox');
         btn.className = 'px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-yellow-500/20 text-yellow-500 border-yellow-500 shadow-lg shadow-yellow-500/20';
         btn.innerHTML = '<i class="fas fa-unlock mr-2"></i> Access: Full';
         if (indicator) indicator.classList.remove('hidden');
     } else {
-        // RESTRICTED: Standard safe box
         iframe.setAttribute('sandbox', 'allow-scripts allow-presentation allow-forms allow-same-origin');
         btn.className = 'px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10';
         btn.innerHTML = '<i class="fas fa-lock mr-2"></i> Access: Safe';
@@ -838,8 +425,6 @@ function toggleIframeSandbox() {
     }
 }
 
-// Search Redirect
-// --- LIVE SEARCH DROPDOWN ---
 let searchTimeout;
 document.getElementById('playerSearch').addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
@@ -877,16 +462,15 @@ document.getElementById('playerSearch').addEventListener('input', (e) => {
         } catch (err) {
             console.error("Search failed:", err);
         }
-    }, 400); // Wait 400ms after user stops typing to save API calls
+    }, 400);
 });
 
-// Close dropdown when clicking outside
 document.addEventListener('click', (e) => {
     if (!e.target.closest('#playerSearch') && !e.target.closest('#playerSearchDropdown')) {
         document.getElementById('playerSearchDropdown').classList.add('hidden');
     }
 });
-// --- LIBRARY STATUS ENGINE ---
+
 function initPlayerLibraryState() {
     let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
     let existingIdx = db.findIndex(i => String(i.id) === String(state.id));
@@ -900,16 +484,7 @@ function initPlayerLibraryState() {
         textEl.className = "text-xs font-bold uppercase text-[#22c55e]";
         iconEl.innerHTML = '<i class="fas fa-check text-[#22c55e]"></i>';
         iconEl.className = "w-10 h-10 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 flex items-center justify-center";
-
-        // Ensure episode is synced with saved state
-        if (state.type === 'tv' && existing.ep > 0) {
-            state.season = existing.season || 1;
-            state.episode = existing.ep;
-            renderEpisodes(state.season);
-            updateStream();
-        }
     } else {
-        // Add to library as watching
         const newItem = {
             id: state.id,
             title: state.data?.title || state.data?.name || '',
@@ -926,9 +501,7 @@ function initPlayerLibraryState() {
             year: (state.data?.release_date || state.data?.first_air_date || '').split('-')[0],
             genres: (state.data?.genres || []).map(g => g.id),
             added: Date.now(),
-            updatedAt: Date.now(),
-            timestamp: 0,
-            duration: 0
+            updatedAt: Date.now()
         };
         db.push(newItem);
         localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
@@ -939,56 +512,72 @@ function initPlayerLibraryState() {
         iconEl.className = "w-10 h-10 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 flex items-center justify-center";
     }
 }
-// (duplicate initPlayer removed — single definition above at line 40)
 
 function togglePlayerLibraryStatus() {
-    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
-    let existing = db.find(i => String(i.id) === String(state.id));
-
-    if (!existing) {
-        db.push({
-            id: state.id, title: state.data.title || state.data.name, poster: state.data.poster_path,
-            type: state.category === 'anime' || state.category === 'kdrama' ? state.category : state.type,
-            tmdb_type: state.type, status: 'Watching', ep: 1, max_ep: state.data.number_of_episodes || 1,
-            score: 0, crown: 0, imdb: state.data.vote_average,
-            year: (state.data.release_date || state.data.first_air_date || '').split('-')[0], genres: [], added: Date.now()
-        });
-        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-        initPlayerLibraryState();
-
-        // FIX: Modern UI Toast instead of native alert()
-        const t = document.createElement('div');
-        t.className = `fixed top-10 right-10 bg-[#22c55e] text-white px-8 py-4 rounded-2xl shadow-2xl z-[9999] font-black uppercase text-[10px] tracking-widest transition-all duration-500 transform translate-y-[-20px] opacity-0 flex items-center gap-3`;
-        t.innerHTML = `<i class="fas fa-check-circle text-lg"></i> Record initialized. Status set to WATCHING.`;
-        document.body.appendChild(t);
-        setTimeout(() => { t.classList.remove('translate-y-[-20px]', 'opacity-0'); }, 10);
-        setTimeout(() => {
-            t.classList.add('opacity-0', 'translate-y-[-20px]');
-            setTimeout(() => t.remove(), 500);
-        }, 3000);
-
-    } else {
-        goBackToModal();
-    }
+    goBackToModal();
 }
-// --- MINI MODAL ENGINE ---
+
 function openPlayerMiniModal(id, type, title, poster) {
     document.getElementById('miniModalImg').src = IMG + poster;
     document.getElementById('miniModalTitle').innerText = title;
-
-    document.getElementById('btnMiniWatch').onclick = () => {
-        window.location.href = `player.html?id=${id}&type=${type}`;
-    };
-
-    document.getElementById('btnMiniDetails').onclick = () => {
-        window.location.href = `index.html?open=${id}&type=${type}`;
-    };
-
+    document.getElementById('btnMiniWatch').onclick = () => window.location.href = `player.html?id=${id}&type=${type}`;
+    document.getElementById('btnMiniDetails').onclick = () => window.location.href = `../index.html?open=${id}&type=${type}`;
     document.getElementById('playerMiniModal').classList.remove('hidden');
 }
 
-// Update your buildUI recommendations mapping to use the modal:
-// Replace the onclick in detailRecs generation with:
-// onclick="openPlayerMiniModal(${r.id}, '${state.type}', '${(r.title || r.name).replace(/'/g, "\\'")}', '${r.poster_path}')"
+let playerIdleTimeout;
+function initSmartNextButton() {
+    const btn = document.getElementById('playerOverlayControls');
+    const nextBtn = document.getElementById('smartNextBtn');
+    const container = document.getElementById('iframeContainer');
+
+    if (!btn || !container) return;
+
+    if (state.type !== 'tv') {
+        if (nextBtn) nextBtn.style.display = 'none';
+    } else {
+        const validSeasons = state.data?.seasons?.filter(s => s.season_number > 0) || [];
+        const currentSeasonData = validSeasons.find(s => s.season_number === state.season);
+        const seasonMaxEp = currentSeasonData?.episode_count || 1;
+
+        let hasNext = false;
+        if (state.episode < seasonMaxEp) hasNext = true;
+        else if (validSeasons.find(s => s.season_number === state.season + 1)) hasNext = true;
+
+        if (nextBtn) {
+            if (!hasNext) nextBtn.style.display = 'none';
+            else nextBtn.style.display = 'flex';
+        }
+    }
+
+    const showButton = () => {
+        btn.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+        btn.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+
+        clearTimeout(playerIdleTimeout);
+        playerIdleTimeout = setTimeout(() => {
+            // REFINEMENT: Don't hide the controls if the user is actively hovering over them
+            if (!btn.matches(':hover')) {
+                btn.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+                btn.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            }
+        }, 3500); // Increased timeout to 3.5s for better usability
+    };
+
+    container.addEventListener('mousemove', showButton);
+    container.addEventListener('touchstart', showButton, { passive: true });
+    container.addEventListener('mouseleave', () => {
+        clearTimeout(playerIdleTimeout);
+        btn.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+        btn.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+    });
+}
+
+window.triggerNextEpisode = function () {
+    const btn = document.getElementById('smartNextBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Loading...</span>';
+    btn.classList.add('bg-pulse', 'border-pulse');
+    playNextEpisode();
+};
 
 initPlayer();

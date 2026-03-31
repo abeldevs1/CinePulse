@@ -352,6 +352,7 @@ async function init() {
         updateSafeModeUI();
         setupLongPressSelection();
         getContinueWatchingHTML();
+        initSmartScrollButtons();
 
     } catch (e) {
         console.error("Neural init error", e);
@@ -892,9 +893,17 @@ function quickWatch(event, id, cat, title, year) {
     event.stopPropagation();
 
     const availableSources = sourcesDb[cat] || [];
+    const tmdbType = (cat === 'tv' || cat === 'anime' || cat === 'kdrama' || cat === 'turkish' || cat === 'asian') ? 'tv' : 'movie';
+
+    // NEW: Auto-Launch Internal Player and bypass Modal if no external sources exist
+    if (availableSources.length === 0) {
+        showNotification(`Launching Built-in Player. <u onclick="navigate('sources')" class="cursor-pointer text-white hover:text-pulse ml-1">Configure External Sources Here</u>`);
+        launchInternalPlayer(id, tmdbType, title);
+        return;
+    }
+
     const safeTitle = encodeURIComponent(title);
     const safeYear = year;
-    const tmdbType = (cat === 'tv' || cat === 'anime' || cat === 'kdrama' || cat === 'turkish' || cat === 'asian') ? 'tv' : 'movie';
 
     // 1. BUILT-IN PLAYER SECTION
     let html = `
@@ -902,9 +911,9 @@ function quickWatch(event, id, cat, title, year) {
             <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
                 <i class="fas fa-play"></i> Built-in Player
             </h4>
-            <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${safeTitle}')"
+            <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
                     class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-broadcast-tower"></i> Watch Now
+                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
             </button>
         </div>
         <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2">
@@ -913,17 +922,22 @@ function quickWatch(event, id, cat, title, year) {
     `;
 
     // 2. EXTERNAL SOURCES SECTION
-    if (availableSources.length === 0) {
+    if (availableSources.length === 1) {
+        const src = availableSources[0];
+        const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
+        let domain = 'Link';
+        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
+
         html += `
-            <div class="text-center py-4 space-y-3 bg-dark/50 rounded-xl border border-white/5">
-                <p class="text-[9px] text-gray-500 uppercase font-bold px-4 leading-relaxed">
-                    No custom external links configured for <span class="text-${cat}">${cat}</span>.
-                </p>
-                <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" 
-                        class="px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] uppercase font-black hover:bg-white/10 transition-all w-full">
-                    Configure Sources
-                </button>
-            </div>
+            <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
+               class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
+                <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-md grayscale group-hover:grayscale-0 transition-all">
+                <div class="flex-1">
+                    <div class="text-[10px] font-black uppercase text-white group-hover:text-${cat} line-clamp-1">Launch ${src.name}</div>
+                    <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">Direct External Link</div>
+                </div>
+                <i class="fas fa-external-link-alt text-gray-700 group-hover:text-${cat} transition-all text-[10px]"></i>
+            </a>
         `;
     } else {
         html += `<div class="space-y-2 max-h-[30vh] overflow-y-auto hide-scroll pr-1">`;
@@ -933,7 +947,7 @@ function quickWatch(event, id, cat, title, year) {
             try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
 
             return `
-                <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
+               <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
                     <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
                     <div class="flex-1">
@@ -950,7 +964,6 @@ function quickWatch(event, id, cat, title, year) {
     document.getElementById('watchSourceList').innerHTML = html;
     document.getElementById('watchModal').classList.remove('hidden');
 }
-
 // Updated deepSearch to handle "all results" and spelling 
 async function deepSearch(q) {
     if (state.view !== 'search') navigate('search');
@@ -2011,6 +2024,7 @@ async function renderSync() {
     }
 
     container.innerHTML = sectionsHTML.join('') || `<div class="text-center py-20 text-gray-700 font-black uppercase tracking-widest italic">Insufficient elite data for synchronization. Add highly rated shows to seed the engine.</div>`;
+    initSmartScrollButtons();
 }
 
 // Global Helpers
@@ -2024,9 +2038,11 @@ function updateCounters() {
         const count = t === 'all' ? state.db.length : state.db.filter(i => i.type === t).length;
         const label = t === 'all' ? 'All Data' : t;
         const border = t === 'all' ? 'pulse' : t;
+        const tooltipText = t === 'all' ? 'Single click to view collection. Double tap for a random pick!' : `Single click to view ${label} category. Double tap for a random pick!`;
 
         return `
                     <div class="bg-white/5 border border-white/10 p-6 rounded-3xl border-t-4 border-${border} shadow-xl cursor-pointer hover:bg-white/10 hover:-translate-y-1 transition-all select-none" 
+                         title="${tooltipText}"
                          onclick="handleCounterClick(event, '${t}')">
                         <div class="text-[9px] font-black text-gray-500 uppercase mb-2 tracking-widest">${label}</div>
                         <div class="text-3xl font-black italic text-white">${count}</div>
@@ -2637,6 +2653,7 @@ async function loadUpcomingPage() {
     } catch (err) {
         console.error("Neural fetch failed for Upcoming page.", err);
     }
+    initSmartScrollButtons();
 }
 
 // 2. Render Tracked Radar directly on the Upcoming page
@@ -3606,6 +3623,13 @@ function openWatchMenu() {
     const tmdbId = state.active.id;
     const year = (state.active.release_date || state.active.first_air_date || '').split('-')[0];
 
+    // NEW: Auto-Launch Internal Player and bypass Modal if no external sources exist
+    if (availableSources.length === 0) {
+        showNotification(`Launching Built-in Player. <u onclick="navigate('sources')" class="cursor-pointer text-white hover:text-pulse ml-1">Configure External Sources Here</u>`);
+        launchInternalPlayer(tmdbId, tmdbType, title);
+        return;
+    }
+
     // 1. BUILT-IN PLAYER SECTION
     let html = `
         <div class="mb-6 border-b border-white/10 pb-6">
@@ -3614,7 +3638,7 @@ function openWatchMenu() {
             </h4>
             <button onclick="launchInternalPlayer(${tmdbId}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
                     class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-broadcast-tower"></i> watch here 
+                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
             </button>
         </div>
     `;
@@ -3622,39 +3646,25 @@ function openWatchMenu() {
     // 2. EXTERNAL CUSTOM SOURCES SECTION
     html += `<h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2"><i class="fas fa-external-link-alt"></i> External Custom Sources</h4>`;
 
-    if (availableSources.length === 0) {
-        html += `
-            <div class="text-center py-4 space-y-3 bg-dark/50 rounded-xl border border-white/5">
-                <p class="text-[9px] text-gray-500 uppercase font-bold px-4 leading-relaxed">
-                    No custom external links configured for <span class="text-${type}">${type}</span>.
-                </p>
-                <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" 
-                        class="px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] uppercase font-black hover:bg-white/10 transition-all">
-                    Configure Sources
-                </button>
-            </div>
-        `;
-    } else {
-        html += `<div class="space-y-2 max-h-[30vh] overflow-y-auto hide-scroll pr-1">`;
-        html += availableSources.map(src => {
-            const finalUrl = src.url.replace(/{title}/g, safeTitleUrl).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
-            let domain = 'Link';
-            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
+    html += `<div class="space-y-2 max-h-[30vh] overflow-y-auto hide-scroll pr-1">`;
+    html += availableSources.map(src => {
+        const finalUrl = src.url.replace(/{title}/g, safeTitleUrl).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
+        let domain = 'Link';
+        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
 
-            return `
-               <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${tmdbId}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
-                   class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${type} hover:bg-${type}/10 transition-all group">
-                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
-                    <div class="flex-1">
-                        <div class="text-[10px] font-black uppercase text-white group-hover:text-${type} line-clamp-1">${src.name}</div>
-                        <div class="text-[7px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
-                    </div>
-                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${type} transition-all text-[10px]"></i>
-                </a>
-            `;
-        }).join('');
-        html += `</div>`;
-    }
+        return `
+           <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${tmdbId}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
+               class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${type} hover:bg-${type}/10 transition-all group">
+                <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
+                <div class="flex-1">
+                    <div class="text-[10px] font-black uppercase text-white group-hover:text-${type} line-clamp-1">${src.name}</div>
+                    <div class="text-[7px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
+                </div>
+                <i class="fas fa-chevron-right text-gray-700 group-hover:text-${type} transition-all text-[10px]"></i>
+            </a>
+        `;
+    }).join('');
+    html += `</div>`;
 
     document.getElementById('watchSourceList').innerHTML = html;
     document.getElementById('watchModal').classList.remove('hidden');
@@ -6010,15 +6020,20 @@ if (state.notifications && state.notifications.length > 0) {
     save();
 }
 function getContinueWatchingHTML() {
-    const watchingList = state.db.filter(item => item.status === 'Watching').sort((a, b) => b.added - a.added);
+    const watchingList = state.db.filter(item => item.status === 'Watching').sort((a, b) => b.updatedAt - a.updatedAt);
 
     if (watchingList.length === 0) return '';
 
     let html = `
     <div class="mb-12 mt-6">
-        <h2 class="text-xs md:text-sm font-black uppercase tracking-[0.2em] text-white mb-4 border-l-4 border-pulse pl-3 flex items-center gap-2">
-            <i class="fas fa-play-circle text-pulse"></i> Continue Watching
-        </h2>
+        <div class="flex justify-between items-center mb-4 pr-2">
+            <h2 class="text-xs md:text-sm font-black uppercase tracking-[0.2em] text-white border-l-4 border-pulse pl-3 flex items-center gap-2">
+                <i class="fas fa-play-circle text-pulse"></i> Continue Watching
+            </h2>
+            <button onclick="clearAllContinueWatching()" class="text-[9px] text-gray-500 hover:text-pulse uppercase font-black tracking-widest flex items-center gap-2 transition-colors">
+                <i class="fas fa-trash-alt"></i> Clear All
+            </button>
+        </div>
         <div class="flex gap-4 overflow-x-auto hide-scroll pb-4 px-1">
     `;
 
@@ -6028,9 +6043,6 @@ function getContinueWatchingHTML() {
     watchingList.forEach(item => {
         const type = item.tmdb_type || (item.type && !movieTypes.includes(item.type.toLowerCase()) ? 'tv' : 'movie');
         const isTV = type === 'tv' || tvTypes.includes(item.type?.toLowerCase());
-        const isMovie = !isTV;
-
-        const timestamp = item.timestamp || 0;
 
         let statusText = '';
         let progressBar = '';
@@ -6038,7 +6050,6 @@ function getContinueWatchingHTML() {
         if (isTV) {
             const ep = item.ep || 0;
             const maxEp = item.max_ep || 1;
-            // FIX: Absolute percentage calculation
             const progressPercent = Math.min((ep / maxEp) * 100, 100);
 
             statusText = `S${item.season || 1} • ${ep}/${maxEp} EPS`;
@@ -6047,28 +6058,23 @@ function getContinueWatchingHTML() {
                     <div class="h-full bg-[#a855f7] shadow-[0_0_10px_rgba(168,85,247,0.8)]" style="width: ${progressPercent}%"></div>
                 </div>` : '';
         } else {
-            const progressPercent = isMovie && timestamp > 0 ? Math.min((timestamp / (item.duration || 1)) * 100, 95) : 0;
-            if (timestamp > 0) {
-                statusText = formatTimestampProgress(timestamp) + ' left';
-                progressBar = `
+            statusText = 'WATCHING';
+            progressBar = `
                 <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
-                    <div class="h-full bg-pulse shadow-[0_0_10px_rgba(255,45,85,0.8)]" style="width: ${progressPercent}%"></div>
+                    <div class="h-full bg-pulse shadow-[0_0_10px_rgba(255,45,85,0.8)]" style="width: 100%"></div>
                 </div>`;
-            } else {
-                statusText = 'START WATCHING';
-            }
         }
 
-        // Simpler URL: Let player.js handle figuring out the exact episode to resume!
-        const navigateUrl = `pages/player.html?id=${item.id}&type=${type}`;
+        // Properly escape titles for inline onclick handlers
+        const safeTitle = (item.title || '').replace(/'/g, "\\'");
 
         html += `
-        <div class="relative w-48 sm:w-56 shrink-0 group cursor-pointer">
-            <button onclick="event.stopPropagation(); event.preventDefault(); window.removeContinueWatching(${item.id})" class="absolute top-2 right-2 w-7 h-7 bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-pulse hover:border-pulse z-50 transition-all opacity-0 group-hover:opacity-100 shadow-xl">
+        <div class="relative w-32 sm:w-40 shrink-0 group cursor-pointer" title="Click to resume ${item.title}">
+            <button onclick="event.stopPropagation(); event.preventDefault(); window.removeContinueWatching(${item.id})" class="absolute top-2 right-2 w-7 h-7 bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-pulse hover:border-pulse z-50 transition-all opacity-0 group-hover:opacity-100 shadow-xl" title="Remove from Continue Watching">
                 <i class="fas fa-times text-[10px]"></i>
             </button>
 
-            <div onclick="window.location.href='${navigateUrl}'" class="aspect-video rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg group-hover:shadow-[0_0_20px_rgba(255,45,85,0.3)] transition-all bg-dark relative">
+            <div onclick="launchInternalPlayer(${item.id}, '${type}', '${safeTitle}')" class="aspect-[2/3] rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg group-hover:shadow-[0_0_20px_rgba(255,45,85,0.3)] transition-all bg-dark relative">
                 <img src="${IMG}${item.poster}" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity">
                 
                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
@@ -6267,66 +6273,58 @@ document.getElementById('watchOptionsModal').addEventListener('click', function 
 function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     document.getElementById('watchModal').classList.add('hidden');
     const safeTitle = encodeURIComponent(title || '');
+    let playerUrl = `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+    let epInfo = '';
 
-    // Get current episode and season from modal if available
-    let currentSeason = 1;
-    let currentEpisode = 1;
+    // Only force episode via URL if we are in the modal AND the user changed the slider
+    const isContextActive = state.active && String(state.active.id) === String(id);
+    const epSlider = document.getElementById('mEpRange');
+    const dbItem = state.db.find(i => String(i.id) === String(id));
 
     if (tmdbType === 'tv') {
-        const dbItem = state.db.find(i => String(i.id) === String(id));
-        const epSlider = document.getElementById('mEpRange');
-
-        // Ensure we have season data to calculate against
-        const seasons = (state.active && state.active.seasons)
-            ? state.active.seasons.filter(s => s.season_number > 0)
-            : [];
-
-        if (dbItem && seasons.length > 0) {
-            let targetAbsolute = dbItem.ep || 0;
-
-            // If user manually dragged slider in modal, respect that exact absolute episode!
-            if (epSlider && parseInt(epSlider.value) !== dbItem.ep) {
-                targetAbsolute = parseInt(epSlider.value);
-            } else {
-                // Otherwise, play the NEXT episode after what they just finished
-                targetAbsolute += 1;
-            }
-
-            // Cap it at max episodes so it doesn't break at the end of a series
-            const maxEp = dbItem.max_ep || 1;
-            if (targetAbsolute > maxEp) targetAbsolute = maxEp;
+        if (isContextActive && epSlider && dbItem && parseInt(epSlider.value) !== (dbItem.ep || 0)) {
+            // User adjusted slider manually. Calculate relative season/ep and pass via URL.
+            let targetAbsolute = parseInt(epSlider.value);
             if (targetAbsolute < 1) targetAbsolute = 1;
 
-            // Convert Absolute Target -> Relative Season & Episode
-            let accumulated = 0;
+            const seasons = state.active.seasons.filter(s => s.season_number > 0);
+            let cSeason = 1, cEp = 1, acc = 0;
             for (let s of seasons) {
-                if (targetAbsolute <= accumulated + s.episode_count) {
-                    currentSeason = s.season_number;
-                    currentEpisode = targetAbsolute - accumulated;
+                if (targetAbsolute <= acc + s.episode_count) {
+                    cSeason = s.season_number;
+                    cEp = targetAbsolute - acc;
                     break;
                 }
-                accumulated += s.episode_count;
+                acc += s.episode_count;
+            }
+            playerUrl += `&season=${cSeason}&episode=${cEp}`;
+            epInfo = ` S${cSeason}:E${cEp}`;
+
+            // Sync database immediately
+            dbItem.ep = targetAbsolute;
+            dbItem.season = cSeason;
+            dbItem.status = 'Watching';
+            save();
+        } else if (dbItem) {
+            // User clicked Quick Play or Continue Watching.
+            // Ensure it's marked as watching, let player.js figure out the exact episode.
+            if (dbItem.status !== 'Finished' && dbItem.status !== 'Ongoing') {
+                dbItem.status = 'Watching';
+                save();
             }
         } else {
-            // Safe fallback if no TMDB season data is cached
-            currentSeason = dbItem?.season || 1;
-            currentEpisode = 1;
+            // Completely new show clicked via Quick Watch.
+            autoMarkWatching(id, tmdbType);
         }
+    } else {
+        autoMarkWatching(id, tmdbType);
     }
-
-    // TRIGER NEURAL AUTO-MARK with episode info
-    autoMarkWatching(id, tmdbType, currentSeason, currentEpisode);
 
     if (typeof showNotification === 'function') {
-        const epInfo = tmdbType === 'tv' ? ` S${currentSeason}:E${currentEpisode}` : '';
-        showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream for ${title}${epInfo}...`, false);
+        showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream${epInfo}...`, false);
     }
 
-    // ALWAYS open in the same tab to preserve PWA seamless experience
     setTimeout(() => {
-        const playerUrl = tmdbType === 'tv'
-            ? `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}&season=${currentSeason}&episode=${currentEpisode}`
-            : `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
         window.location.href = playerUrl;
     }, 800);
 }
@@ -6676,3 +6674,119 @@ function checkInstallSnooze() {
         }
     }
 }
+window.initSmartScrollButtons = function () {
+    document.querySelectorAll('.hide-scroll').forEach(scrollArea => {
+        const parent = scrollArea.parentElement;
+        // Don't double-inject buttons
+        if (!parent || parent.querySelector('.scroll-btn-smart.left')) return;
+
+        parent.style.position = 'relative';
+
+        // Detect if we are on the "For You" (Sync) Page
+        const isSyncPage = parent.closest('#view-sync') !== null;
+        const verticalPos = isSyncPage ? 'top-[35%]' : 'top-1/2';
+        const extraStyles = isSyncPage ? 'border-pulse text-pulse bg-dark/95' : 'border-white/20 text-white bg-dark/80';
+
+        // Base Tailwind Classes
+        const baseBtnClass = `scroll-btn-smart absolute ${verticalPos} -translate-y-1/2 z-50 w-10 h-10 rounded-full shadow-2xl flex items-center justify-center hover:bg-pulse hover:border-pulse hover:text-white transition-all duration-300 opacity-0 pointer-events-none border ${extraStyles}`;
+
+        // Create Left Button
+        const btnLeft = document.createElement('button');
+        btnLeft.className = `${baseBtnClass} left left-[-15px]`;
+        btnLeft.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        btnLeft.onclick = () => scrollArea.scrollBy({ left: -(scrollArea.clientWidth * 0.7), behavior: 'smooth' });
+        parent.appendChild(btnLeft);
+
+        // Create Right Button
+        const btnRight = document.createElement('button');
+        btnRight.className = `${baseBtnClass} right right-[-15px]`;
+        btnRight.innerHTML = '<i class="fas fa-chevron-right"></i>';
+        btnRight.onclick = () => scrollArea.scrollBy({ left: (scrollArea.clientWidth * 0.7), behavior: 'smooth' });
+        parent.appendChild(btnRight);
+
+        // Intelligence Logic
+        const updateButtons = () => {
+            const maxScroll = scrollArea.scrollWidth - scrollArea.clientWidth;
+
+            // Left Button visibility
+            if (scrollArea.scrollLeft > 5) {
+                btnLeft.classList.remove('opacity-0', 'pointer-events-none');
+                btnLeft.classList.add('opacity-100', 'pointer-events-auto');
+            } else {
+                btnLeft.classList.add('opacity-0', 'pointer-events-none');
+                btnLeft.classList.remove('opacity-100', 'pointer-events-auto');
+            }
+
+            // Right Button visibility (only show if scrollable)
+            if (maxScroll > 10 && scrollArea.scrollLeft < maxScroll - 5) {
+                btnRight.classList.remove('opacity-0', 'pointer-events-none');
+                btnRight.classList.add('opacity-100', 'pointer-events-auto');
+            } else {
+                btnRight.classList.add('opacity-0', 'pointer-events-none');
+                btnRight.classList.remove('opacity-100', 'pointer-events-auto');
+            }
+        };
+
+        // Bind Listeners
+        scrollArea.addEventListener('scroll', updateButtons);
+
+        // ResizeObserver guarantees buttons appear immediately when data loads
+        const observer = new ResizeObserver(() => updateButtons());
+        observer.observe(scrollArea);
+
+        // Initial check
+        setTimeout(updateButtons, 300);
+    });
+};
+window.clearAllContinueWatching = function () {
+    // Remove existing if any to prevent duplicates
+    const existing = document.getElementById('customConfirmModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'customConfirmModal';
+    modal.className = 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 px-4';
+    modal.innerHTML = `
+        <div class="bg-[#0a0c12] border border-pulse/30 rounded-[30px] p-8 max-w-sm w-full shadow-[0_20px_60px_rgba(255,45,85,0.15)] text-center transform scale-95 animate-in zoom-in duration-300">
+            <div class="w-16 h-16 mx-auto bg-pulse/10 rounded-full flex items-center justify-center mb-5 border border-pulse/30 text-pulse text-2xl">
+                <i class="fas fa-trash-alt"></i>
+            </div>
+            <h3 class="text-xl font-black uppercase italic text-white tracking-widest mb-2">Clear Records?</h3>
+            <p class="text-gray-400 text-[10px] uppercase font-bold tracking-widest mb-8">This will wipe all items from your Continue Watching feed.</p>
+            
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('customConfirmModal').remove()" class="flex-1 py-3.5 bg-white/5 border border-white/10 text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-white/10 transition-all">
+                    Cancel
+                </button>
+                <button onclick="executeClearContinueWatching()" class="flex-1 py-3.5 bg-pulse text-white rounded-xl font-black uppercase text-[10px] tracking-widest hover:scale-105 active:scale-95 transition-all shadow-lg shadow-pulse/20">
+                    Purge
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+
+window.executeClearContinueWatching = function () {
+    const modal = document.getElementById('customConfirmModal');
+    if (modal) modal.remove();
+
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+    let clearedCount = 0;
+
+    db.forEach(item => {
+        if (item.status === 'Watching') {
+            item.status = 'Plan to Watch';
+            if (item.type === 'movie') item.timestamp = 0;
+            clearedCount++;
+        }
+    });
+
+    if (clearedCount > 0) {
+        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+        state.db = db;
+        renderContinueWatching();
+        if (state.view === 'mylist') renderList();
+        showNotification(`${clearedCount} records wiped from Continue Watching.`);
+    }
+};
