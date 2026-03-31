@@ -26,14 +26,22 @@ const P2P_CONFIG = {
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' },
-            { urls: 'stun:stun1.stunprotocol.org:3478' },
-            { urls: 'stun:stun2.stunprotocol.org:3478' },
-            { urls: 'turn:global.turn.twilio.com:3478?transport=udp', username: '5d03670a5aa0f36c6ee4a136a5662e5e0e0d6f29f2f3d97e3a5bb89b7b8a1c9d', credential: 'vN4jR8kLm3pQ9xW2yZ5cT7nA6bV4sD0fE1hG3jK9pR8uY2o=' },
-            { urls: 'turn:global.turn.twilio.com:3478?transport=tcp', username: '5d03670a5aa0f36c6ee4a136a5662e5e0e0d6f29f2f3d97e3a5bb89b7b8a1c9d', credential: 'vN4jR8kLm3pQ9xW2yZ5cT7nA6bV4sD0fE1hG3jK9pR8uY2o=' },
-            { urls: 'turn:global.turn.twilio.com:443?transport=tcp', username: '5d03670a5aa0f36c6ee4a136a5662e5e0e0d6f29f2f3d97e3a5bb89b7b8a1c9d', credential: 'vN4jR8kLm3pQ9xW2yZ5cT7nA6bV4sD0fE1hG3jK9pR8uY2o=' }
+            { urls: 'stun:stun.relay.metered.ca:80' },
+            {
+                urls: 'turn:openrelay.metered.ca:80',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            },
+            {
+                urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                username: 'openrelayproject',
+                credential: 'openrelayproject'
+            }
         ],
         iceCandidatePoolSize: 10
     }
@@ -68,21 +76,21 @@ NeuralSync.history = NeuralSync.history.map(h => {
     return h;
 });
 
-window.editLocalNodeName = function() {
+window.editLocalNodeName = function () {
     const curr = NeuralSync.deviceName;
     const res = prompt("Enter a name for this device:", curr);
-    if(res && res.trim().length > 0) {
+    if (res && res.trim().length > 0) {
         NeuralSync.deviceName = res.trim();
         localStorage.setItem('cp_device_name', NeuralSync.deviceName);
         renderTopology();
     }
 }
 
-window.editTopologyNodeName = function(dId) {
+window.editTopologyNodeName = function (dId) {
     const aliases = JSON.parse(localStorage.getItem('cp_network_aliases')) || {};
     const curr = aliases[dId] || dId;
     const res = prompt("Enter a custom alias for this device:", curr);
-    if(res && res.trim().length > 0) {
+    if (res && res.trim().length > 0) {
         aliases[dId] = res.trim();
         localStorage.setItem('cp_network_aliases', JSON.stringify(aliases));
         // Update history immediately if it exists
@@ -177,7 +185,7 @@ window.initNeuralHost = function (optionalPeerId = null) {
             secure: SIGNALING_SERVER.secure,
             key: SIGNALING_SERVER.key
         };
-        
+
         NeuralSync.peer = new Peer(peerId, peerConfig);
 
         NeuralSync.peer.on('open', (id) => {
@@ -245,7 +253,7 @@ window.joinNeuralNetwork = function (targetId = null, isSilent = false) {
         secure: SIGNALING_SERVER.secure,
         key: SIGNALING_SERVER.key
     };
-    
+
     NeuralSync.peer = new Peer(clientId, peerConfig);
 
     NeuralSync.peer.on('open', (id) => {
@@ -337,22 +345,22 @@ function saveToHistory(peerId, explicitDeviceId, explicitName, explicitType) {
         const baseIdMatch = peerId.match(/^(.*?-\w+-\d+)/);
         if (baseIdMatch) dId = baseIdMatch[1];
     }
-    
+
     const aliases = JSON.parse(localStorage.getItem('cp_network_aliases')) || {};
     const localAlias = aliases[dId];
     const dName = localAlias ? localAlias : (explicitName && explicitName !== 'Local Node' ? explicitName : dId);
     const dType = explicitType || (dId.includes('MOB') ? 'MOB' : (dId.includes('TAB') ? 'TAB' : 'PC'));
 
     NeuralSync.history = NeuralSync.history.filter(h => h.deviceId !== dId && h.id !== peerId);
-    
+
     const isLive = NeuralSync.activeConns[peerId] !== undefined;
-    
-    NeuralSync.history.push({ 
-        id: peerId, 
-        deviceId: dId, 
-        name: dName, 
-        type: dType, 
-        lastSeen: Date.now() 
+
+    NeuralSync.history.push({
+        id: peerId,
+        deviceId: dId,
+        name: dName,
+        type: dType,
+        lastSeen: Date.now()
     });
 
     localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
@@ -394,7 +402,7 @@ function renderTopology() {
             uniqueHistoryMap.set(item.deviceId, item);
         }
     });
-    
+
     const uniqueHistory = Array.from(uniqueHistoryMap.values());
 
     html += uniqueHistory.sort((a, b) => b.lastSeen - a.lastSeen).map(node => {
@@ -443,9 +451,9 @@ function renderTopology() {
 
 window.removeTopologyNode = function (id) {
     const node = NeuralSync.history.find(n => n.id === id);
-    if(node) NeuralSync.history = NeuralSync.history.filter(n => n.deviceId !== node.deviceId);
+    if (node) NeuralSync.history = NeuralSync.history.filter(n => n.deviceId !== node.deviceId);
     else NeuralSync.history = NeuralSync.history.filter(n => n.id !== id);
-    
+
     localStorage.setItem('cp_network_history', JSON.stringify(NeuralSync.history));
     renderTopology();
 }
@@ -484,8 +492,8 @@ function startHeartbeat() {
         Object.keys(NeuralSync.activeConns).forEach(peerId => {
             const conn = NeuralSync.activeConns[peerId];
             if (conn && conn.open) {
-                conn.send({ 
-                    type: 'HEARTBEAT', 
+                conn.send({
+                    type: 'HEARTBEAT',
                     status: statusMsg,
                     deviceId: NeuralSync.deviceId,
                     deviceName: NeuralSync.deviceName,
@@ -516,8 +524,8 @@ function setupConnection(conn) {
         }
 
         if (NeuralSync.role === 'node') {
-            conn.send({ 
-                type: 'SYNC_REQUEST', 
+            conn.send({
+                type: 'SYNC_REQUEST',
                 sender: NeuralSync.deviceId,
                 deviceId: NeuralSync.deviceId,
                 deviceName: NeuralSync.deviceName,
@@ -531,8 +539,8 @@ function setupConnection(conn) {
         if (data.type === 'SYNC_REQUEST') {
             if (data.deviceId) saveToHistory(conn.peer, data.deviceId, data.deviceName, data.deviceType);
             sendPayload(conn);
-            conn.send({ 
-                type: 'SYNC_REQUEST_REPLY', 
+            conn.send({
+                type: 'SYNC_REQUEST_REPLY',
                 sender: NeuralSync.deviceId,
                 deviceId: NeuralSync.deviceId,
                 deviceName: NeuralSync.deviceName,
