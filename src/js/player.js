@@ -100,6 +100,7 @@ async function initPlayer() {
 
         state.data = details;
         state.category = detectCategory(details);
+        const savedItem = loadSavedWatchState();
 
         // Simple logic: Use URL params, or saved DB state, or default to S1:E1
         // NO auto-advancing - player starts exactly where tracker says
