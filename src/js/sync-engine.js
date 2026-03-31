@@ -21,15 +21,29 @@ function getDevicePlatform() {
 }
 
 const P2P_CONFIG = {
+    debug: 2,
     config: {
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
             { urls: 'stun:stun2.l.google.com:19302' },
             { urls: 'stun:stun3.l.google.com:19302' },
-            { urls: 'stun:stun4.l.google.com:19302' }
-        ]
+            { urls: 'stun:stun4.l.google.com:19302' },
+            { urls: 'stun:stun1.stunprotocol.org:3478' },
+            { urls: 'stun:stun2.stunprotocol.org:3478' },
+            { urls: 'turn:global.turn.twilio.com:3478?transport=udp', username: '5d03670a5aa0f36c6ee4a136a5662e5e0e0d6f29f2f3d97e3a5bb89b7b8a1c9d', credential: 'vN4jR8kLm3pQ9xW2yZ5cT7nA6bV4sD0fE1hG3jK9pR8uY2o=' },
+            { urls: 'turn:global.turn.twilio.com:3478?transport=tcp', username: '5d03670a5aa0f36c6ee4a136a5662e5e0e0d6f29f2f3d97e3a5bb89b7b8a1c9d', credential: 'vN4jR8kLm3pQ9xW2yZ5cT7nA6bV4sD0fE1hG3jK9pR8uY2o=' },
+            { urls: 'turn:global.turn.twilio.com:443?transport=tcp', username: '5d03670a5aa0f36c6ee4a136a5662e5e0e0d6f29f2f3d97e3a5bb89b7b8a1c9d', credential: 'vN4jR8kLm3pQ9xW2yZ5cT7nA6bV4sD0fE1hG3jK9pR8uY2o=' }
+        ],
+        iceCandidatePoolSize: 10
     }
+};
+
+const SIGNALING_SERVER = {
+    host: '0.peerjs.com',
+    port: 443,
+    secure: true,
+    key: 'cinepulse'
 };
 
 const NeuralSync = {
@@ -156,7 +170,15 @@ window.initNeuralHost = function (optionalPeerId = null) {
 
         if (NeuralSync.peer) NeuralSync.peer.destroy();
 
-        NeuralSync.peer = new Peer(peerId, P2P_CONFIG);
+        const peerConfig = {
+            ...P2P_CONFIG,
+            host: SIGNALING_SERVER.host,
+            port: SIGNALING_SERVER.port,
+            secure: SIGNALING_SERVER.secure,
+            key: SIGNALING_SERVER.key
+        };
+        
+        NeuralSync.peer = new Peer(peerId, peerConfig);
 
         NeuralSync.peer.on('open', (id) => {
             NeuralSync.role = 'host';
@@ -216,7 +238,15 @@ window.joinNeuralNetwork = function (targetId = null, isSilent = false) {
         localStorage.setItem('cp_neural_client_id', clientId);
     }
 
-    NeuralSync.peer = new Peer(clientId, P2P_CONFIG);
+    const peerConfig = {
+        ...P2P_CONFIG,
+        host: SIGNALING_SERVER.host,
+        port: SIGNALING_SERVER.port,
+        secure: SIGNALING_SERVER.secure,
+        key: SIGNALING_SERVER.key
+    };
+    
+    NeuralSync.peer = new Peer(clientId, peerConfig);
 
     NeuralSync.peer.on('open', (id) => {
         NeuralSync.role = 'node';

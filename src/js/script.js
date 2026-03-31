@@ -5,7 +5,7 @@ window.addEventListener('popstate', (e) => {
     // 1. Intercept Back Button for Modals
     const modal = document.getElementById('modal');
     const personModal = document.getElementById('personModal');
-    
+
     if (personModal && !personModal.classList.contains('hidden')) {
         closePersonModal(true);
         return; // Stop routing
@@ -20,7 +20,7 @@ window.addEventListener('popstate', (e) => {
         try {
             const view = secureDecode(hash);
             if (document.getElementById(`view-${view}`)) navigate(view, true);
-        } catch(e) { navigate('home', true); }
+        } catch (e) { navigate('home', true); }
     } else {
         navigate('home', true);
     }
@@ -42,7 +42,7 @@ function sanitize(str) {
     return temp.innerHTML;
 }
 
-  if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js');
     });
@@ -50,17 +50,17 @@ function sanitize(str) {
 
 function checkPWADisplay() {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone || document.referrer.includes('android-app://');
-    
+
     // Permanent hide: app was installed at some point
     const isPermanentlyInstalled = localStorage.getItem('cp_pwa_installed') === '1';
-    
+
     // Check if dismissed within the last 3 days (3 * 24 * 60 * 60 * 1000 ms)
     const lastDismissed = parseInt(localStorage.getItem('cp_dismissed_install_time') || '0', 10);
     const isSnoozed = (Date.now() - lastDismissed) < 259200000;
-    
+
     const lnk = document.getElementById('mobileInstallLink');
     const crd = document.getElementById('installReminderCard');
-    
+
     // Permanent hide takes priority over snooze
     if (isStandalone || isPermanentlyInstalled || isSnoozed) {
         if (lnk) lnk.classList.add('hidden');
@@ -82,7 +82,7 @@ window.addEventListener('appinstalled', () => {
     if (crd) crd.classList.add('hidden');
 });
 
-window.dismissInstallReminder = function(event) {
+window.dismissInstallReminder = function (event) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -93,40 +93,40 @@ window.dismissInstallReminder = function(event) {
     if (crd) crd.classList.add('hidden');
     if (lnk) lnk.classList.add('hidden');
 };
-  const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
-        const BASE = 'https://api.themoviedb.org/3';
-        const IMG = 'https://image.tmdb.org/t/p/w500';
-        const IMG_HD = 'https://image.tmdb.org/t/p/original';
-        const GENRE_MAP = {
-            28: [28, 10759],       // Action <-> Action & Adventure
-            12: [12, 10759],       // Adventure <-> Action & Adventure
-            10759: [10759, 28, 12],
-            878: [878, 10765],     // Science Fiction <-> Sci-Fi & Fantasy
-            14: [14, 10765],       // Fantasy <-> Sci-Fi & Fantasy
-            10765: [10765, 878, 14],
-            10752: [10752, 10768], // War <-> War & Politics
-            10768: [10768, 10752]
-        };
-       // --- NETWORK LOADER LOGIC ---
+const API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb';
+const BASE = 'https://api.themoviedb.org/3';
+const IMG = 'https://image.tmdb.org/t/p/w500';
+const IMG_HD = 'https://image.tmdb.org/t/p/original';
+const GENRE_MAP = {
+    28: [28, 10759],       // Action <-> Action & Adventure
+    12: [12, 10759],       // Adventure <-> Action & Adventure
+    10759: [10759, 28, 12],
+    878: [878, 10765],     // Science Fiction <-> Sci-Fi & Fantasy
+    14: [14, 10765],       // Fantasy <-> Sci-Fi & Fantasy
+    10765: [10765, 878, 14],
+    10752: [10752, 10768], // War <-> War & Politics
+    10768: [10768, 10752]
+};
+// --- NETWORK LOADER LOGIC ---
 function showLoader() {
     let el = document.getElementById('globalLoader');
-    if(!el) {
+    if (!el) {
         el = document.createElement('div');
         el.id = 'globalLoader';
         document.body.appendChild(el);
     }
     el.style.opacity = '1';
     el.style.width = '30%';
-    setTimeout(() => { if(el.style.opacity === '1') el.style.width = '70%'; }, 200);
+    setTimeout(() => { if (el.style.opacity === '1') el.style.width = '70%'; }, 200);
 }
 
 function hideLoader() {
     const el = document.getElementById('globalLoader');
-    if(el) {
+    if (el) {
         el.style.width = '100%';
-        setTimeout(() => { 
-            el.style.opacity = '0'; 
-            setTimeout(() => { el.style.width = '0%'; }, 300); 
+        setTimeout(() => {
+            el.style.opacity = '0';
+            setTimeout(() => { el.style.width = '0%'; }, 300);
         }, 250);
     }
 }
@@ -154,7 +154,7 @@ if (navEl) {
             scrollHint.style.transform = 'translateX(-50%) translateY(20px)';
             scrollHint.style.pointerEvents = 'none';
             sessionStorage.setItem('cp_sidebar_hint_seen', 'true');
-            
+
             // Clean up DOM after animation
             setTimeout(() => {
                 scrollHint.classList.add('hidden');
@@ -191,76 +191,76 @@ window.fetch = async (...args) => {
         throw error;
     }
 };
-        let discoverPage = 1;
-        let currentPersonCredits = [];
-        let personDisplayLimit = 8;
-        let isSelectMode = false;
-        let selectedItems = new Set();
-        let notifications = JSON.parse(localStorage.getItem('cp_elite_notifs')) || [];
-        let archivedNotifs = JSON.parse(localStorage.getItem('cp_elite_notifs_archived')) || [];
-        let currentNotifTab = 'recent';
+let discoverPage = 1;
+let currentPersonCredits = [];
+let personDisplayLimit = 8;
+let isSelectMode = false;
+let selectedItems = new Set();
+let notifications = JSON.parse(localStorage.getItem('cp_elite_notifs')) || [];
+let archivedNotifs = JSON.parse(localStorage.getItem('cp_elite_notifs_archived')) || [];
+let currentNotifTab = 'recent';
 
-        let prefs = JSON.parse(localStorage.getItem('cp_elite_prefs')) || {
-            listIsGrid: true,
-            labIsGrid: true,
-            searchLayout: 'grid-cols-4',
-            safeMode: true
-        };
+let prefs = JSON.parse(localStorage.getItem('cp_elite_prefs')) || {
+    listIsGrid: true,
+    labIsGrid: true,
+    searchLayout: 'grid-cols-4',
+    safeMode: true
+};
 // Failsafe for existing users
 if (typeof prefs.safeMode === 'undefined') prefs.safeMode = true;
 
 let currentSearchLayout = prefs.searchLayout;
-       let state = {
-            hero: [],
-            heroIdx: 0,
-            db: JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [],
-            genres: [],
-            isGrid: prefs.listIsGrid,        // Loaded from Prefs
-            labIsGrid: prefs.labIsGrid,
-            active: null,
-            view: 'home',
-            searchParams: { q: '', y: '', g: '', s: 'popularity.desc' },
-            searchMode: 'trending', // 'trending', 'actor', 'filter', 'search'
-            actorCredits: [],
-            actorPage: 1,
-            filterPage: 1,
-            recPage: 1,
-            listFilters: { type: 'all', genres: [] },
-            labFilters: { type: 'all', genres: [] },
-            listExpanded: {},
-            listSearchQuery: '', 
-            labSearchQuery: '',  
-            listSort: 'newest', 
-            labSort: 'newest',  
-            discoverFilters: { type: 'all', genres: [] },
-            discoverDataRaw: [],
-            modalHistory: [],
-            mpTab: 'crowned',
-            mpLimit: 25,
-            mpFilter: 'all', 
-            reminders: JSON.parse(localStorage.getItem('cp_elite_reminders')) || [],
-            catMode: 'trending', // Tracks if category page is looking at trending or upcoming
-            catRawData: [], // For local searching
-            
-            
-        };
+let state = {
+    hero: [],
+    heroIdx: 0,
+    db: JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [],
+    genres: [],
+    isGrid: prefs.listIsGrid,        // Loaded from Prefs
+    labIsGrid: prefs.labIsGrid,
+    active: null,
+    view: 'home',
+    searchParams: { q: '', y: '', g: '', s: 'popularity.desc' },
+    searchMode: 'trending', // 'trending', 'actor', 'filter', 'search'
+    actorCredits: [],
+    actorPage: 1,
+    filterPage: 1,
+    recPage: 1,
+    listFilters: { type: 'all', genres: [] },
+    labFilters: { type: 'all', genres: [] },
+    listExpanded: {},
+    listSearchQuery: '',
+    labSearchQuery: '',
+    listSort: 'newest',
+    labSort: 'newest',
+    discoverFilters: { type: 'all', genres: [] },
+    discoverDataRaw: [],
+    modalHistory: [],
+    mpTab: 'crowned',
+    mpLimit: 25,
+    mpFilter: 'all',
+    reminders: JSON.parse(localStorage.getItem('cp_elite_reminders')) || [],
+    catMode: 'trending', // Tracks if category page is looking at trending or upcoming
+    catRawData: [], // For local searching
+
+
+};
 
 
 // --- CLEANUP ENGINE (Runs on load) ---
 function cleanNotifications() {
     const now = Date.now();
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // Auto-clear after 7 days
-    
+
     // Filter old ones, then slice to strictly limit to 30 items
     notifications = notifications.filter(n => (now - (n.date || now)) < SEVEN_DAYS_MS).slice(0, 30);
     archivedNotifs = archivedNotifs.filter(n => (now - (n.date || now)) < SEVEN_DAYS_MS).slice(0, 30);
-    
+
     saveNotifs();
 }
 cleanNotifications(); // Run immediately
-        // Initialize App
+// Initialize App
 async function init() {
-let customSagas = JSON.parse(localStorage.getItem('cp_elite_custom_sagas')) || [];    
+    let customSagas = JSON.parse(localStorage.getItem('cp_elite_custom_sagas')) || [];
     try {
         // Clear preloader
         setTimeout(() => {
@@ -268,114 +268,121 @@ let customSagas = JSON.parse(localStorage.getItem('cp_elite_custom_sagas')) || [
             setTimeout(() => document.getElementById('preloader').style.display = 'none', 800);
         }, 2000);
 
-       const today = getTodayAPI();
-const [
-        trending, tv, anime, kdrama, turkish, asian, 
-        upMovie, upTv, upAnime, upKdrama, upTurkish, upAsian,
-        mGenres, tGenres
-    ]= await Promise.all([
-    fetchAPI('/trending/all/week'),
-    fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
-    fetchAPI('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
-    fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
-    fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
-    fetchAPI('/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc'),
-    
-    fetchAPI('/movie/upcoming?region=US'),
-    fetchAPI(`/discover/tv?first_air_date.gte=${today}&sort_by=popularity.desc&with_original_language=en`),
-    fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`),
-    fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=ko&sort_by=popularity.desc`),
-    fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=tr&sort_by=popularity.desc`),
-    fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`),
+        const today = getTodayAPI();
+        const [
+            trending, tv, anime, kdrama, turkish, asian,
+            upMovie, upTv, upAnime, upKdrama, upTurkish, upAsian,
+            mGenres, tGenres
+        ] = await Promise.all([
+            fetchAPI('/trending/all/week'),
+            fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
+            fetchAPI('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
+            fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
+            fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
+            fetchAPI('/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc'),
 
-    fetchAPI('/genre/movie/list'), fetchAPI('/genre/tv/list')
-]);
+            fetchAPI('/movie/upcoming?region=US'),
+            fetchAPI(`/discover/tv?first_air_date.gte=${today}&sort_by=popularity.desc&with_original_language=en`),
+            fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`),
+            fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=ko&sort_by=popularity.desc`),
+            fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=tr&sort_by=popularity.desc`),
+            fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`),
 
-state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
-const allGenres = [...mGenres.genres, ...tGenres.genres];
-state.genres = Array.from(new Map(allGenres.map(g => [g.id, g])).values());
-state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
+            fetchAPI('/genre/movie/list'), fetchAPI('/genre/tv/list')
+        ]);
+
+        state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
+        const allGenres = [...mGenres.genres, ...tGenres.genres];
+        state.genres = Array.from(new Map(allGenres.map(g => [g.id, g])).values());
+        state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
 
 
-renderHero();
-renderContinueWatching(); // NEW: Render Continue Watching on load
+        renderHero();
+        renderContinueWatching(); // NEW: Render Continue Watching on load
 
-// --- NEW: Intercept URL on Load ---
-const hash = window.location.hash.substring(2);
-if (hash) {
-    try {
-        const decodedView = secureDecode(hash);
-        if (document.getElementById(`view-${decodedView}`)) {
-            navigate(decodedView, true);
+        // --- NEW: Intercept URL on Load ---
+        const hash = window.location.hash.substring(2);
+        if (hash) {
+            try {
+                const decodedView = secureDecode(hash);
+                if (document.getElementById(`view-${decodedView}`)) {
+                    navigate(decodedView, true);
+                } else {
+                    navigate('home', true);
+                }
+            } catch (e) {
+                navigate('home', true);
+            }
         } else {
             navigate('home', true);
         }
-    } catch(e) {
-        navigate('home', true);
+
+        renderHero();
+
+
+        // Render Trending
+        renderRow('row-movies', trending.results.filter(i => i.media_type === 'movie'), 'movie');
+        renderRow('row-tv', tv.results, 'tv');
+        renderRow('row-anime', anime.results, 'tv');
+        renderRow('row-kdrama', kdrama.results, 'tv');
+        renderRow('row-turkish', turkish.results, 'tv');
+        renderRow('row-asian', asian.results, 'tv');
+
+        // Render Upcoming
+        renderRow('row-up-movies', upMovie.results, 'movie');
+        renderRow('row-up-tv', upTv.results, 'tv');
+        renderRow('row-up-anime', upAnime.results, 'tv');
+        renderRow('row-up-kdrama', upKdrama.results, 'tv');
+        renderRow('row-up-turkish', upTurkish.results, 'tv');
+        renderRow('row-up-asian', upAsian.results, 'tv');
+
+        checkReminders(); // Fire reminder check on load
+
+        setupFilters();
+        updateCounters();
+        startClock();
+        setupSearchBehavior();
+        setupStarLogic();
+        initNeuralEngine();
+        renderSources();
+        setupLongPressCopy();
+        setInterval(nextHero, 10000);
+        setupModalSearch();
+        loadCountries();
+        updateSafeModeUI();
+        setupLongPressSelection();
+        getContinueWatchingHTML();
+
+    } catch (e) {
+        console.error("Neural init error", e);
+
+
     }
-} else {
-    navigate('home', true);
 }
 
-renderHero();
-
-
-// Render Trending
-renderRow('row-movies', trending.results.filter(i => i.media_type === 'movie'), 'movie');
-renderRow('row-tv', tv.results, 'tv');
-renderRow('row-anime', anime.results, 'tv');
-renderRow('row-kdrama', kdrama.results, 'tv');
-renderRow('row-turkish', turkish.results, 'tv');
-renderRow('row-asian', asian.results, 'tv');
-
-// Render Upcoming
-renderRow('row-up-movies', upMovie.results, 'movie');
-renderRow('row-up-tv', upTv.results, 'tv');
-renderRow('row-up-anime', upAnime.results, 'tv');
-renderRow('row-up-kdrama', upKdrama.results, 'tv');
-renderRow('row-up-turkish', upTurkish.results, 'tv');
-renderRow('row-up-asian', upAsian.results, 'tv');
-
-checkReminders(); // Fire reminder check on load
-                
-                setupFilters();
-                updateCounters();
-                startClock();
-                setupSearchBehavior();
-                setupStarLogic();
-                initNeuralEngine();
-                renderSources();
-                setupLongPressCopy();
-                setInterval(nextHero, 10000);
-                setupModalSearch();
-                loadCountries();
-                updateSafeModeUI();
-                setupLongPressSelection();
-                getContinueWatchingHTML();
-                
-            } catch (e) { console.error("Neural init error", e); 
-                
-       
-            }
-        }
-
-        async function fetchAPI(path) {
-            const res = await fetch(`${BASE}${path}${path.includes('?')?'&':'?'}api_key=${API_KEY}`);
-            return res.json();
-        }
-        // --- URL ROUTING (Handles returning from Player) ---
+async function fetchAPI(path) {
+    const res = await fetch(`${BASE}${path}${path.includes('?') ? '&' : '?'}api_key=${API_KEY}`);
+    return res.json();
+}
+// --- URL ROUTING (Handles returning from Player) ---
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const openId = urlParams.get('open');
     const openType = urlParams.get('type');
     const searchQuery = urlParams.get('search');
-    
+
 
     if (openId && openType) {
         // Clean the URL silently so it doesn't get stuck in a loop if refreshed
         window.history.replaceState({}, document.title, window.location.pathname);
         // Wait half a second for the app to finish initializing, then open the modal
-        setTimeout(() => openModal(openId, openType), 500);
+        setTimeout(() => {
+            // Refresh database from localStorage first to get latest changes from player
+            state.db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+            openModal(openId, openType);
+            // Refresh continue watching after returning from player
+            if (typeof renderContinueWatching === 'function') renderContinueWatching();
+        }, 500);
     } else if (searchQuery) {
         window.history.replaceState({}, document.title, window.location.pathname);
         document.getElementById('mainSearch').value = searchQuery;
@@ -388,16 +395,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- NEW: Check Install Reminder Snooze State ---
     checkInstallSnooze();
 });
-        // api helper 
+// api helper 
 function getTodayAPI() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
-        // Navigation
+// Navigation
 function navigate(view, skipHistory = false) {
-    showLoader(); 
+    showLoader();
     state.view = view;
-    
+
     // --- NEW: Update Encrypted URL Hash ---
     if (!skipHistory) {
         window.history.pushState(null, null, `#/${secureEncode(view)}`);
@@ -417,48 +424,48 @@ function navigate(view, skipHistory = false) {
 
     const targetView = document.getElementById(`view-${view}`);
     targetView.classList.remove('hidden');
-    void targetView.offsetWidth; 
+    void targetView.offsetWidth;
     targetView.classList.add('page-transition-enter');
 
     document.getElementById('pathLabel').innerText = view.toUpperCase();
-    
+
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(`'${view}'`));
-    if(btn) btn.classList.add('active');
+    if (btn) btn.classList.add('active');
 
     // Run view specific logic
-    if(view === 'mylist') renderList();
-    if(view === 'upcoming') loadUpcomingPage(); 
-    if(view === 'rhythmlab') runLab();
-    if(view === 'sync') renderSync();
-    if(view === 'masterpieces') renderMasterpieces();
-    if(view === 'sagamatrix') renderSagaMatrix();
+    if (view === 'mylist') renderList();
+    if (view === 'upcoming') loadUpcomingPage();
+    if (view === 'rhythmlab') runLab();
+    if (view === 'sync') renderSync();
+    if (view === 'masterpieces') renderMasterpieces();
+    if (view === 'sagamatrix') renderSagaMatrix();
 
 
-    if(view === 'search') {
+    if (view === 'search') {
         const input = document.getElementById('mainSearch');
         const header = document.getElementById('searchHeader');
         if (!input.value && !header.innerText.includes('• Works')) {
             header.innerText = "Discover";
             loadDiscoverContent();
         }
-        
+
     }
-    if(view === 'radar') renderRadar();
-    if(view === 'neurallink') {
+    if (view === 'radar') renderRadar();
+    if (view === 'neurallink') {
         // 1. Reset Host UI to default state
         const qrContainer = document.getElementById('qrContainer');
         const hostStatus = document.getElementById('hostStatusText');
-        if(qrContainer) qrContainer.classList.add('hidden');
-        if(hostStatus) {
+        if (qrContainer) qrContainer.classList.add('hidden');
+        if (hostStatus) {
             hostStatus.classList.add('hidden');
             hostStatus.innerText = "Awaiting Connection...";
             hostStatus.className = "hidden mt-4 text-[10px] text-pulse font-bold uppercase tracking-widest animate-pulse";
         }
-        
+
         // 2. Clear manual input
         const manualInput = document.getElementById('manualPeerId');
-        if(manualInput) manualInput.value = '';
+        if (manualInput) manualInput.value = '';
 
         // 3. Optional: Auto-init Peer if you want the ID ready immediately 
         // otherwise, let the user click "Generate Sync Key"
@@ -495,17 +502,17 @@ function navigate(view, skipHistory = false) {
     }
 }
 
-        // Search Behavior
+// Search Behavior
 // --- UPDATED SEARCH & MODAL LOGIC ---
 function setupSearchBehavior() {
     const input = document.getElementById('mainSearch');
     const bar = document.getElementById('searchBar');
     const drop = document.getElementById('searchDrop');
     const clearBtn = document.getElementById('clearSearch');
-    
-    let searchTimeout; 
-    let hoverTimeout;  
-    let idleTimeout;   
+
+    let searchTimeout;
+    let hoverTimeout;
+    let idleTimeout;
 
     const resetIdleTimer = () => {
         clearTimeout(idleTimeout);
@@ -517,16 +524,16 @@ function setupSearchBehavior() {
                 bar.classList.remove('active');
                 document.body.classList.remove('search-active-mobile');
                 input.blur();
-            }, 15000); 
+            }, 15000);
         }
     };
 
     input.onfocus = () => {
         bar.classList.add('active');
         document.body.classList.add('search-active-mobile'); // Hides notifs on mobile
-        
+
         if (state.view !== 'search' && input.value.trim()) drop.classList.remove('hidden');
-        else drop.classList.add('hidden'); 
+        else drop.classList.add('hidden');
         resetIdleTimer();
     };
 
@@ -535,7 +542,7 @@ function setupSearchBehavior() {
             drop.classList.add('hidden');
             bar.classList.remove('active');
             if (!input.matches(':focus')) document.body.classList.remove('search-active-mobile');
-        }, 400); 
+        }, 400);
     });
 
     bar.addEventListener('mouseenter', () => {
@@ -556,10 +563,10 @@ function setupSearchBehavior() {
                 drop.classList.add('hidden');
                 bar.classList.remove('active');
                 document.body.classList.remove('search-active-mobile');
-                input.blur(); 
+                input.blur();
                 navigate('search');
                 deepSearch(q);
-                
+
                 input.value = '';
                 clearBtn.classList.add('hidden');
                 clearTimeout(idleTimeout);
@@ -573,7 +580,7 @@ function setupSearchBehavior() {
         clearBtn.classList.add('hidden');
         drop.classList.add('hidden');
         document.body.classList.remove('search-active-mobile');
-        
+
         if (state.view === 'search') {
             document.getElementById('searchHeader').innerText = "Discover";
             loadDiscoverContent();
@@ -585,24 +592,24 @@ function setupSearchBehavior() {
     input.oninput = (e) => {
         const q = e.target.value.trim();
         clearBtn.classList.toggle('hidden', !q);
-        
-        clearTimeout(searchTimeout); 
+
+        clearTimeout(searchTimeout);
         resetIdleTimer();
 
         if (state.view === 'search') {
-            drop.classList.add('hidden'); 
-            searchTimeout = setTimeout(() => { 
+            drop.classList.add('hidden');
+            searchTimeout = setTimeout(() => {
                 if (state.searchMode === 'filter') {
-                    applySearchFilters(false); 
+                    applySearchFilters(false);
                 } else {
-                    deepSearch(q); 
+                    deepSearch(q);
                 }
-            }, 500); 
+            }, 500);
         } else {
-            if(!q) { drop.classList.add('hidden'); return; }
+            if (!q) { drop.classList.add('hidden'); return; }
             searchTimeout = setTimeout(async () => {
                 const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=${!prefs.safeMode}`);
-                if (state.view !== 'search') renderDrop(data.results.slice(0, 8), q); 
+                if (state.view !== 'search') renderDrop(data.results.slice(0, 8), q);
             }, 300);
         }
     };
@@ -615,41 +622,41 @@ function setupSearchBehavior() {
         }
     });
 
-  //modal 
-const modalSearch = document.getElementById('modalSearch');
-if (modalSearch) {
-    modalSearch.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && e.target.value.trim()) {
-            const query = e.target.value.trim();
-            closeModal(); // Eject from modal view
-            document.getElementById('mainSearch').value = ''; // Don't crowd the top bar
-            deepSearch(query); // Trigger the cinematic search
-            e.target.value = ''; // Clear the input for next time
-        }
-    });
-}
+    //modal 
+    const modalSearch = document.getElementById('modalSearch');
+    if (modalSearch) {
+        modalSearch.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                const query = e.target.value.trim();
+                closeModal(); // Eject from modal view
+                document.getElementById('mainSearch').value = ''; // Don't crowd the top bar
+                deepSearch(query); // Trigger the cinematic search
+                e.target.value = ''; // Clear the input for next time
+            }
+        });
+    }
 
 }
-window.checkScrollLock = function() {
+window.checkScrollLock = function () {
     const modalIds = [
-        'modal', 'personModal', 'sagaModal', 'pickerModal', 'advancedIOModal', 
-        'networkPurgeModal', 'factoryResetModal', 'watchModal', 'watchOptionsModal', 
+        'modal', 'personModal', 'sagaModal', 'pickerModal', 'advancedIOModal',
+        'networkPurgeModal', 'factoryResetModal', 'watchModal', 'watchOptionsModal',
         'qrScannerModal', 'neuralDiffOverlay', 'purgeModal', 'temporalArchiveModal' // <--- Added here
     ];
-    
-    
+
+
     const isAnyModalOpen = modalIds.some(id => {
         const el = document.getElementById(id);
         return el && !el.classList.contains('hidden') && getComputedStyle(el).display !== 'none';
     });
-    
+
     document.body.style.overflow = isAnyModalOpen ? 'hidden' : 'auto';
 };
 
 window.addEventListener('DOMContentLoaded', () => {
     setupNeuralDiffOverlayGestures();
 });
- 
+
 // Add this new function
 function setupModalSearch() {
     const wrapper = document.getElementById('modalSearchWrapper');
@@ -714,19 +721,19 @@ function setupModalSearch() {
 }
 function renderModalDrop(res, query) {
     const drop = document.getElementById('modalSearchDrop');
-    if(!res.length) { drop.classList.add('hidden'); return; }
+    if (!res.length) { drop.classList.add('hidden'); return; }
     drop.classList.remove('hidden');
-    
+
     let html = res.map(i => {
         const isPerson = i.media_type === 'person';
         const img = isPerson ? i.profile_path : i.poster_path;
         const type = i.media_type || 'movie'; // Defaulting for the quickAdd call
-        
+
         // Routing logic
-        const call = isPerson 
-            ? `closeModal(); openActor(${i.id}, '${i.name.replace(/'/g, "\\'")}')` 
-            : `openModal(${i.id}, '${type}')`; 
-        
+        const call = isPerson
+            ? `closeModal(); openActor(${i.id}, '${i.name.replace(/'/g, "\\'")}')`
+            : `openModal(${i.id}, '${type}')`;
+
         return `
             <div onmousedown="${call}" 
                  class="flex items-center gap-4 p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 transition-all group relative">
@@ -738,7 +745,7 @@ function renderModalDrop(res, query) {
                     </button>
                 ` : '<div class="w-8"></div>'}
 
-                <img src="${img ? IMG+img : 'https://via.placeholder.com/50'}" class="w-8 h-12 rounded-lg object-cover shadow-lg">
+                <img src="${img ? IMG + img : 'https://via.placeholder.com/50'}" class="w-8 h-12 rounded-lg object-cover shadow-lg">
                 <div class="flex-1 min-w-0">
                     <div class="text-[9px] font-black uppercase text-white line-clamp-1">${i.title || i.name}</div>
                     <div class="text-[7px] text-gray-400 font-bold uppercase mt-1">
@@ -755,7 +762,7 @@ function renderModalDrop(res, query) {
             <span class="text-[9px] font-black uppercase tracking-widest">See all results</span>
         </div>
     `;
-    
+
     drop.innerHTML = html;
 }
 
@@ -780,40 +787,40 @@ async function openPersonModal(id) {
         fetchAPI(`/person/${id}/combined_credits`)
     ]);
 
-//filters and credits 
-const talkShowKeywords = ['self', 'talk-show', 'host', 'guest'];
+    //filters and credits 
+    const talkShowKeywords = ['self', 'talk-show', 'host', 'guest'];
 
-currentPersonCredits = credits.cast
-    .filter(c => {
-        // 1. Must have a poster
-        if (!c.poster_path) return false;
-        
-        // 2. Filter out Talk Shows / "Self" appearances
-        const role = (c.character || '').toLowerCase();
-        const isSelf = talkShowKeywords.some(keyword => role.includes(keyword));
-        return !isSelf;
-    })
-    .sort((a, b) => {
-        // 3. Sort: Best works first (Popularity + Vote Count weighting)
-        const scoreA = (a.popularity || 0) * (a.vote_count || 1);
-        const scoreB = (b.popularity || 0) * (b.vote_count || 1);
-        return scoreB - scoreA;
-    });
+    currentPersonCredits = credits.cast
+        .filter(c => {
+            // 1. Must have a poster
+            if (!c.poster_path) return false;
+
+            // 2. Filter out Talk Shows / "Self" appearances
+            const role = (c.character || '').toLowerCase();
+            const isSelf = talkShowKeywords.some(keyword => role.includes(keyword));
+            return !isSelf;
+        })
+        .sort((a, b) => {
+            // 3. Sort: Best works first (Popularity + Vote Count weighting)
+            const scoreA = (a.popularity || 0) * (a.vote_count || 1);
+            const scoreB = (b.popularity || 0) * (b.vote_count || 1);
+            return scoreB - scoreA;
+        });
 
     document.getElementById('pProfileImg').src = person.profile_path ? IMG_HD + person.profile_path : 'https://via.placeholder.com/500x800';
     document.getElementById('pName').innerText = person.name;
-   document.getElementById('pRole').innerHTML = `
+    document.getElementById('pRole').innerHTML = `
         ${person.known_for_department || 'Artist'} 
         <a href="https://www.google.com/search?q=${encodeURIComponent(person.name)}" target="_blank" onclick="event.stopPropagation()"
            class="inline-flex items-center justify-center gap-2 ml-4 px-4 py-2 bg-white/5 hover:bg-pulse border border-white/10 rounded-full text-[9px] text-white transition-all shadow-lg">
             <i class="fab fa-google"></i> Search Web
         </a>
-    `;  
+    `;
     document.getElementById('pBio').innerText = person.biography || "Neural records for this individual are currently encrypted.";
-    
+
     renderPersonWorks();
 
-   document.getElementById('personModal').classList.remove('hidden');
+    document.getElementById('personModal').classList.remove('hidden');
     checkScrollLock();
     document.body.style.overflow = 'hidden';
 
@@ -823,15 +830,15 @@ currentPersonCredits = credits.cast
         personDisplayLimit += 8;
         renderPersonWorks();
     };
-   
+
 }
- 
+
 function renderPersonWorks() {
     const container = document.getElementById('pWorks');
     const loadMoreBox = document.getElementById('pWorksLoadContainer');
-    
+
     const items = currentPersonCredits.slice(0, personDisplayLimit);
-    
+
     container.innerHTML = items.map(w => `
         <div class="group cursor-pointer" onclick="openModal(${w.id}, '${w.media_type || 'movie'}')">
             <div class="aspect-[2/3] rounded-2xl overflow-hidden mb-3 border border-white/5 group-hover:border-pulse transition-all">
@@ -844,7 +851,7 @@ function renderPersonWorks() {
     loadMoreBox.classList.toggle('hidden', personDisplayLimit >= currentPersonCredits.length);
 }
 
-    
+
 function renderDrop(items, query) {
     const drop = document.getElementById('searchDrop');
     if (!items || items.length === 0) {
@@ -877,7 +884,7 @@ function renderDrop(items, query) {
         }).join('');
     }
     drop.classList.remove('hidden');
-}   
+}
 
 // Logic for the Quick Add Button
 function quickWatch(event, id, cat, title, year) {
@@ -923,8 +930,8 @@ function quickWatch(event, id, cat, title, year) {
         html += availableSources.map(src => {
             const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
             let domain = 'Link';
-            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
-            
+            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
+
             return `
                 <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
@@ -939,7 +946,7 @@ function quickWatch(event, id, cat, title, year) {
         }).join('');
         html += `</div>`;
     }
-    
+
     document.getElementById('watchSourceList').innerHTML = html;
     document.getElementById('watchModal').classList.remove('hidden');
 }
@@ -947,14 +954,14 @@ function quickWatch(event, id, cat, title, year) {
 // Updated deepSearch to handle "all results" and spelling 
 async function deepSearch(q) {
     if (state.view !== 'search') navigate('search');
-    
+
     const grid = document.getElementById('searchGrid');
     const header = document.getElementById('searchHeader');
     const loadBtn = document.getElementById('discoverLoadContainer');
     const actorBanner = document.getElementById('actorProfileBanner');
-    
+
     actorBanner.classList.add('hidden');
-    
+
     if (!q) {
         loadDiscoverContent();
         return;
@@ -962,27 +969,27 @@ async function deepSearch(q) {
 
     state.searchMode = 'search';
     header.innerText = `Results: ${q}`;
-    loadBtn.classList.add('hidden'); 
+    loadBtn.classList.add('hidden');
     grid.innerHTML = '<div class="page-loader"></div>';
-    
+
     // 1. Dynamic API Query based on Safe Mode
     const adultParam = prefs.safeMode ? 'false' : 'true';
     const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(q)}&include_adult=${adultParam}`);
-    
-    if(!data.results || data.results.length === 0) {
+
+    if (!data.results || data.results.length === 0) {
         grid.innerHTML = `<div class="col-span-full py-20 text-center text-gray-600 font-black uppercase italic tracking-[0.5em]">No Neural Matches Found</div>`;
         return;
     }
-    
+
     // 2. Strict Local Failsafe (Double-checks TMDB's work)
     let safeResults = data.results;
     if (prefs.safeMode) {
         // Physically strip out anything with an adult flag
         safeResults = safeResults.filter(item => item.adult !== true);
     }
-    
+
     // 3. UI Reaction if all results were blocked
-    if(safeResults.length === 0) {
+    if (safeResults.length === 0) {
         grid.innerHTML = `<div class="col-span-full py-20 text-center text-pulse font-black uppercase italic tracking-[0.2em]"><i class="fas fa-shield-alt text-2xl mb-4 block"></i>Content Blocked by Neural Safe Mode</div>`;
         return;
     }
@@ -996,7 +1003,7 @@ async function deepSearch(q) {
 async function applySearchFilters(append = false) {
     const actorBanner = document.getElementById('actorProfileBanner');
     const loadBtn = document.getElementById('discoverLoadContainer');
-    
+
     if (!append) {
         state.searchMode = 'filter';
         state.filterPage = 1;
@@ -1004,17 +1011,17 @@ async function applySearchFilters(append = false) {
         document.getElementById('searchGrid').innerHTML = '<div class="page-loader"></div>';
         document.getElementById('searchHeader').innerText = "Filtered Results";
     }
-    
+
     const year = document.getElementById('searchYear').value;
     const country = document.getElementById('searchCountry').value; // Now capturing the Country
     const sort = document.getElementById('searchSort').value;
-    
+
     // Check which category pill is active so we search the right TMDB database
     const activeType = state.discoverFilters.type;
     const apiType = (activeType === 'tv' || activeType === 'anime' || activeType === 'kdrama' || activeType === 'turkish' || activeType === 'asian') ? 'tv' : 'movie';
-    
+
     const query = document.getElementById('mainSearch').value.trim();
-    
+
     // Determine path based on if we have a search query or just filters
     let path = "";
     if (query) {
@@ -1027,7 +1034,7 @@ async function applySearchFilters(append = false) {
         // local filter (applyDiscoverLocalFilters) will handle them.
     } else {
         path = `/discover/${apiType}?sort_by=${sort}&page=${state.filterPage}`;
-        
+
         // THE ASIAN FILTER OVERRIDE FIX
         if (activeType === 'asian') {
             path += `&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
@@ -1038,15 +1045,15 @@ async function applySearchFilters(append = false) {
         } else if (activeType === 'turkish') {
             path += `&with_original_language=tr`;
         }
-        
+
         // Apply Year
-        if(year) {
+        if (year) {
             if (apiType === 'movie') path += `&primary_release_year=${year}`;
             else path += `&first_air_date_year=${year}`;
         }
-        
+
         // Apply Country
-        if(country) {
+        if (country) {
             path += `&with_origin_country=${country}`;
         }
 
@@ -1055,10 +1062,10 @@ async function applySearchFilters(append = false) {
             path += `&with_genres=${state.discoverFilters.genres.join(',')}`;
         }
     }
-    
+
     try {
         const data = await fetchAPI(path);
-        
+
         // If we have a query, we might need extra local filtering as search API is less restrictive
         if (query) {
             state.discoverDataRaw = data.results;
@@ -1070,7 +1077,7 @@ async function applySearchFilters(append = false) {
 
         renderGrid('searchGrid', data.results, apiType, !append);
         applyLayoutToGrid();
-        
+
         if (data.page < data.total_pages) loadBtn.classList.remove('hidden');
         else loadBtn.classList.add('hidden');
     } catch (err) {
@@ -1079,58 +1086,58 @@ async function applySearchFilters(append = false) {
     }
 }
 
-        // Hero Slider
-        function renderHero() {
-            const slider = document.getElementById('heroSlider');
-            slider.innerHTML = state.hero.map((item, i) => `
+// Hero Slider
+function renderHero() {
+    const slider = document.getElementById('heroSlider');
+    slider.innerHTML = state.hero.map((item, i) => `
                 <div class="hero-item absolute inset-0 transition-opacity duration-1000 ${i === 0 ? 'opacity-100' : 'opacity-0'}">
                     <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover ">
                     
                 </div>
                 
             `).join('');
-            updateHeroContent();
-        }
+    updateHeroContent();
+}
 
-        function updateHeroContent() {
-            const item = state.hero[state.heroIdx];
-            const title = item.title || item.name;
-            const hTitle = document.getElementById('heroTitle');
-            
-            // Liquid Glass Resizing Logic
-            hTitle.innerText = title;
-            const length = title.length;
-            let size = 5; // Default 5rem
-            if (length > 25) size = 3;
-            else if (length > 15) size = 4;
-            else if (length < 8) size = 7;
-            
-            // Adjust for mobile viewports
-            if (window.innerWidth < 768) size = size * 0.6;
-            
-            hTitle.style.setProperty('--title-size', `${size}rem`);
-            
-            document.getElementById('heroInfoBtn').onclick = () => openModal(item.id, item.media_type);
-            //watch
-            const watchBtn = document.getElementById('heroWatchBtn');
-            if (watchBtn) watchBtn.onclick = () => openWatchOptions(item.id, item.media_type, encodeURIComponent(title));
-            
-            // Fetch trailer for hero
-            fetchAPI(`/${item.media_type}/${item.id}/videos`).then(v => {
-                const tr = v.results.find(x => x.type === 'Trailer');
-                document.getElementById('heroTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
-            });
-        }
+function updateHeroContent() {
+    const item = state.hero[state.heroIdx];
+    const title = item.title || item.name;
+    const hTitle = document.getElementById('heroTitle');
 
-        function nextHero() {
-            const items = document.querySelectorAll('.hero-item');
-            items[state.heroIdx].classList.replace('opacity-100', 'opacity-0');
-            state.heroIdx = (state.heroIdx + 1) % state.hero.length;
-            items[state.heroIdx].classList.replace('opacity-0', 'opacity-100');
-            updateHeroContent();
-        }
+    // Liquid Glass Resizing Logic
+    hTitle.innerText = title;
+    const length = title.length;
+    let size = 5; // Default 5rem
+    if (length > 25) size = 3;
+    else if (length > 15) size = 4;
+    else if (length < 8) size = 7;
 
-        // Modal Logic
+    // Adjust for mobile viewports
+    if (window.innerWidth < 768) size = size * 0.6;
+
+    hTitle.style.setProperty('--title-size', `${size}rem`);
+
+    document.getElementById('heroInfoBtn').onclick = () => openModal(item.id, item.media_type);
+    //watch
+    const watchBtn = document.getElementById('heroWatchBtn');
+    if (watchBtn) watchBtn.onclick = () => openWatchOptions(item.id, item.media_type, encodeURIComponent(title));
+
+    // Fetch trailer for hero
+    fetchAPI(`/${item.media_type}/${item.id}/videos`).then(v => {
+        const tr = v.results.find(x => x.type === 'Trailer');
+        document.getElementById('heroTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
+    });
+}
+
+function nextHero() {
+    const items = document.querySelectorAll('.hero-item');
+    items[state.heroIdx].classList.replace('opacity-100', 'opacity-0');
+    state.heroIdx = (state.heroIdx + 1) % state.hero.length;
+    items[state.heroIdx].classList.replace('opacity-0', 'opacity-100');
+    updateHeroContent();
+}
+
+// Modal Logic
 async function openModal(id, type, isBack = false) {
     let modalCountdownInterval;
     // Save current scroll before opening (used to restore when modal is closed via Back)
@@ -1140,7 +1147,7 @@ async function openModal(id, type, isBack = false) {
     // Ensure modal starts at the top
     const modalEl = document.getElementById('modal');
     if (modalEl) modalEl.scrollTop = 0;
-    
+
     // Push history state so the Back Button works safely
     if (!isBack) {
         if (!modalEl.classList.contains('hidden')) {
@@ -1150,12 +1157,12 @@ async function openModal(id, type, isBack = false) {
         }
         if (state.active) state.modalHistory.push({ id: state.active.id, type: state.active.media_type });
     }
-    
- 
+
+
     document.getElementById('mBackBtn').classList.toggle('hidden', state.modalHistory.length === 0);
 
     let details, credits, vids;
-    
+
     // Smart API Retry System (Prevents Asian Movies failing when assumed as TV)
     try {
         [details, credits, vids] = await Promise.all([
@@ -1181,19 +1188,23 @@ async function openModal(id, type, isBack = false) {
     }
 
     state.active = { ...details, media_type: type };
-    const local = state.db.find(i => i.id === id);
+    // Always read fresh from localStorage to get latest episode/status
+    const freshDb = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+    const local = freshDb.find(i => String(i.id) === String(id));
+    // Update state.db with fresh data
+    state.db = freshDb;
     const originalRenderMasterpieces = renderMasterpieces;
-    renderMasterpieces = function() {
+    renderMasterpieces = function () {
         // Call the original, but intercept the 'crowned' tab HTML generation
         if (state.mpTab !== 'crowned') {
             originalRenderMasterpieces();
             return;
         }
-    const container = document.getElementById('mpContainer');
-    const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
-    const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish', asian: 'Asian Drama' };
-    
-    let html = `
+        const container = document.getElementById('mpContainer');
+        const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
+        const typeNames = { movie: 'Movies', tv: 'Series', anime: 'Anime', kdrama: 'K-Drama', turkish: 'Turkish', asian: 'Asian Drama' };
+
+        let html = `
         <div class="flex gap-4 mb-8 overflow-x-auto hide-scroll pb-2">
             <button onclick="state.mpFilter='all'; renderMasterpieces()" class="px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${state.mpFilter === 'all' ? 'bg-pulse text-white shadow-lg shadow-pulse/20' : 'bg-white/5 border border-white/10 text-gray-500 hover:text-white'}">All Types</button>
             ${types.map(t => `
@@ -1202,15 +1213,15 @@ async function openModal(id, type, isBack = false) {
         </div>
     `;
 
-    let displayTypes = state.mpFilter === 'all' ? types : [state.mpFilter];
+        let displayTypes = state.mpFilter === 'all' ? types : [state.mpFilter];
 
-    html += displayTypes.map(type => {
-        const crowned = state.db.filter(i => i.type === type && i.crown > 0 && i.crown < 4).sort((a,b) => a.crown - b.crown);
-        const sovereigns = state.db.filter(i => i.type === type && i.crown === 4);
-        
-        if(!crowned.length && !sovereigns.length) return '';
-        
-        let sectionHtml = `
+        html += displayTypes.map(type => {
+            const crowned = state.db.filter(i => i.type === type && i.crown > 0 && i.crown < 4).sort((a, b) => a.crown - b.crown);
+            const sovereigns = state.db.filter(i => i.type === type && i.crown === 4);
+
+            if (!crowned.length && !sovereigns.length) return '';
+
+            let sectionHtml = `
             <div class="mb-16 animate-in fade-in duration-500">
                 <h3 class="text-xl md:text-2xl font-black italic uppercase text-yellow-500/80 tracking-widest mb-6 md:mb-8 border-b border-white/5 pb-4 flex items-center gap-4">
                     <i class="fas fa-crown"></i> ${typeNames[type]} Royal Court
@@ -1219,18 +1230,18 @@ async function openModal(id, type, isBack = false) {
                     ${crowned.map(i => getRankedCard(i, i.crown, true)).join('')}
                 </div>
         `;
-        
-        // Group Sovereigns by Realm
-        if (sovereigns.length > 0) {
-             const realms = {};
-             sovereigns.forEach(s => {
-                 const rName = s.realm || 'Cinematic';
-                 if (!realms[rName]) realms[rName] = [];
-                 realms[rName].push(s);
-             });
-             
-             Object.keys(realms).sort().forEach(realmName => {
-                 sectionHtml += `
+
+            // Group Sovereigns by Realm
+            if (sovereigns.length > 0) {
+                const realms = {};
+                sovereigns.forEach(s => {
+                    const rName = s.realm || 'Cinematic';
+                    if (!realms[rName]) realms[rName] = [];
+                    realms[rName].push(s);
+                });
+
+                Object.keys(realms).sort().forEach(realmName => {
+                    sectionHtml += `
                     <h4 class="text-sm font-black italic uppercase text-pulse tracking-widest mt-12 mb-6 flex items-center gap-3">
                         <i class="fas fa-gem"></i> ${realmName} Sovereigns
                     </h4>
@@ -1238,13 +1249,13 @@ async function openModal(id, type, isBack = false) {
                         ${realms[realmName].map(i => getRankedCard(i, 4, true, realmName)).join('')}
                     </div>
                  `;
-             });
-        }
-        sectionHtml += `</div>`;
-        return sectionHtml;
-    }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">No crowned items in this category.</div>';
-    
-    container.innerHTML = html;
+                });
+            }
+            sectionHtml += `</div>`;
+            return sectionHtml;
+        }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">No crowned items in this category.</div>';
+
+        container.innerHTML = html;
     };
     document.getElementById('mBackdrop').src = IMG_HD + (details.backdrop_path || details.poster_path);
     document.getElementById('mTitle').innerText = (details.title || details.name);
@@ -1270,7 +1281,7 @@ async function openModal(id, type, isBack = false) {
     const cBox = document.getElementById('mCountdownBox');
     const cTimer = document.getElementById('mCountdownTimer');
     const cLabel = document.getElementById('mCountdownLabel');
-    
+
     mAirStatus.classList.add('hidden');
     cBox.classList.add('hidden');
 
@@ -1305,7 +1316,7 @@ async function openModal(id, type, isBack = false) {
     if (targetDateStr) {
         cBox.classList.remove('hidden');
         cLabel.innerText = labelText;
-        
+
         // Setup Remind Button State
         const isReminded = state.reminders.some(r => r.id === id);
         updateRemindBtnUI(isReminded);
@@ -1316,20 +1327,20 @@ async function openModal(id, type, isBack = false) {
         const updateTimer = () => {
             const diff = target - new Date().getTime();
             if (diff < 0) {
-                    cTimer.innerHTML = '<span class="text-[#22c55e]">AVAILABLE NOW</span>';
-                    clearInterval(modalCountdownInterval);
-                    return;
-                }
+                cTimer.innerHTML = '<span class="text-[#22c55e]">AVAILABLE NOW</span>';
+                clearInterval(modalCountdownInterval);
+                return;
+            }
             const d = Math.floor(diff / (1000 * 60 * 60 * 24));
             const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
             const s = Math.floor((diff % (1000 * 60)) / 1000);
-            
-           cTimer.innerHTML = `
+
+            cTimer.innerHTML = `
                 <div class="flex flex-col items-center w-12 md:w-16"><span class="text-pulse tabular-nums">${d}</span><span class="text-[8px] text-gray-500 uppercase">Days</span></div><span class="text-gray-700 font-light">:</span>
-                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${h.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Hrs</span></div><span class="text-gray-700 font-light">:</span>
-                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${m.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Min</span></div><span class="text-gray-700 font-light">:</span>
-                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${s.toString().padStart(2,'0')}</span><span class="text-[8px] text-gray-500 uppercase">Sec</span></div>
+                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${h.toString().padStart(2, '0')}</span><span class="text-[8px] text-gray-500 uppercase">Hrs</span></div><span class="text-gray-700 font-light">:</span>
+                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${m.toString().padStart(2, '0')}</span><span class="text-[8px] text-gray-500 uppercase">Min</span></div><span class="text-gray-700 font-light">:</span>
+                <div class="flex flex-col items-center w-12 md:w-16"><span class="tabular-nums">${s.toString().padStart(2, '0')}</span><span class="text-[8px] text-gray-500 uppercase">Sec</span></div>
             `;
         };
         updateTimer();
@@ -1353,7 +1364,7 @@ async function openModal(id, type, isBack = false) {
     document.getElementById('mStatus').value = local ? local.status : '';
     populateSagaDropdown(local ? local.sagaId : null);
     document.getElementById('mProgressBox').classList.toggle('hidden', type !== 'tv' || !local);
-    
+
     // 1. BUG FIX: Force clear previous season state so it never bleeds over
     state.activeSeasons = [];
     document.getElementById('mSeasonsList').innerHTML = '';
@@ -1361,7 +1372,7 @@ async function openModal(id, type, isBack = false) {
     // 2. BUG FIX: Always calculate seasons for TV shows so they are ready when added
     if (type !== 'movie') {
         const total = details.number_of_episodes || 1;
-        
+
         state.activeSeasons = (details.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
         let cumulative = 0;
         state.activeSeasons.forEach(s => {
@@ -1396,66 +1407,66 @@ async function openModal(id, type, isBack = false) {
     document.getElementById('modal').classList.remove('hidden');
     checkScrollLock();
     document.body.style.overflow = 'hidden';
-    
+
     state.recPage = 1;
     loadModalRecommendations(id, type, state.recPage, false);
 }
 
-        function updateRatingCard(local) {
-            const card = document.getElementById('mRatingCard');
-            if(local && local.status === 'Finished') {
-                card.classList.remove('hidden');
-                setStars(local.score || 0);
-                document.getElementById('mCrownSelect').value = local.crown || 0;
-            } else {
-                card.classList.add('hidden');
-            }
-        }
+function updateRatingCard(local) {
+    const card = document.getElementById('mRatingCard');
+    if (local && local.status === 'Finished') {
+        card.classList.remove('hidden');
+        setStars(local.score || 0);
+        document.getElementById('mCrownSelect').value = local.crown || 0;
+    } else {
+        card.classList.add('hidden');
+    }
+}
 
-        function setupStarLogic() {
-                const stars = document.querySelectorAll('#starRating i');
-                stars.forEach(s => {
-                    s.onclick = () => {
-                        const val = parseInt(s.dataset.val);
-                        const idx = state.db.findIndex(i => i.id === state.active.id);
-                        if(idx !== -1) {
-                            state.db[idx].score = val;
-                            state.db[idx].updatedAt = Date.now();
-                            save();
-                            setStars(val);
-                            
-                            // FIX: Live-sync the Saga Modal if it is open in the background
-                            const sagaModal = document.getElementById('sagaModal');
-                            if (sagaModal && !sagaModal.classList.contains('hidden') && currentSagaViewContext) {
-                                openSaga(currentSagaViewContext.id); 
-                            }
-                        }
-                    };
-                });
-            }
+function setupStarLogic() {
+    const stars = document.querySelectorAll('#starRating i');
+    stars.forEach(s => {
+        s.onclick = () => {
+            const val = parseInt(s.dataset.val);
+            const idx = state.db.findIndex(i => String(i.id) === String(state.active.id));
+            if (idx !== -1) {
+                state.db[idx].score = val;
+                state.db[idx].updatedAt = Date.now();
+                save();
+                setStars(val);
 
-        function setStars(n) {
-            document.querySelectorAll('#starRating i').forEach((s, i) => {
-                s.className = i < n ? 'fas fa-star active' : 'far fa-star';
-            });
-        }
+                // FIX: Live-sync the Saga Modal if it is open in the background
+                const sagaModal = document.getElementById('sagaModal');
+                if (sagaModal && !sagaModal.classList.contains('hidden') && currentSagaViewContext) {
+                    openSaga(currentSagaViewContext.id);
+                }
+            }
+        };
+    });
+}
+
+function setStars(n) {
+    document.querySelectorAll('#starRating i').forEach((s, i) => {
+        s.className = i < n ? 'fas fa-star active' : 'far fa-star';
+    });
+}
 
 function updateStatus() {
     const status = document.getElementById('mStatus').value;
-    if(!status) return;
-    
-    const item = state.active;
-    let existing = state.db.find(i => i.id === item.id);
+    if (!status) return;
 
-    if(existing) {
+    const item = state.active;
+    let existing = state.db.find(i => String(i.id) === String(item.id));
+
+    if (existing) {
         existing.status = status;
     } else {
         let cat = determineCategory(item);
-        
+
         // Extract exact TMDB type and Origin Country
         let tmdb_type = item.media_type || (item.title ? 'movie' : 'tv');
-        let country = (item.origin_country && item.origin_country.length > 0) 
-            ? item.origin_country[0] 
+        let country = (item.origin_country && item.origin_country.length > 0)
+            ? item.origin_country[0]
             : ((item.production_countries && item.production_countries.length > 0) ? item.production_countries[0].iso_3166_1 : '');
 
         existing = {
@@ -1477,13 +1488,13 @@ function updateStatus() {
         };
         state.db.push(existing);
     }
-    
-    save(); 
-    updateRatingCard(existing); 
-    
+
+    save();
+    updateRatingCard(existing);
+
     document.getElementById('mRemoveBtn').classList.remove('hidden');
-    
-const total = item.number_of_episodes || 1;
+
+    const total = item.number_of_episodes || 1;
     // Utilize tmdb_type to accurately show the episode tracker
     if (existing.tmdb_type !== 'movie' && total > 1) {
         document.getElementById('mProgressBox').classList.remove('hidden');
@@ -1494,10 +1505,10 @@ const total = item.number_of_episodes || 1;
     } else {
         document.getElementById('mProgressBox').classList.add('hidden');
     }
-  
+
     const sagaModal = document.getElementById('sagaModal');
     if (sagaModal && !sagaModal.classList.contains('hidden') && currentSagaViewContext) {
-        openSaga(currentSagaViewContext.id); 
+        openSaga(currentSagaViewContext.id);
     }
 }
 
@@ -1506,7 +1517,7 @@ async function quickAdd(id, type) {
     showLoader();
     try {
         // 1. Check if it already exists to prevent duplicates
-        let existing = state.db.find(i => i.id === id);
+        let existing = state.db.find(i => String(i.id) === String(id));
         if (existing) {
             showNotification("Entity already exists in your library.", true);
             hideLoader();
@@ -1519,8 +1530,8 @@ async function quickAdd(id, type) {
         // 3. Parse categories and origin data exactly like the main status updater
         let cat = determineCategory(details);
         let tmdb_type = details.media_type || type;
-        let country = (details.origin_country && details.origin_country.length > 0) 
-            ? details.origin_country[0] 
+        let country = (details.origin_country && details.origin_country.length > 0)
+            ? details.origin_country[0]
             : ((details.production_countries && details.production_countries.length > 0) ? details.production_countries[0].iso_3166_1 : '');
 
         // 4. Construct the Neural Record
@@ -1545,7 +1556,7 @@ async function quickAdd(id, type) {
         // 5. Save and refresh the UI silently
         state.db.push(newItem);
         save(); // Triggers UI counter updates and list re-renders automatically
-        
+
         showNotification(`Added "${newItem.title}" to Plan to Watch!`);
 
     } catch (error) {
@@ -1556,33 +1567,33 @@ async function quickAdd(id, type) {
 }
 
 
-        // List Rendering with Hierarchy
+// List Rendering with Hierarchy
 function toggleListView() {
-            state.isGrid = !state.isGrid;
-            document.getElementById('viewToggle').innerHTML = state.isGrid ? '<i class="fas fa-list"></i>' : '<i class="fas fa-th-large"></i>';
-            renderList();
-            savePrefs();
-        }
+    state.isGrid = !state.isGrid;
+    document.getElementById('viewToggle').innerHTML = state.isGrid ? '<i class="fas fa-list"></i>' : '<i class="fas fa-th-large"></i>';
+    renderList();
+    savePrefs();
+}
 
-    
+
 function toggleSectionExpand(status) {
     state.listExpanded[status] = !state.listExpanded[status];
     renderList();
 }
 
 function renderList() {
-    
+
     const container = document.getElementById('listContainer');
     const order = ['Watching', 'Ongoing', 'Plan to Watch', 'On Hold', 'Finished', 'Dropped'];
-    const limit = window.innerWidth < 768 ? 4 : (window.innerWidth < 1280 ? 5 : 6); 
+    const limit = window.innerWidth < 768 ? 4 : (window.innerWidth < 1280 ? 5 : 6);
 
     const html = order.map(status => {
         let items = state.db.filter(i => i.status === status);
         if (state.listSearchQuery) items = items.filter(i => isSmartMatch(i.title, state.listSearchQuery));
         if (state.listFilters.type !== 'all') items = items.filter(i => i.type === state.listFilters.type);
         if (state.listFilters.genres.length > 0) items = items.filter(i => state.listFilters.genres.every(g => (GENRE_MAP[g] || [g]).some(id => i.genres.includes(id))));
-        
-        if(!items.length) return '';
+
+        if (!items.length) return '';
         items.sort((a, b) => state.listSort === 'newest' ? b.added - a.added : a.added - b.added);
         const isExpanded = state.listExpanded[status];
         const displayItems = isExpanded ? items : items.slice(0, limit);
@@ -1594,11 +1605,11 @@ function renderList() {
         </div>
        <div class="${state.isGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6' : 'flex flex-col gap-4'}">
             ${displayItems.map(i => {
-                const actualType = i.tmdb_type || (i.type === 'movie' ? 'movie' : 'tv');
-                const displayLabel = formatTypeLabel(i.type, actualType);
-                const countryStr = i.country ? ` • ${i.country}` : '';
-                
-                return state.isGrid ? `
+            const actualType = i.tmdb_type || (i.type === 'movie' ? 'movie' : 'tv');
+            const displayLabel = formatTypeLabel(i.type, actualType);
+            const countryStr = i.country ? ` • ${i.country}` : '';
+
+            return state.isGrid ? `
               <div class="lib-card-wrapper relative group cursor-pointer selectable-card ${isSelectMode ? 'select-mode-pulse' : ''} ${selectedItems.has(i.id) ? 'card-selected' : ''}" data-id="${i.id}" onclick="handleCardClick(event, ${i.id}, '${actualType}')">
                     
                     <div class="card-checkbox ${selectedItems.has(i.id) ? 'selected' : ''} ${!isSelectMode ? 'hidden' : ''}">
@@ -1606,7 +1617,7 @@ function renderList() {
                     </div>
 
                     <div class="aspect-[2/3] rounded-[24px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
-                        <img src="${IMG+i.poster}" class="w-full h-full object-cover">
+                        <img src="${IMG + i.poster}" class="w-full h-full object-cover">
                         <div class="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity z-20"></div>
                         
                         ${getPlayHoverHTML(i)}
@@ -1625,7 +1636,7 @@ function renderList() {
                     </div>
 
                     <div class="relative w-16 h-24 shrink-0 rounded-xl overflow-hidden shadow-lg border border-white/5 group-hover:border-pulse/50 transition-all">
-                        <img src="${IMG+i.poster}" class="w-full h-full object-cover">
+                        <img src="${IMG + i.poster}" class="w-full h-full object-cover">
                         ${getPlayHoverHTML(i)}
                         ${getLiquidHTML(i)}
                     </div>
@@ -1669,11 +1680,11 @@ function renderList() {
 window.addEventListener('resize', () => {
     if (state.view === 'mylist') renderList();
 });
-        function backdropClose(e) {
-            if (e.target.id === "pickerModal") {
-             closePicker();
-                }
-        }
+function backdropClose(e) {
+    if (e.target.id === "pickerModal") {
+        closePicker();
+    }
+}
 function updateRemindBtnUI(isReminded) {
     const btn = document.getElementById('mRemindBtn');
     if (isReminded) {
@@ -1708,7 +1719,7 @@ function toggleReminder() {
             nextEp = item.next_episode_to_air.episode_number;
             isEpisodic = true;
         }
-        
+
         state.reminders.push({
             id: item.id, title: item.title || item.name, poster: item.poster_path,
             type: item.media_type, date: releaseDate, added: Date.now(),
@@ -1719,14 +1730,14 @@ function toggleReminder() {
     }
     localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
     if (state.view === 'radar') renderRadar();
-    if (state.view === 'upcoming') renderUpcomingRadar(); 
+    if (state.view === 'upcoming') renderUpcomingRadar();
 }
 
 function renderRadar() {
     const grid = document.getElementById('radarGrid');
     const empty = document.getElementById('radarEmptyState');
-    
-    
+
+
     // Automatically prune items that have been added to the main library
     const dbIds = new Set(state.db.map(i => i.id));
     state.reminders = state.reminders.filter(r => !dbIds.has(r.id));
@@ -1735,7 +1746,7 @@ function renderRadar() {
     if (state.reminders.length === 0) {
         grid.innerHTML = '';
         empty.classList.remove('hidden');
-        
+
         // Auto-navigate away if it becomes empty while viewing, as requested
         if (state.view === 'radar' && state.modalHistory.length === 0) {
             // setTimeout(() => navigate('home'), 2000); // Optional auto-redirect
@@ -1744,7 +1755,7 @@ function renderRadar() {
     }
 
     empty.classList.add('hidden');
-    
+
     grid.innerHTML = state.reminders.map(r => {
         const diff = new Date(r.date).getTime() - new Date().getTime();
         const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -1773,7 +1784,7 @@ function checkReminders() {
         const target = new Date(r.date).getTime();
         const diff = target - today;
         const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        
+
         // Alert if it releases today or yesterday (grace period)
         if (days <= 0 && days >= -1) {
             dispatchNotification(r, 'RADAR ALERT', `${r.title} has officially released!`);
@@ -1810,11 +1821,11 @@ function runLab() {
     labGrid.className = state.labIsGrid ? 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6' : 'flex flex-col gap-4';
 
     // 4. Render the HTML
-        labGrid.innerHTML = filtered.map(item => {
+    labGrid.innerHTML = filtered.map(item => {
         const actualType = item.tmdb_type || (item.type === 'movie' ? 'movie' : 'tv');
         const displayLabel = formatTypeLabel(item.type, actualType);
         const countryStr = item.country ? ` • ${item.country}` : '';
-        
+
         const isSelected = typeof selectedItems !== 'undefined' && selectedItems.has(item.id);
         const activeSelectClass = isSelectMode ? 'select-mode-pulse' : '';
         const checkboxHiddenClass = !isSelectMode ? 'hidden' : '';
@@ -1878,27 +1889,27 @@ function runLab() {
             </div>`;
         }
     }).join('');
-    
+
     updateCounters();
 }
-        // Sync Engine Logic
-    // Sync Engine Logic
+// Sync Engine Logic
+// Sync Engine Logic
 async function renderSync() {
     const container = document.getElementById('syncContainer');
     container.innerHTML = '<div class="col-span-full py-20 text-center text-pulse text-[10px] font-black uppercase tracking-[0.5em] animate-pulse">Initializing Neural Sync...</div>';
 
     const types = ['movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
     let sectionsHTML = [];
-    
+
     // FEATURE 1: Neural Exclusion (Get a Set of IDs the user already has)
-    let dbIds = new Set(state.db.map(i => i.id)); 
+    let dbIds = new Set(state.db.map(i => i.id));
 
     // Calculate Neural Match % based on user's highest rated genres
     const calculateMatch = (itemGenres) => {
         if (!itemGenres || !itemGenres.length) return Math.floor(Math.random() * 20) + 70;
         const userGenres = state.db.filter(i => i.score >= 4).flatMap(i => i.genres);
         if (!userGenres.length) return Math.floor(Math.random() * 20) + 70;
-        
+
         let matches = itemGenres.filter(g => userGenres.includes(g)).length;
         let pct = Math.min(99, 60 + (matches * 15) + Math.floor(Math.random() * 10));
         return pct;
@@ -1907,20 +1918,20 @@ async function renderSync() {
     for (let type of types) {
         // FEATURE 2: Elite Seeding
         const anchors = state.db.filter(i => i.type === type && (i.score >= 4 || i.status === 'Watching'));
-        if(!anchors.length) continue;
-        
+        if (!anchors.length) continue;
+
         const seed = anchors[Math.floor(Math.random() * anchors.length)];
         const apiType = (type === 'movie' ? 'movie' : 'tv');
-        
+
         try {
             const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
             let recommendations = data.results.filter(i => !dbIds.has(i.id));
-            if (recommendations.length === 0) continue; 
+            if (recommendations.length === 0) continue;
 
             // FEATURE 3: Context UI Text
             let contextText = seed.crown > 0 ? `Because you crowned 👑 ${seed.title}` :
-                              seed.score >= 4 ? `Because you rated ${seed.title} ★ ${seed.score}/5` :
-                              `Since you are watching ${seed.title}`;
+                seed.score >= 4 ? `Because you rated ${seed.title} ★ ${seed.score}/5` :
+                    `Since you are watching ${seed.title}`;
 
             let rowHtml = `
                 <section class="animate-in fade-in duration-500">
@@ -1930,20 +1941,20 @@ async function renderSync() {
                     </h3>
                     <div class="flex gap-4 md:gap-8 overflow-x-auto hide-scroll pb-6 -mx-6 px-6 md:mx-0 md:px-1">
                         ${recommendations.slice(0, 10).map(i => {
-                            let matchPct = calculateMatch(i.genre_ids);
-                            let matchColor = matchPct >= 90 ? 'text-[#22c55e]' : matchPct >= 80 ? 'text-[#f59e0b]' : 'text-pulse';
-                            
-                            return `
+                let matchPct = calculateMatch(i.genre_ids);
+                let matchColor = matchPct >= 90 ? 'text-[#22c55e]' : matchPct >= 80 ? 'text-[#f59e0b]' : 'text-pulse';
+
+                return `
                             <div class="flex-none w-32 md:w-44 group cursor-pointer relative" onclick="openModal(${i.id}, '${apiType}')">
                                 <div class="aspect-[2/3] rounded-[20px] md:rounded-[24px] overflow-hidden mb-3 md:mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
-                                    <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
+                                    <img src="${IMG + i.poster_path}" class="w-full h-full object-cover">
                                     <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10 opacity-80"></div>
                                     
                                     <div class="absolute top-2 left-2 md:top-3 md:left-3 bg-dark/80 backdrop-blur-md px-2 py-1 rounded-md text-[7px] md:text-[8px] font-black uppercase border border-white/10 z-30 flex items-center gap-1 ${matchColor}">
                                         <i class="fas fa-brain"></i> ${matchPct}% Match
                                     </div>
                                     
-                                    ${getPlayHoverHTML({...i, type: type})}
+                                    ${getPlayHoverHTML({ ...i, type: type })}
                                 </div>
                                 <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
                             </div>
@@ -1952,7 +1963,7 @@ async function renderSync() {
                 </section>
             `;
             sectionsHTML.push(rowHtml);
-        } catch(e) {
+        } catch (e) {
             console.error("Failed to fetch recs for sync", e);
         }
     }
@@ -1962,13 +1973,13 @@ async function renderSync() {
         let allGenres = state.db.filter(i => i.score >= 4).flatMap(i => i.genres);
         let counts = {};
         allGenres.forEach(g => counts[g] = (counts[g] || 0) + 1);
-        let topGenres = Object.keys(counts).sort((a,b) => counts[b] - counts[a]).slice(0, 3);
-        
+        let topGenres = Object.keys(counts).sort((a, b) => counts[b] - counts[a]).slice(0, 3);
+
         if (topGenres.length >= 2) {
             try {
                 const mixData = await fetchAPI(`/discover/movie?with_genres=${topGenres.join(',')}&sort_by=vote_average.desc&vote_count.gte=500`);
                 let mixRecs = mixData.results.filter(i => !dbIds.has(i.id)).slice(0, 10);
-                
+
                 if (mixRecs.length > 0) {
                     sectionsHTML.push(`
                         <section class="animate-in fade-in duration-500">
@@ -1979,12 +1990,12 @@ async function renderSync() {
                                 ${mixRecs.map(i => `
                                     <div class="flex-none w-32 md:w-44 group cursor-pointer relative" onclick="openModal(${i.id}, 'movie')">
                                         <div class="aspect-[2/3] rounded-[20px] md:rounded-[24px] overflow-hidden mb-3 md:mb-4 border border-pulse/30 shadow-[0_0_20px_rgba(255,45,85,0.15)] group-hover:border-pulse transition-all relative">
-                                            <img src="${IMG+i.poster_path}" class="w-full h-full object-cover">
+                                            <img src="${IMG + i.poster_path}" class="w-full h-full object-cover">
                                             <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent z-10"></div>
                                             <div class="absolute top-2 left-2 md:top-3 md:left-3 bg-pulse/20 text-pulse px-2 py-1 rounded-md text-[7px] md:text-[8px] font-black uppercase border border-pulse/30 z-30">
                                                 99% Match
                                             </div>
-                                            ${getPlayHoverHTML({...i, type: 'movie'})}
+                                            ${getPlayHoverHTML({ ...i, type: 'movie' })}
                                         </div>
                                         <div class="text-[9px] font-black uppercase line-clamp-1">${i.title || i.name}</div>
                                     </div>
@@ -1993,7 +2004,7 @@ async function renderSync() {
                         </section>
                     `);
                 }
-            } catch(e) {
+            } catch (e) {
                 console.error("Failed to fetch mix", e);
             }
         }
@@ -2002,173 +2013,173 @@ async function renderSync() {
     container.innerHTML = sectionsHTML.join('') || `<div class="text-center py-20 text-gray-700 font-black uppercase tracking-widest italic">Insufficient elite data for synchronization. Add highly rated shows to seed the engine.</div>`;
 }
 
-        // Global Helpers
-        // --- COUNTER INTERACTIVITY & CATEGORY ENGINE ---
+// Global Helpers
+// --- COUNTER INTERACTIVITY & CATEGORY ENGINE ---
 
-        let clickTimer = null; // Used to distinguish single vs double clicks
+let clickTimer = null; // Used to distinguish single vs double clicks
 
-        function updateCounters() {
-            const types = ['all', 'movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
-            const html = types.map(t => {
-                const count = t === 'all' ? state.db.length : state.db.filter(i => i.type === t).length;
-                const label = t === 'all' ? 'All Data' : t;
-                const border = t === 'all' ? 'pulse' : t;
-                
-                return `
+function updateCounters() {
+    const types = ['all', 'movie', 'tv', 'anime', 'kdrama', 'turkish', 'asian'];
+    const html = types.map(t => {
+        const count = t === 'all' ? state.db.length : state.db.filter(i => i.type === t).length;
+        const label = t === 'all' ? 'All Data' : t;
+        const border = t === 'all' ? 'pulse' : t;
+
+        return `
                     <div class="bg-white/5 border border-white/10 p-6 rounded-3xl border-t-4 border-${border} shadow-xl cursor-pointer hover:bg-white/10 hover:-translate-y-1 transition-all select-none" 
                          onclick="handleCounterClick(event, '${t}')">
                         <div class="text-[9px] font-black text-gray-500 uppercase mb-2 tracking-widest">${label}</div>
                         <div class="text-3xl font-black italic text-white">${count}</div>
                     </div>
                 `;
-            }).join('');
-            
-            const hc = document.getElementById('homeCounters');
-            const lc = document.getElementById('labCounters');
-            if (hc) hc.innerHTML = html;
-            if (lc) lc.innerHTML = html;
+    }).join('');
+
+    const hc = document.getElementById('homeCounters');
+    const lc = document.getElementById('labCounters');
+    if (hc) hc.innerHTML = html;
+    if (lc) lc.innerHTML = html;
+}
+
+function handleCounterClick(e, type) {
+    // e.detail tells us how many times it was clicked (1 = single, 2 = double)
+    if (e.detail === 1) {
+        clickTimer = setTimeout(() => {
+            if (type === 'all') navigate('rhythmlab');
+            else openCategoryPage('trending', type); // Fixed: Added 'trending' argument
+        }, 250); // Wait 250ms to ensure it's not a double-click
+    } else if (e.detail === 2) {
+        clearTimeout(clickTimer); // Cancel single click action
+        if (type === 'all') navigate('rhythmlab');
+        else openRandomSuggestion(type);
+    }
+}
+
+async function openCategoryPage(mode, type) {
+    state.catMode = mode; // 'trending' or 'upcoming'
+    state.catType = type;
+    state.catSort = 'trending'; // Default
+    state.catPage = 1;
+    document.getElementById('catSearchInput').value = '';
+
+    const titleMap = { 'movie': 'Movies', 'tv': 'Series', 'anime': 'Anime', 'kdrama': 'K-Drama', 'turkish': 'Turkish', 'asian': 'Asian Drama' };
+    document.getElementById('catTitle').innerHTML = `${mode === 'upcoming' ? 'Upcoming ' : 'Trending '}<span class="text-pulse">${titleMap[type]}</span>`;
+
+    // Hide Top Rated sort button if we are looking at upcoming
+    document.getElementById('btnTopRated').classList.toggle('hidden', mode === 'upcoming');
+
+    document.getElementById('categoryGrid').innerHTML = '<div class="page-loader"></div>';
+    document.getElementById('catLoadMore').classList.remove('hidden');
+
+    navigate('category');
+    await fetchAndRenderCategory(true);
+}
+
+function setCategorySort(sort) {
+    if (state.catSort === sort) return;
+    state.catSort = sort;
+    state.catPage = 1;
+
+    const isTr = sort === 'trending';
+    document.getElementById('btnTrending').className = isTr ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white";
+    document.getElementById('btnTopRated').className = !isTr ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white";
+
+    document.getElementById('categoryGrid').innerHTML = '<div class="page-loader"></div>';
+    document.getElementById('catLoadMore').classList.remove('hidden');
+    fetchAndRenderCategory(true);
+}
+
+function getCategoryApiPath(mode, type, sort, page) {
+    const today = getTodayAPI();
+    if (mode === 'upcoming') {
+        if (type === 'movie') return `/movie/upcoming?page=${page}&region=US`;
+        let base = `/discover/tv?first_air_date.gte=${today}&sort_by=popularity.desc&page=${page}`;
+        if (type === 'tv') return `${base}&with_original_language=en`;
+        if (type === 'anime') return `${base}&with_genres=16&with_original_language=ja`;
+        if (type === 'kdrama') return `${base}&with_original_language=ko`;
+        if (type === 'turkish') return `${base}&with_original_language=tr`;
+        if (type === 'asian') return `${base}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`;
+    } else {
+        // Your existing trending logic
+        if (type === 'movie') return sort === 'trending' ? `/trending/movie/week?page=${page}` : `/movie/top_rated?page=${page}`;
+
+        let base = `/discover/tv?page=${page}`;
+        let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300';
+
+        if (type === 'tv') return `${base}&sort_by=${sortParam}&with_original_language=en`;
+        if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16&with_original_language=ja`;
+        if (type === 'kdrama') return `${base}&sort_by=${sortParam}&with_original_language=ko`;
+        if (type === 'turkish') return `${base}&sort_by=${sortParam}&with_original_language=tr`;
+        if (type === 'asian') return `${base}&sort_by=${sortParam}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
+    }
+}
+
+function filterCategoryGrid(query) {
+    if (!query) { renderGrid('categoryGrid', state.catRawData, state.catType, true); return; }
+    // ADDED || '' TO PREVENT CRASHES
+    const filtered = state.catRawData.filter(i => isSmartMatch(i.title || i.name || '', query));
+    renderGrid('categoryGrid', filtered, state.catType, true);
+}
+
+async function fetchAndRenderCategory(clear = false) {
+    const btn = document.getElementById('catLoadMore');
+    const grid = document.getElementById('categoryGrid');
+    if (!clear) btn.innerText = "Processing...";
+
+    try {
+        const path = getCategoryApiPath(state.catMode, state.catType, state.catSort, state.catPage);
+        const data = await fetchAPI(path);
+        const apiType = state.catType === 'movie' ? 'movie' : 'tv';
+
+        // REPLACED CUSTOM HTML MAP WITH OUR UNIFIED GRID RENDERER
+        renderGrid('categoryGrid', data.results, apiType, clear);
+
+        if (data.page >= data.total_pages || state.catPage >= 10) btn.classList.add('hidden');
+        else btn.innerHTML = `Load More <i class="fas fa-chevron-down ml-3"></i>`;
+
+        if (clear) state.catRawData = data.results;
+        else state.catRawData = state.catRawData.concat(data.results);
+
+    } catch (error) {
+        console.error("Neural fetch error", error);
+        if (clear) grid.innerHTML = '<div class="col-span-full text-white text-center w-full py-10 font-black italic uppercase tracking-widest text-gray-600">Neural link severed. Failed to load data.</div>';
+        btn.innerText = "Retry Link";
+    }
+}
+
+async function loadMoreCategory() {
+    state.catPage++;
+    await fetchAndRenderCategory(false);
+}
+
+async function openRandomSuggestion(type) {
+    // Fetch top-rated from a random page (1 to 3) to guarantee a "good" suggestion
+    const randomPage = Math.floor(Math.random() * 3) + 1;
+    // FIXED: Added 'trending' as the first argument
+    const path = getCategoryApiPath('trending', type, 'top', randomPage);
+
+    try {
+        const data = await fetchAPI(path);
+        if (data.results && data.results.length > 0) {
+            // Filter for 7.5+ rating for high quality, fallback to raw list if none found
+            const pool = data.results.filter(i => i.vote_average >= 7.5);
+            const targetPool = pool.length > 0 ? pool : data.results;
+
+            const randomItem = targetPool[Math.floor(Math.random() * targetPool.length)];
+            const apiType = type === 'movie' ? 'movie' : 'tv';
+            openModal(randomItem.id, apiType);
         }
+    } catch (e) {
+        console.error("Failed to fetch random suggestion", e);
+    }
+}
 
-        function handleCounterClick(e, type) {
-                // e.detail tells us how many times it was clicked (1 = single, 2 = double)
-                if (e.detail === 1) {
-                    clickTimer = setTimeout(() => {
-                        if (type === 'all') navigate('rhythmlab');
-                        else openCategoryPage('trending', type); // Fixed: Added 'trending' argument
-                    }, 250); // Wait 250ms to ensure it's not a double-click
-                } else if (e.detail === 2) {
-                    clearTimeout(clickTimer); // Cancel single click action
-                    if (type === 'all') navigate('rhythmlab');
-                    else openRandomSuggestion(type);
-                }
-            }
-
-        async function openCategoryPage(mode, type) {
-                state.catMode = mode; // 'trending' or 'upcoming'
-                state.catType = type;
-                state.catSort = 'trending'; // Default
-                state.catPage = 1;
-                document.getElementById('catSearchInput').value = '';
-                
-                const titleMap = { 'movie': 'Movies', 'tv': 'Series', 'anime': 'Anime', 'kdrama': 'K-Drama', 'turkish': 'Turkish', 'asian': 'Asian Drama' };
-                document.getElementById('catTitle').innerHTML = `${mode === 'upcoming' ? 'Upcoming ' : 'Trending '}<span class="text-pulse">${titleMap[type]}</span>`;
-                
-                // Hide Top Rated sort button if we are looking at upcoming
-                document.getElementById('btnTopRated').classList.toggle('hidden', mode === 'upcoming');
-                
-                document.getElementById('categoryGrid').innerHTML = '<div class="page-loader"></div>';
-                document.getElementById('catLoadMore').classList.remove('hidden');
-
-                navigate('category'); 
-                await fetchAndRenderCategory(true);
-            }
-
-        function setCategorySort(sort) {
-            if (state.catSort === sort) return;
-            state.catSort = sort;
-            state.catPage = 1;
-            
-            const isTr = sort === 'trending';
-            document.getElementById('btnTrending').className = isTr ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white";
-            document.getElementById('btnTopRated').className = !isTr ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20" : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white";
-            
-            document.getElementById('categoryGrid').innerHTML = '<div class="page-loader"></div>';
-            document.getElementById('catLoadMore').classList.remove('hidden');
-            fetchAndRenderCategory(true);
-        }
-
-     function getCategoryApiPath(mode, type, sort, page) {
-                const today = getTodayAPI();
-                if (mode === 'upcoming') {
-                    if (type === 'movie') return `/movie/upcoming?page=${page}&region=US`;
-                    let base = `/discover/tv?first_air_date.gte=${today}&sort_by=popularity.desc&page=${page}`;
-                    if (type === 'tv') return `${base}&with_original_language=en`;
-                    if (type === 'anime') return `${base}&with_genres=16&with_original_language=ja`;
-                    if (type === 'kdrama') return `${base}&with_original_language=ko`;
-                    if (type === 'turkish') return `${base}&with_original_language=tr`;
-                    if (type === 'asian') return `${base}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`;
-                } else {
-                // Your existing trending logic
-                if (type === 'movie') return sort === 'trending' ? `/trending/movie/week?page=${page}` : `/movie/top_rated?page=${page}`;
-
-                let base = `/discover/tv?page=${page}`;
-                let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300'; 
-
-                if (type === 'tv') return `${base}&sort_by=${sortParam}&with_original_language=en`;
-                if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16&with_original_language=ja`;
-                if (type === 'kdrama') return `${base}&sort_by=${sortParam}&with_original_language=ko`;
-                if (type === 'turkish') return `${base}&sort_by=${sortParam}&with_original_language=tr`;
-                if (type === 'asian') return `${base}&sort_by=${sortParam}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
-                }
-            }
-
-          function filterCategoryGrid(query) {
-                    if (!query) { renderGrid('categoryGrid', state.catRawData, state.catType, true); return; }
-                    // ADDED || '' TO PREVENT CRASHES
-                    const filtered = state.catRawData.filter(i => isSmartMatch(i.title || i.name || '', query));
-                    renderGrid('categoryGrid', filtered, state.catType, true);
-                }
-
-       async function fetchAndRenderCategory(clear = false) {
-                    const btn = document.getElementById('catLoadMore');
-                    const grid = document.getElementById('categoryGrid');
-                    if (!clear) btn.innerText = "Processing...";
-
-                    try {
-                        const path = getCategoryApiPath(state.catMode, state.catType, state.catSort, state.catPage);
-                        const data = await fetchAPI(path);
-                        const apiType = state.catType === 'movie' ? 'movie' : 'tv';
-                        
-                        // REPLACED CUSTOM HTML MAP WITH OUR UNIFIED GRID RENDERER
-                        renderGrid('categoryGrid', data.results, apiType, clear);
-
-                        if (data.page >= data.total_pages || state.catPage >= 10) btn.classList.add('hidden');
-                        else btn.innerHTML = `Load More <i class="fas fa-chevron-down ml-3"></i>`;
-
-                        if (clear) state.catRawData = data.results; 
-                        else state.catRawData = state.catRawData.concat(data.results);
-
-                    } catch (error) {
-                        console.error("Neural fetch error", error);
-                        if (clear) grid.innerHTML = '<div class="col-span-full text-white text-center w-full py-10 font-black italic uppercase tracking-widest text-gray-600">Neural link severed. Failed to load data.</div>';
-                        btn.innerText = "Retry Link";
-                    }
-                }
-
-        async function loadMoreCategory() {
-            state.catPage++;
-            await fetchAndRenderCategory(false);
-        }
-
-        async function openRandomSuggestion(type) {
-            // Fetch top-rated from a random page (1 to 3) to guarantee a "good" suggestion
-            const randomPage = Math.floor(Math.random() * 3) + 1; 
-            // FIXED: Added 'trending' as the first argument
-            const path = getCategoryApiPath('trending', type, 'top', randomPage);
-            
-            try {
-                const data = await fetchAPI(path);
-                if (data.results && data.results.length > 0) {
-                    // Filter for 7.5+ rating for high quality, fallback to raw list if none found
-                    const pool = data.results.filter(i => i.vote_average >= 7.5); 
-                    const targetPool = pool.length > 0 ? pool : data.results; 
-                    
-                    const randomItem = targetPool[Math.floor(Math.random() * targetPool.length)];
-                    const apiType = type === 'movie' ? 'movie' : 'tv';
-                    openModal(randomItem.id, apiType);
-                }
-            } catch (e) {
-                console.error("Failed to fetch random suggestion", e);
-            }
-        }
-
-       function renderRow(id, items, type) {
+function renderRow(id, items, type) {
     const container = document.getElementById(id);
     container.innerHTML = items.map(item => `
         <div class="flex-none w-[240px] group cursor-pointer" onclick="openModal(${item.id}, '${type}')">
             <div class="relative aspect-[2/3] rounded-[40px] overflow-hidden mb-5 border border-white/5 group-hover:scale-105 transition-all duration-700">
-                <img src="${IMG+item.poster_path}" class="w-full h-full object-cover">
-                ${getPlayHoverHTML({...item, type: type})}
+                <img src="${IMG + item.poster_path}" class="w-full h-full object-cover">
+                ${getPlayHoverHTML({ ...item, type: type })}
             </div>
             <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2">${item.title || item.name}</h3>
             <div class="text-[8px] font-bold text-gray-600 mt-2 uppercase px-2 tracking-widest">${(item.release_date || item.first_air_date || '').split('-')[0]} • ★ ${item.vote_average.toFixed(1)}</div>
@@ -2207,7 +2218,7 @@ function renderGrid(id, items, forced, clear = true) {
                     </div>
                 ` : ''}
                 
-                ${!isPerson ? getPlayHoverHTML({...i, type: type}) : ''}
+                ${!isPerson ? getPlayHoverHTML({ ...i, type: type }) : ''}
             </div>
             
             <div class="text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title || i.name}</div>
@@ -2216,91 +2227,91 @@ function renderGrid(id, items, forced, clear = true) {
             </div>
         </div>
     `}).join('');
-    
+
     if (clear) container.innerHTML = html;
     else container.insertAdjacentHTML('beforeend', html);
 }
-        function setupFilters() {
-                const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')];
-                const years = Array.from({length: 50}, (_, i) => 2026 - i);
-                yearSels.forEach(sel => {
-                    sel.innerHTML = `<option value="${sel.id.includes('lab') ? 'all' : ''}">Year</option>` + years.map(y => `<option value="${y}">${y}</option>`).join('');
-                });
+function setupFilters() {
+    const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')];
+    const years = Array.from({ length: 50 }, (_, i) => 2026 - i);
+    yearSels.forEach(sel => {
+        sel.innerHTML = `<option value="${sel.id.includes('lab') ? 'all' : ''}">Year</option>` + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    });
 
-                // UPDATED: Removed 'searchGenre' to prevent null reference errors
-                const genreSels = [document.getElementById('pGenre')];
-                genreSels.forEach(sel => {
-                    if(sel) sel.innerHTML = `<option value="">Genre</option>` + state.genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
-                });
+    // UPDATED: Removed 'searchGenre' to prevent null reference errors
+    const genreSels = [document.getElementById('pGenre')];
+    genreSels.forEach(sel => {
+        if (sel) sel.innerHTML = `<option value="">Genre</option>` + state.genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+    });
 
-                document.getElementById('homeGenres').innerHTML = state.genres.slice(0, 15).map(g => `
+    document.getElementById('homeGenres').innerHTML = state.genres.slice(0, 15).map(g => `
                     <button onclick="deepSearch('${g.name}')" class="text-[9px] font-black uppercase tracking-widest text-gray-600 hover:text-pulse transition-all">#${g.name}</button>
                 `).join('');
-            }
+}
 
-        function openPicker() {
-            document.getElementById('pickerModal').classList.remove('hidden');
-            document.getElementById('pickerResult').classList.add('hidden');
-        }
-        function closePicker() { document.getElementById('pickerModal').classList.add('hidden'); checkScrollLock();}
+function openPicker() {
+    document.getElementById('pickerModal').classList.remove('hidden');
+    document.getElementById('pickerResult').classList.add('hidden');
+}
+function closePicker() { document.getElementById('pickerModal').classList.add('hidden'); checkScrollLock(); }
 
-        function runPulsePicker() {
-            const w = document.getElementById('pWatching').checked;
-            const p = document.getElementById('pPlan').checked;
-            const t = document.getElementById('pType').value;
-            const g = parseInt(document.getElementById('pGenre').value);
+function runPulsePicker() {
+    const w = document.getElementById('pWatching').checked;
+    const p = document.getElementById('pPlan').checked;
+    const t = document.getElementById('pType').value;
+    const g = parseInt(document.getElementById('pGenre').value);
 
-            let pool = state.db.filter(i => {
-                let sMatch = (w && i.status === 'Watching') || (p && i.status === 'Plan to Watch');
-                let tMatch = t === 'all' || i.type === t;
-                let gMatch = !g || i.genres.includes(g);
-                return sMatch && tMatch && gMatch;
-            });
+    let pool = state.db.filter(i => {
+        let sMatch = (w && i.status === 'Watching') || (p && i.status === 'Plan to Watch');
+        let tMatch = t === 'all' || i.type === t;
+        let gMatch = !g || i.genres.includes(g);
+        return sMatch && tMatch && gMatch;
+    });
 
-            if(!pool.length) return alert("Database empty for selected criteria.");
+    if (!pool.length) return alert("Database empty for selected criteria.");
 
-            const btn = document.getElementById('pRunBtn');
-            btn.innerText = "Processing...";
-            
-            setTimeout(() => {
-                const win = pool[Math.floor(Math.random() * pool.length)];
-                document.getElementById('pickerResult').classList.remove('hidden');
-                document.getElementById('pResImg').src = IMG + win.poster;
-                document.getElementById('pResTitle').innerText = win.title;
-                
-                // Expose the Pick Again button
-                document.getElementById('pPickAgainBtn').classList.remove('hidden');
-                
-                btn.innerText = "Synchronize Now";
-                btn.onclick = () => { 
-                    closePicker(); 
-                    openModal(win.id, win.type === 'movie' ? 'movie' : 'tv'); 
-                    btn.onclick = runPulsePicker; 
-                    btn.innerText = "Begin Sync"; 
-                    document.getElementById('pPickAgainBtn').classList.add('hidden'); // Reset for next time
-                };
-            }, 1000);
-        }
+    const btn = document.getElementById('pRunBtn');
+    btn.innerText = "Processing...";
 
-        function updateEpUI(curr, tot) {
-            document.getElementById('mEpLabel').innerText = `${curr}/${tot}`;
-            document.getElementById('mProgressBar').style.width = `${(curr/tot)*100}%`;
-        }
+    setTimeout(() => {
+        const win = pool[Math.floor(Math.random() * pool.length)];
+        document.getElementById('pickerResult').classList.remove('hidden');
+        document.getElementById('pResImg').src = IMG + win.poster;
+        document.getElementById('pResTitle').innerText = win.title;
+
+        // Expose the Pick Again button
+        document.getElementById('pPickAgainBtn').classList.remove('hidden');
+
+        btn.innerText = "Synchronize Now";
+        btn.onclick = () => {
+            closePicker();
+            openModal(win.id, win.type === 'movie' ? 'movie' : 'tv');
+            btn.onclick = runPulsePicker;
+            btn.innerText = "Begin Sync";
+            document.getElementById('pPickAgainBtn').classList.add('hidden'); // Reset for next time
+        };
+    }, 1000);
+}
+
+function updateEpUI(curr, tot) {
+    document.getElementById('mEpLabel').innerText = `${curr}/${tot}`;
+    document.getElementById('mProgressBar').style.width = `${(curr / tot) * 100}%`;
+}
 // --- NEW SYNC & SEASON LOGIC ---
 function renderSeasonsUI() {
     const container = document.getElementById('mSeasonsList');
-    if (!state.activeSeasons || !state.activeSeasons.length) { 
-        container.innerHTML = ''; return; 
+    if (!state.activeSeasons || !state.activeSeasons.length) {
+        container.innerHTML = ''; return;
     }
-    
+
     const currentEp = parseInt(document.getElementById('mEpRange').value) || 0;
 
     container.innerHTML = state.activeSeasons.map(s => {
         let isChecked = currentEp >= s.endEp; // Passed the season
         let isGlowing = currentEp > s.startEp && currentEp < s.endEp; // Inside the season
-        
+
         let styleClasses = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase cursor-pointer transition-all border shrink-0 ";
-        
+
         if (isChecked) {
             styleClasses += "bg-[#22c55e] text-white border-[#22c55e] shadow-[0_0_10px_rgba(34,197,94,0.3)]";
         } else if (isGlowing) {
@@ -2316,21 +2327,33 @@ function renderSeasonsUI() {
 function syncProgress(v) {
     const max = parseInt(document.getElementById('mEpRange').max);
     v = Math.max(0, Math.min(parseInt(v), max)); // Prevent going below 0 or above max
-    
+
+    // Find which season this episode belongs to
+    let currentSeason = 1;
+    if (state.activeSeasons && state.activeSeasons.length > 0) {
+        for (let s of state.activeSeasons) {
+            if (v >= s.startEp && v <= s.endEp) {
+                currentSeason = s.season_number;
+                break;
+            }
+        }
+    }
+
     document.getElementById('mEpRange').value = v;
-    const idx = state.db.findIndex(i => i.id === state.active.id);
-    
-    if(idx !== -1) {
+    const idx = state.db.findIndex(i => String(i.id) === String(state.active.id));
+
+    if (idx !== -1) {
         state.db[idx].ep = v;
+        state.db[idx].season = currentSeason;
+        state.db[idx].updatedAt = Date.now();
         updateEpUI(v, max);
         renderSeasonsUI(); // Update glowing/checked states instantly
-        state.db[idx].updatedAt = Date.now();
         save();
-        
+
         // Auto-mark finished if max is reached
         if (v === max && state.db[idx].status !== 'Finished') {
             document.getElementById('mStatus').value = 'Finished';
-            updateStatus(); 
+            updateStatus();
             state.db[idx].updatedAt = Date.now();
         }
     }
@@ -2339,29 +2362,29 @@ function adjustProgress(dir) {
     const curr = parseInt(document.getElementById('mEpRange').value) || 0;
     syncProgress(curr + dir);
 }
- async function openActor(id, name) {
+async function openActor(id, name) {
     closeModal(true);
     navigate('search');
-    state.searchMode = 'actor'; 
-    
+    state.searchMode = 'actor';
+
     const header = document.getElementById('searchHeader');
     const loadBtn = document.getElementById('discoverLoadContainer');
     const actorBanner = document.getElementById('actorProfileBanner');
-    
+
     header.innerText = `Works: ${name}`;
     actorBanner.classList.remove('hidden');
-    
+
     const grid = document.getElementById('searchGrid');
     grid.innerHTML = '<div class="page-loader"></div>';
 
-try {
+    try {
         const [person, data] = await Promise.all([
             fetchAPI(`/person/${id}`),
             fetchAPI(`/person/${id}/combined_credits`)
         ]);
-        
+
         // Mobile-friendly clickable wrapper
-       actorBanner.innerHTML = `
+        actorBanner.innerHTML = `
     <div onclick="openPersonModal(${id})" class="cursor-pointer flex flex-col md:flex-row items-center gap-6 p-6 bg-[#0a0c12] border border-white/10 rounded-[30px] shadow-2xl relative overflow-hidden group hover:border-pulse/50 transition-all">
         
         <button onclick="closeActorMode(event)" class="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-pulse rounded-full flex items-center justify-center transition-all z-30">
@@ -2382,30 +2405,30 @@ try {
 `;
 
         // Sort by highest rating (penalize items with < 10 votes so obscure 10/10s don't dominate)
-      const getScore = (item) => item.vote_count > 10 ? item.vote_average : (item.vote_average || 0) - 5;
-        
+        const getScore = (item) => item.vote_count > 10 ? item.vote_average : (item.vote_average || 0) - 5;
+
         state.actorCredits = data.cast
             .filter(item => item.poster_path)
             .sort((a, b) => getScore(b) - getScore(a));
-        
+
         state.actorPage = 1;
-        
+
         // UPDATED: Funnel data into the filter engine instead of direct rendering
         applyDiscoverLocalFilters();
-        
-        
+
+
         const slice = state.actorCredits.slice(0, 20); // Show top 20 first
-        
+
         renderGrid('searchGrid', slice, false, true);
         applyLayoutToGrid();
-        
+
         // Show Load More if there are more than 20 works
         if (state.actorCredits.length > 20) {
             loadBtn.classList.remove('hidden');
         } else {
             loadBtn.classList.add('hidden');
         }
-        
+
     } catch (err) {
         actorBanner.classList.add('hidden');
         grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 uppercase font-black italic">Neural link to ${name} failed.</div>`;
@@ -2416,27 +2439,29 @@ function closeActorMode(e) {
     e.stopPropagation(); // Prevents clicking the banner itself
     document.getElementById('actorProfileBanner').classList.add('hidden');
     document.getElementById('searchHeader').innerText = "Discover";
-    
+
     // Reset state to standard discovery and reload
     state.searchMode = 'trending';
-    discoverPage = 1; 
-    
+    discoverPage = 1;
+
     const grid = document.getElementById('searchGrid');
     grid.innerHTML = '<div class="page-loader"></div>';
-    
+
     // Fetch raw discovery data again
     fetchDiscoverData(false);
 }
 
-        function startClock() { setInterval(() => { 
-            const d = new Date();
-            document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
-        }, 1000); }
-function save(skipBroadcast = false) { 
-    localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db)); 
-    updateCounters(); 
-    if (typeof renderContinueWatching === 'function') renderContinueWatching(); 
-    
+function startClock() {
+    setInterval(() => {
+        const d = new Date();
+        document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
+    }, 1000);
+}
+function save(skipBroadcast = false) {
+    localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db));
+    updateCounters();
+    if (typeof renderContinueWatching === 'function') renderContinueWatching();
+
     if (state.view === 'mylist') renderList();
     if (state.view === 'rhythmlab') runLab();
 
@@ -2461,23 +2486,23 @@ async function saveWithSagaContext(item, type) {
             item.sagaName = details.belongs_to_collection.name;
         }
     }
-    
+
     // Standard save logic follows...
     state.myList.push(item);
     saveToLocalStorage();
 }
-function closeModal(fromPopState = false) { 
+function closeModal(fromPopState = false) {
     state.modalHistory = []; // Wipe history on full close
     document.getElementById('mBackBtn').classList.add('hidden');
-    document.getElementById('modal').classList.add('hidden'); 
-    
+    document.getElementById('modal').classList.add('hidden');
+
     checkScrollLock(); // Replaces document.body.style.overflow = 'auto'
-    
+
     // If closed via browser Back button, restore scroll position
     if (fromPopState && typeof window._cpModalScrollY === 'number') {
         setTimeout(() => window.scrollTo({ top: window._cpModalScrollY, behavior: 'instant' }), 50);
     }
-    
+
     // If closed manually via X button, reverse the history to clean the stack
     if (!fromPopState) window.history.back();
 }
@@ -2485,49 +2510,49 @@ function closeModal(fromPopState = false) {
 function closePersonModal(fromPopState = false) {
     document.getElementById('personModal').classList.add('hidden');
     checkScrollLock(); // Replaces document.body.style.overflow = 'auto'
-    
+
     // If closed via browser Back button, restore scroll position
     if (fromPopState && typeof window._cpModalScrollY === 'number') {
         setTimeout(() => window.scrollTo({ top: window._cpModalScrollY, behavior: 'instant' }), 50);
     }
-    
+
     if (!fromPopState) window.history.back();
 }
-function removeItem() { 
-    state.db = state.db.filter(i => i.id !== state.active.id); 
-    save(); 
-    closeModal(); 
+function removeItem() {
+    state.db = state.db.filter(i => i.id !== state.active.id);
+    save();
+    closeModal();
 }
 function modalGoBack() {
-     if (state.modalHistory.length > 0) {
+    if (state.modalHistory.length > 0) {
         const prev = state.modalHistory.pop();
-                openModal(prev.id, prev.type, true); // true = isBack
-        }
+        openModal(prev.id, prev.type, true); // true = isBack
+    }
 }
 
 
 // --- DATA SYNC: IMPORT & EXPORT ---
 
-   // --- Beautiful UI Notification System ---
+// --- Beautiful UI Notification System ---
 function showNotification(msg, isError = false) {
     const t = document.createElement('div');
     const color = isError ? 'bg-pulse' : 'bg-[#22c55e]';
     t.className = `fixed top-10 right-10 ${color} text-white px-8 py-4 rounded-2xl shadow-2xl z-[9999] font-black uppercase text-[10px] tracking-widest transition-all duration-500 transform translate-y-[-20px] opacity-0 flex items-center gap-3`;
     t.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'} text-lg"></i> ${msg}`;
     document.body.appendChild(t);
-    
+
     // Animate In
     setTimeout(() => { t.classList.remove('translate-y-[-20px]', 'opacity-0'); }, 10);
     // Animate Out
-    setTimeout(() => { 
-        t.classList.add('opacity-0', 'translate-y-[-20px]'); 
-        setTimeout(() => t.remove(), 500); 
+    setTimeout(() => {
+        t.classList.add('opacity-0', 'translate-y-[-20px]');
+        setTimeout(() => t.remove(), 500);
     }, 3000);
 }
 
 // --- Smart Export ---
 function exportData() {
-   
+
     if (state.db.length === 0 && Object.keys(sourcesDb).every(k => sourcesDb[k].length === 0) && customSagas.length === 0) {
         showNotification("Library, Source Engine, and Forge are empty.", true);
         return;
@@ -2535,7 +2560,7 @@ function exportData() {
 
     showNotification("Packaging Neural Data...");
 
-   // 2. V3.1 Includes Neural Radar, Standard Sagas, AND Custom Forge Sagas
+    // 2. V3.1 Includes Neural Radar, Standard Sagas, AND Custom Forge Sagas
     const backupPackage = {
         version: "3.1",
         db: state.db,
@@ -2568,7 +2593,7 @@ async function loadUpcomingPage() {
 
     // Helper to clear grids and show loaders
     const grids = [
-        'upcomingRecommendationsGrid', 'upcomingSeriesGrid', 'upcomingAnimeGrid', 
+        'upcomingRecommendationsGrid', 'upcomingSeriesGrid', 'upcomingAnimeGrid',
         'upcomingKdramaGrid', 'upcomingTurkishGrid', 'upcomingMainGrid'
     ];
     grids.forEach(id => {
@@ -2620,7 +2645,7 @@ function renderUpcomingRadar() {
     const radarGrid = document.getElementById('upcomingRadarGrid');
     const epSection = document.getElementById('upcomingEpisodicSection');
     const epGrid = document.getElementById('upcomingEpisodicGrid');
-    
+
     // FIX: Protect Episodic items from being auto-cleaned if they are in the DB
     const dbIds = new Set(state.db.map(i => i.id));
     state.reminders = state.reminders.filter(r => r.isEpisodic || !dbIds.has(r.id));
@@ -2639,9 +2664,9 @@ function renderUpcomingRadar() {
             const diff = new Date(r.date).getTime() - new Date().getTime();
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
             const dayText = days <= 0 ? 'AVAILABLE NOW' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`);
-            
+
             // FIX: Advanced Dynamic Progress Bar Integration
-            const localData = state.db.find(i => i.id === r.id);
+            const localData = state.db.find(i => String(i.id) === String(r.id));
             let progressHtml = '';
             let currentEpText = 'Waiting';
 
@@ -2691,7 +2716,7 @@ function renderUpcomingRadar() {
             const diff = new Date(r.date).getTime() - new Date().getTime();
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
             const isOut = days <= 0;
-            
+
             const urgencyColor = isOut ? 'text-[#22c55e]' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
             const urgencyBorder = isOut ? 'border-[#22c55e]/50' : (days <= 7 ? 'border-[#f59e0b]/50' : 'border-pulse/50');
             const urgencyShadow = isOut ? 'shadow-[#22c55e]/10' : (days <= 7 ? 'shadow-[#f59e0b]/10' : 'shadow-pulse/10');
@@ -2701,7 +2726,7 @@ function renderUpcomingRadar() {
             <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border ${urgencyBorder} hover:border-pulse transition-all cursor-pointer group shadow-xl ${urgencyShadow}" onclick="openModal(${r.id}, '${r.type}')">
                 <div class="w-20 h-28 shrink-0 rounded-2xl overflow-hidden shadow-lg border border-white/5 relative">
                     <img src="${r.poster ? IMG + r.poster : 'https://via.placeholder.com/150'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                    ${getPlayHoverHTML({...r, type: r.type})}
+                    ${getPlayHoverHTML({ ...r, type: r.type })}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-2">
@@ -2747,10 +2772,10 @@ async function handleUpcomingSearch(query) {
     upcomingSearchTimer = setTimeout(async () => {
         try {
             const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(query)}&include_adult=${!prefs.safeMode}`);
-            
+
             // Get today's date in YYYY-MM-DD format for strict comparison
             const todayStr = new Date().toISOString().split('T')[0];
-            
+
             // Filter: Must be a movie/tv AND release date must be in the future
             let results = data.results.filter(i => {
                 if (i.media_type !== 'movie' && i.media_type !== 'tv') return false;
@@ -2758,12 +2783,12 @@ async function handleUpcomingSearch(query) {
                 if (!dateStr) return false; // Remove items with missing dates
                 return dateStr > todayStr;  // Keep ONLY future releases
             });
-            
+
             if (results.length === 0) {
                 searchGrid.innerHTML = '<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest text-[10px] italic">No future releases found for this query.</div>';
                 return;
             }
-            
+
             renderGrid('upcomingSearchGrid', results, false, true);
         } catch (err) {
             searchGrid.innerHTML = '<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest text-[10px]">Neural Link Severed</div>';
@@ -2820,7 +2845,7 @@ function executeAdvancedExport() {
     document.body.appendChild(node);
     node.click();
     node.remove();
-    
+
     document.getElementById('advancedIOModal').classList.add('hidden');
     showNotification("Custom Backup Generated!");
 }
@@ -2831,7 +2856,7 @@ function executeAdvancedImport(event) {
     if (!file) return;
 
     const strategy = document.querySelector('input[name="importStrat"]:checked').value;
-    
+
     // Feature Selections
     const impLib = document.getElementById('impLibrary').checked;
     const impSagas = document.getElementById('impSagas').checked;
@@ -2842,7 +2867,7 @@ function executeAdvancedImport(event) {
     showNotification("Analyzing Neural Data via " + strategy.toUpperCase() + " Protocol...");
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         try {
             const data = JSON.parse(e.target.result);
             TemporalEngine.commit("Pre-Import Anchor");
@@ -2852,7 +2877,7 @@ function executeAdvancedImport(event) {
             if (impLib && (data.db || Array.isArray(data))) {
                 const importedDB = Array.isArray(data) ? data : data.db;
                 importedDB.forEach(importedItem => {
-                    const existingIdx = state.db.findIndex(ex => ex.id === importedItem.id);
+                    const existingIdx = state.db.findIndex(ex => String(ex.id) === String(importedItem.id));
                     if (existingIdx !== -1) {
                         if (strategy === 'skip') {
                             skippedCount++;
@@ -2928,10 +2953,10 @@ function executeAdvancedImport(event) {
 
             save();
             if (state.view === 'mylist') renderList();
-            
+
             document.getElementById('advancedIOModal').classList.add('hidden');
-            document.getElementById('advImportFile').value = ''; 
-            
+            document.getElementById('advImportFile').value = '';
+
             showNotification(`Sync Complete! ${importedCount} Added, ${updatedCount} Updated, ${skippedCount} Skipped.`);
 
         } catch (err) {
@@ -2945,14 +2970,14 @@ function executeAdvancedImport(event) {
 
 function toggleSelectMode() {
     isSelectMode = !isSelectMode;
-    selectedItems.clear(); 
-    
+    selectedItems.clear();
+
     const bar = document.getElementById('multiSelectBar');
     if (isSelectMode) bar.classList.add('active');
     else bar.classList.remove('active');
-    
+
     updateSelectCount();
-    
+
     // Refresh the current view to show/hide checkboxes
     if (state.view === 'mylist') renderList();
     if (state.view === 'rhythmlab') runLab();
@@ -2961,7 +2986,7 @@ function toggleSelectMode() {
 
 function updateSelectCount() {
     const countEl = document.getElementById('selectedCount');
-    if(countEl) countEl.innerText = selectedItems.size;
+    if (countEl) countEl.innerText = selectedItems.size;
 }
 
 function handleCardClick(event, id, type) {
@@ -2969,19 +2994,19 @@ function handleCardClick(event, id, type) {
         // Intercept standard click behavior
         event.preventDefault();
         event.stopPropagation();
-        
+
         if (selectedItems.has(id)) {
             selectedItems.delete(id);
         } else {
             selectedItems.add(id);
         }
-        
+
         updateSelectCount();
         if (state.view === 'mylist') renderList(); // Re-render My List
         if (state.view === 'rhythmlab') runLab();  // Re-render Rhythm Lab
         return;
     }
-    
+
     // Default flow if not in select mode
     openModal(id, type);
 }
@@ -2994,7 +3019,7 @@ function selectAllItems() {
         const id = isSaga ? rawId : parseInt(rawId);
         if (id) selectedItems.add(id);
     });
-    
+
     updateSelectCount();
     if (state.view === 'mylist') renderList();
     if (state.view === 'rhythmlab') runLab();
@@ -3006,23 +3031,23 @@ function handleSagaCardClick(event, id) {
     if (isSelectMode) {
         event.preventDefault();
         event.stopPropagation();
-        
+
         const stringId = String(id);
         if (selectedItems.has(stringId)) selectedItems.delete(stringId);
         else selectedItems.add(stringId);
-        
+
         updateSelectCount();
-        renderMySagas(); 
+        renderMySagas();
         return;
     }
     openSaga(id);
 }
 function deleteSelectedItems() {
     if (selectedItems.size === 0) return;
-    
+
     if (state.view === 'sagamatrix') {
         if (!confirm(`Are you sure you want to permanently eject ${selectedItems.size} Universes from your Neural Link?`)) return;
-        
+
         selectedItems.forEach(sagaId => {
             // Delete custom saga if it is one
             customSagas = customSagas.filter(s => String(s.id) !== String(sagaId));
@@ -3040,9 +3065,9 @@ function deleteSelectedItems() {
         if (!confirm(`Are you sure you want to permanently eject ${selectedItems.size} items from your Neural Library?`)) return;
         state.db = state.db.filter(i => !selectedItems.has(i.id));
     }
-    
+
     save();
-    toggleSelectMode(); 
+    toggleSelectMode();
     showNotification(`${selectedItems.size} Entries Purged Successfully.`);
 }
 // --- EXPORT SELECTED ITEMS ENGINE ---
@@ -3059,7 +3084,7 @@ function exportSelectedItems() {
     if (state.view === 'sagamatrix') {
         // If in Saga Matrix, export the selected custom sagas
         exportSagas = customSagas.filter(s => selectedItems.has(String(s.id)));
-        
+
         // And automatically bundle all the library items that belong to those sagas!
         exportDb = state.db.filter(item => selectedItems.has(String(item.sagaId)));
     } else {
@@ -3082,7 +3107,7 @@ function exportSelectedItems() {
         document.body.appendChild(node);
         node.click();
         node.remove();
-        
+
         showNotification(`Exported ${selectedItems.size} selected entries successfully!`);
         toggleSelectMode(); // Exit select mode cleanly after export
     }, 500);
@@ -3097,26 +3122,26 @@ function setupLongPressSelection() {
         const card = e.target.closest('.selectable-card');
         if (!card) return;
         isDragging = false;
-        
+
         touchTimer = setTimeout(() => {
             if (!isDragging) {
                 // Haptic feedback if supported
                 if (navigator.vibrate) navigator.vibrate(50);
-                
+
                 // Activate select mode if it isn't already
                 if (!isSelectMode) toggleSelectMode();
-                
+
                 // Extract metadata
                 const rawId = card.getAttribute('data-id');
                 const type = card.getAttribute('data-type');
                 const isSaga = card.getAttribute('data-issaga') === 'true';
                 const id = isSaga ? rawId : parseInt(rawId); // Sagas can have string IDs ('custom_123')
-                
+
                 // Select the item
                 if (!selectedItems.has(id)) {
                     selectedItems.add(id);
                     updateSelectCount();
-                    
+
                     // Re-render the active view instantly
                     if (state.view === 'mylist') renderList();
                     if (state.view === 'rhythmlab') runLab();
@@ -3147,18 +3172,18 @@ function openFactoryResetModal() {
 function executeFactoryReset() {
     // 1. Identify all CinePulse data keys
     const keysToDestroy = [
-        'cp_elite_db_v3', 
-        'cp_elite_sources', 
-        'cp_elite_custom_sagas', 
-        'cp_elite_reminders', 
-        'cp_elite_notifs', 
-        'cp_elite_notifs_archived', 
+        'cp_elite_db_v3',
+        'cp_elite_sources',
+        'cp_elite_custom_sagas',
+        'cp_elite_reminders',
+        'cp_elite_notifs',
+        'cp_elite_notifs_archived',
         'cp_elite_prefs'
     ];
-    
+
     // 2. Erase from Local Storage
     keysToDestroy.forEach(key => localStorage.removeItem(key));
-    
+
     // 3. The cleanest way to reset in-memory variables and UI is to reload the window.
     // The visual transition makes it feel like a true system reboot.
     document.body.innerHTML = `
@@ -3168,18 +3193,18 @@ function executeFactoryReset() {
             <p style="color: #666; font-size: 10px; margin-top: 10px; letter-spacing: 2px;">Rebooting Neural Interface...</p>
         </div>
     `;
-    
+
     setTimeout(() => {
         location.reload();
     }, 1500);
 }
 
-        // --- NEW: Grid Layout Engine ---
+// --- NEW: Grid Layout Engine ---
 
 
 function setSearchLayout(layout) {
     currentSearchLayout = layout;
-    
+
     // Update active button UI
     document.querySelectorAll('.layout-btn').forEach(btn => {
         btn.classList.remove('active', 'bg-pulse', 'text-white', 'shadow-lg', 'shadow-pulse/20');
@@ -3189,17 +3214,17 @@ function setSearchLayout(layout) {
             btn.classList.remove('text-gray-500');
         }
     });
-    
+
     applyLayoutToGrid();
     savePrefs();
 }
 
 function applyLayoutToGrid() {
     const grid = document.getElementById('searchGrid');
-    
+
     // Reset classes
     grid.className = 'gap-8 relative min-h-[400px]';
-    
+
     if (currentSearchLayout === 'list') {
         grid.classList.add('list-view'); // Applies custom CSS list logic
     } else {
@@ -3209,8 +3234,8 @@ function applyLayoutToGrid() {
 
 function toggleLabView() {
     state.labIsGrid = !state.labIsGrid;
-    document.getElementById('labViewToggle').innerHTML = state.labIsGrid 
-        ? '<i class="fas fa-list text-white"></i>' 
+    document.getElementById('labViewToggle').innerHTML = state.labIsGrid
+        ? '<i class="fas fa-list text-white"></i>'
         : '<i class="fas fa-th-large text-white"></i>';
     runLab();
     savePrefs();
@@ -3284,7 +3309,7 @@ async function loadModalRecommendations(id, type, page, append = false) {
 function toggleGenreVisibility(containerId, btnElement) {
     const container = document.getElementById(containerId);
     container.classList.toggle('hidden');
-    
+
     if (container.classList.contains('hidden')) {
         btnElement.classList.remove('bg-pulse', 'text-white', 'border-pulse');
         btnElement.classList.add('border-white/10', 'text-gray-500');
@@ -3326,10 +3351,10 @@ function calculateLevenshteinDistance(a, b) {
 function isSmartMatch(text, query) {
     if (!text) return false;
     if (!query) return true;
-    
+
     text = text.toLowerCase();
     query = query.toLowerCase().trim();
-    
+
     // Exact substring match (fastest)
     if (text.includes(query)) return true;
 
@@ -3337,7 +3362,7 @@ function isSmartMatch(text, query) {
     const titleWords = text.split(/[\s\-:]+/);
     const queryWords = query.split(/[\s\-:]+/);
 
-    return queryWords.every(qw => 
+    return queryWords.every(qw =>
         titleWords.some(tw => {
             if (tw.includes(qw)) return true;
             // Allow 1 typo for 4 letter words, 2 typos for 5+ letter words
@@ -3363,7 +3388,7 @@ let sourcesDb = initSourcesDb();
 function renderSources() {
     const container = document.getElementById('sourceListContainer');
     if (!container) return;
-    
+
     const categories = Object.keys(sourcesDb);
     container.innerHTML = categories.map(cat => {
         if (!sourcesDb[cat] || !sourcesDb[cat].length) return '';
@@ -3372,11 +3397,11 @@ function renderSources() {
                 <h4 class="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-4 border-b border-white/5 pb-2">${cat} Sources</h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     ${sourcesDb[cat].map((src, idx) => {
-                        // Safe fallback if URL is malformed
-                        let domain = 'Link';
-                        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
-                        
-                        return `
+            // Safe fallback if URL is malformed
+            let domain = 'Link';
+            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
+
+            return `
                             <div class="flex items-center justify-between bg-dark border border-white/10 p-3 rounded-xl hover:border-pulse/50 transition-colors">
                                 <div class="flex items-center gap-3 overflow-hidden">
                                     <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md bg-white/10 p-0.5 shrink-0">
@@ -3391,7 +3416,7 @@ function renderSources() {
                                 </div>
                             </div>
                         `;
-                    }).join('')}
+        }).join('')}
                 </div>
             </div>
         `;
@@ -3403,14 +3428,14 @@ function editSource(cat, idx) {
     const src = sourcesDb[cat][idx];
     const newName = prompt(`Editing name for ${cat.toUpperCase()} source:`, src.name);
     if (newName === null) return; // Cancelled
-    
+
     const newUrl = prompt(`Editing URL template for ${newName}:`, src.url);
     if (newUrl === null) return; // Cancelled
-    
+
     if (!newName.trim() || !newUrl.trim() || !newUrl.startsWith('http')) {
         return alert("Invalid input. Must provide a name and a valid HTTP/HTTPS URL.");
     }
-    
+
     sourcesDb[cat][idx] = { name: newName.trim(), url: newUrl.trim() };
     localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
     renderSources();
@@ -3425,17 +3450,17 @@ function addSource() {
     if (!name || !url) return alert("Please provide both a name and a URL template.");
     if (!url.startsWith('http')) return alert("URL must start with http:// or https://");
 
-    if (!sourcesDb[cat]) sourcesDb[cat] = []; 
+    if (!sourcesDb[cat]) sourcesDb[cat] = [];
     sourcesDb[cat].push({ name, url });
     localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
-    
+
     document.getElementById('srcName').value = '';
     document.getElementById('srcUrl').value = '';
     renderSources();
 }
 
 function clearAllSources() {
-    if(confirm("Are you sure you want to delete all configured sources?")) {
+    if (confirm("Are you sure you want to delete all configured sources?")) {
         sourcesDb = { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
         localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
         renderSources();
@@ -3455,9 +3480,9 @@ function removeSource(cat, idx) {
 // --- UNIFIED HOVER PLAY ENGINE ---
 function getPlayHoverHTML(item) {
     // 1. Determine exact category natively
-    const local = state.db.find(i => i.id === item.id);
+    const local = state.db.find(i => String(i.id) === String(item.id));
     const cat = local ? local.type : determineCategory(item);
-    
+
     // 2. Escape strings safely for inline HTML
     const title = (item.title || item.name || '').replace(/'/g, "\\'");
     const year = (item.release_date || item.first_air_date || item.year || '').split('-')[0];
@@ -3531,8 +3556,8 @@ function quickWatch(event, id, cat, title, year) {
         const src = availableSources[0];
         const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
         let domain = 'Link';
-        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
-        
+        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
+
         html += `
             <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
@@ -3550,8 +3575,8 @@ function quickWatch(event, id, cat, title, year) {
         html += availableSources.map(src => {
             const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
             let domain = 'Link';
-            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
-            
+            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
+
             return `
                <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
@@ -3566,13 +3591,13 @@ function quickWatch(event, id, cat, title, year) {
         }).join('');
         html += `</div>`;
     }
-    
+
     document.getElementById('watchSourceList').innerHTML = html;
     document.getElementById('watchModal').classList.remove('hidden');
 }
 function openWatchMenu() {
     if (!state.active) return;
-    
+
     const type = determineCategory(state.active);
     const tmdbType = state.active.media_type || (state.active.title ? 'movie' : 'tv');
     const availableSources = sourcesDb[type] || [];
@@ -3614,8 +3639,8 @@ function openWatchMenu() {
         html += availableSources.map(src => {
             const finalUrl = src.url.replace(/{title}/g, safeTitleUrl).replace(/{tmdb_id}/g, tmdbId).replace(/{year}/g, year);
             let domain = 'Link';
-            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch(e){}
-            
+            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
+
             return `
                <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${tmdbId}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
                    class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${type} hover:bg-${type}/10 transition-all group">
@@ -3639,23 +3664,23 @@ async function quickTrailer(event, id, type) {
     event.preventDefault();
     event.stopPropagation();
     showNotification("Locating Neural Video...");
-    
+
     try {
         const apiType = (type === 'tv' || type === 'anime' || type === 'kdrama' || type === 'turkish' || type === 'asian') ? 'tv' : 'movie';
         const vids = await fetchAPI(`/${apiType}/${id}/videos`);
-        
+
         // Fallback sequence: Trailer -> Teaser -> Clip -> Featurette
         const order = ['Trailer', 'Teaser', 'Clip', 'Featurette'];
         let tr = null;
-        
+
         for (let o of order) {
             tr = vids.results.find(v => v.type === o);
             if (tr) break;
         }
-        
+
         // Absolute fallback: Just play the first video they have
-        if (!tr && vids.results.length > 0) tr = vids.results[0]; 
-        
+        if (!tr && vids.results.length > 0) tr = vids.results[0];
+
         if (tr) {
             window.open(`https://youtube.com/watch?v=${tr.key}`, '_blank');
         } else {
@@ -3709,8 +3734,8 @@ function renderGenrePills() {
         if (!container) return;
         container.innerHTML = state.genres.map(g => {
             const isActive = currentList.includes(g.id);
-            const baseClass = isActive 
-                ? "bg-pulse text-white border-pulse shadow-lg shadow-pulse/30" 
+            const baseClass = isActive
+                ? "bg-pulse text-white border-pulse shadow-lg shadow-pulse/30"
                 : "bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white";
             return `<button onclick="${clickHandler}('${targetId}', ${g.id})" class="px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest shrink-0 transition-all snap-start ${baseClass}">${g.name}</button>`;
         }).join('');
@@ -3725,7 +3750,7 @@ function toggleFilterGenre(target, genreId) {
     const idx = filterObj.genres.indexOf(genreId);
     if (idx > -1) filterObj.genres.splice(idx, 1);
     else filterObj.genres.push(genreId);
-    
+
     renderGenrePills();
     target === 'listGenreContainer' ? renderList() : runLab();
 }
@@ -3747,7 +3772,7 @@ function toggleLabFilter(type, val) {
 
 // Ensure genres render on initial load
 const originalSetupFilters = setupFilters;
-setupFilters = function() {
+setupFilters = function () {
     originalSetupFilters();
     renderGenrePills();
 };
@@ -3763,7 +3788,7 @@ function initNeuralEngine() {
     // Run every 2 minutes (120000 ms)
     setInterval(generateSmartNotification, 120000);
     // Fire one off 10 seconds after load to show the user it works
-    setTimeout(generateSmartNotification, 10000); 
+    setTimeout(generateSmartNotification, 10000);
 }
 // notfication generation 
 
@@ -3777,13 +3802,13 @@ async function generateSmartNotification() {
         try {
             const tmdbData = await fetchAPI(`/tv/${checkItem.id}`);
             const lastEp = tmdbData.last_episode_to_air;
-            
+
             // If TMDB says an episode exists that is higher than our local max_ep or current ep
             if (lastEp && (lastEp.episode_number > checkItem.ep)) {
                 // FIXED: Now correctly dispatches and saves to the Hub
                 dispatchNotification(
-                    checkItem, 
-                    'NEW EPISODE DETECTED', 
+                    checkItem,
+                    'NEW EPISODE DETECTED',
                     `Season ${lastEp.season_number}, Episode ${lastEp.episode_number} is available!`
                 );
                 return; // Stop here, we found a real update!
@@ -3801,7 +3826,7 @@ async function generateSmartNotification() {
     const weightedRules = rules.flatMap(r => Array(r.weight).fill(r));
     const rule = weightedRules[Math.floor(Math.random() * weightedRules.length)];
     const pool = state.db.filter(rule.filter);
-    
+
     if (pool.length > 0) {
         const item = pool[Math.floor(Math.random() * pool.length)];
         // FIXED: Now correctly dispatches and saves to the Hub
@@ -3815,10 +3840,10 @@ function showToast(notif) {
     document.getElementById('toastBadge').innerText = notif.badge;
     document.getElementById('toastTitle').innerText = notif.item.title;
     document.getElementById('toastMsg').innerText = notif.msg;
-    
+
     const toast = document.getElementById('neuralToast');
     toast.classList.remove('hidden');
-    
+
     // Auto hide after 8 seconds
     setTimeout(() => { toast.classList.add('hidden'); }, 8000);
 }
@@ -3838,7 +3863,7 @@ function handleToastClick() {
 function toggleNotifHub() {
     const hub = document.getElementById('notifHub');
     hub.classList.toggle('translate-x-full');
-    
+
     // Mark all as read when opened
     notifications.forEach(n => n.read = true);
     updateHubUI();
@@ -3848,7 +3873,7 @@ function toggleNotifHub() {
 function updateHubUI() {
     const unreadCount = notifications.filter(n => !n.read).length;
     const badge = document.getElementById('notifBadge');
-    
+
     if (unreadCount > 0) {
         badge.classList.remove('hidden');
     } else {
@@ -3894,7 +3919,7 @@ clearBtn.addEventListener("click", () => {
 async function fetchDiscoverData(append = false) {
     let val = state.discoverFilters.type;
     let path = `/trending/all/day?page=${discoverPage}`;
-    
+
     if (val === 'movie') path = `/discover/movie?sort_by=popularity.desc&page=${discoverPage}`;
     if (val === 'tv') path = `/discover/tv?sort_by=popularity.desc&with_original_language=en&page=${discoverPage}`;
     if (val === 'anime') path = `/discover/tv?with_genres=16&sort_by=popularity.desc&with_original_language=ja&page=${discoverPage}`;
@@ -3903,7 +3928,7 @@ async function fetchDiscoverData(append = false) {
     if (val === 'asian') path = `/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc&page=${discoverPage}`;
 
     const data = await fetchAPI(path);
-    
+
     if (append) {
         state.discoverDataRaw = state.discoverDataRaw.concat(data.results);
     } else {
@@ -3915,13 +3940,13 @@ async function fetchDiscoverData(append = false) {
 async function toggleDiscoverFilter(type, val) {
     state.discoverFilters.type = val;
     discoverPage = 1; // RESET PAGE BATCHING
-    
+
     document.querySelectorAll('.d-type-btn').forEach(b => b.className = "d-type-btn px-6 py-2 rounded-full border border-white/10 text-[10px] font-black uppercase text-gray-500 hover:text-white shrink-0 transition-all");
     document.getElementById(`dType-${val}`).className = "d-type-btn px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest bg-pulse text-white shadow-lg shadow-pulse/20 shrink-0 transition-all";
-    
+
     const grid = document.getElementById('searchGrid');
     grid.innerHTML = '<div class="page-loader"></div>';
-    
+
     // --- Smart mode awareness ---
     if (state.searchMode === 'search') {
         // Re-run the current search query with the new type filter applied
@@ -3938,14 +3963,14 @@ async function toggleDiscoverFilter(type, val) {
         await applySearchFilters(false);
         return;
     }
-    
+
     // Default: fetch fresh discover data for the selected type
     await fetchDiscoverData(false);
 }
 
 async function loadDiscoverContent(append = false) {
     if (state.searchMode === 'actor') return; // Prevent overwriting actor mode
-    state.searchMode = 'trending'; 
+    state.searchMode = 'trending';
     document.getElementById('discoverLoadContainer').classList.remove('hidden');
     document.getElementById('searchHeader').innerText = "Discover";
     await fetchDiscoverData(append);
@@ -3954,7 +3979,7 @@ async function loadDiscoverContent(append = false) {
 async function loadMoreDiscover() {
     const btn = document.getElementById('btnDiscoverLoadMore');
     btn.innerText = "Syncing...";
-    
+
     if (state.searchMode === 'actor') {
         state.actorPage++;
         applyDiscoverLocalFilters(); // Engine natively handles slicing the next batch
@@ -3962,10 +3987,10 @@ async function loadMoreDiscover() {
         state.filterPage++;
         await applySearchFilters(true);
     } else if (state.searchMode === 'trending') {
-        discoverPage++; 
-        await fetchDiscoverData(true); 
+        discoverPage++;
+        await fetchDiscoverData(true);
     }
-    
+
     btn.innerText = "Load More Discovery";
 }
 
@@ -3979,7 +4004,7 @@ function resetDiscoverFilters() {
     document.getElementById('searchYear').value = '';
     document.getElementById('searchSort').value = 'popularity.desc';
     renderGenrePills();
-    toggleDiscoverFilter('type', 'all'); 
+    toggleDiscoverFilter('type', 'all');
 }
 function toggleDiscoverGenre(target, genreId) {
     const idx = state.discoverFilters.genres.indexOf(genreId);
@@ -3995,9 +4020,9 @@ function applyDiscoverLocalFilters() {
 
     // 2. Apply Filters
     let filtered = sourceData.filter(i => {
-       
 
-      let type = determineCategory(i);
+
+        let type = determineCategory(i);
 
         let tMatch = state.discoverFilters.type === 'all' || type === state.discoverFilters.type;
         let gMatch = state.discoverFilters.genres.length === 0 || state.discoverFilters.genres.every(g => {
@@ -4011,16 +4036,16 @@ function applyDiscoverLocalFilters() {
     // 3. Render Logic (Handle Actor Pagination vs Standard Render)
     if (state.searchMode === 'actor') {
         const slice = filtered.slice(0, state.actorPage * 20); // Paginate dynamically
-        renderGrid('searchGrid', slice, false, true); 
-        
+        renderGrid('searchGrid', slice, false, true);
+
         // Toggle Load More button based on filtered results
         const loadBtn = document.getElementById('discoverLoadContainer');
         if (slice.length < filtered.length) loadBtn.classList.remove('hidden');
         else loadBtn.classList.add('hidden');
     } else {
-        renderGrid('searchGrid', filtered, false, true); 
+        renderGrid('searchGrid', filtered, false, true);
     }
-    
+
     applyLayoutToGrid();
 }
 //reset mylist
@@ -4028,45 +4053,45 @@ function applyDiscoverLocalFilters() {
 function resetListFilters() {
     state.listFilters.genres = [];
     state.listSearchQuery = '';
-    
+
     const searchInput = document.getElementById('listSearchInput');
-    if(searchInput) searchInput.value = '';
-    
+    if (searchInput) searchInput.value = '';
+
     renderGenrePills();
-    toggleListFilter('type', 'all'); 
+    toggleListFilter('type', 'all');
 }
 // 3. Rhythm Lab Reset
 function resetLabFilters() {
     state.labFilters.genres = [];
     state.labSearchQuery = '';
-    
+
     // Clear the local text search
     const searchInput = document.getElementById('labSearchInput');
-    if(searchInput) searchInput.value = '';
-    
+    if (searchInput) searchInput.value = '';
+
     // Reset Advanced Dropdowns
     document.getElementById('labStatus').value = 'all';
     document.getElementById('labYear').value = 'all';
     document.getElementById('labImdb').value = 'all';
     document.getElementById('labPersonal').value = 'all';
-    
+
     renderGenrePills();
-    toggleLabFilter('type', 'all'); 
+    toggleLabFilter('type', 'all');
 }
 
 
-      // water progress feature 
+// water progress feature 
 function getLiquidHTML(item) {
     // Failsafe: No water for movies or 0 episodes watched
     if (item.type === 'movie' || !item.ep || item.ep <= 0) return '';
-    
+
     // Use max_ep, or temporarily use 'ep' if Auto-Heal is still processing
-    let max = item.max_ep || item.ep || 1; 
+    let max = item.max_ep || item.ep || 1;
     let ratio = item.ep / max;
-    
+
     // Force a minimum of 4% visibility so it NEVER disappears
-    let percent = Math.max(Math.min(ratio * 100, 100), 4); 
-    
+    let percent = Math.max(Math.min(ratio * 100, 100), 4);
+
     let textClass = ratio > 0.8 ? 'text-[#22c55e]' : ratio > 0.4 ? 'text-[#f59e0b]' : 'text-pulse';
     let bgClass = ratio > 0.8 ? 'bg-[#22c55e]' : ratio > 0.4 ? 'bg-[#f59e0b]' : 'bg-pulse';
 
@@ -4085,7 +4110,7 @@ function getLiquidHTML(item) {
 
 async function autoHealDatabase() {
     let healedCount = 0;
-    
+
     for (let i of state.db) {
         // If it's a TV show, has watched episodes, but is missing max_ep
         if (i.type !== 'movie' && i.ep > 0 && (!i.max_ep || i.max_ep === 0)) {
@@ -4097,7 +4122,7 @@ async function autoHealDatabase() {
                     healedCount++;
                 } else {
                     // Fallback so the math at least works
-                    i.max_ep = i.ep; 
+                    i.max_ep = i.ep;
                     healedCount++;
                 }
             } catch (err) {
@@ -4105,7 +4130,7 @@ async function autoHealDatabase() {
             }
         }
     }
-    
+
     // If we fixed anything, save the database and refresh the visuals instantly
     if (healedCount > 0) {
         save();
@@ -4116,7 +4141,7 @@ async function autoHealDatabase() {
 }
 
 function clearAllSources() {
-    if(confirm("Are you sure you want to delete all configured sources?")) {
+    if (confirm("Are you sure you want to delete all configured sources?")) {
         // FIX: Include 'asian' in the wipe reset
         sourcesDb = { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
         localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
@@ -4140,9 +4165,9 @@ function saveNotifs() {
 // --- SMART CATEGORY PARSER ---
 
 function determineCategory(item) {
-    if (item.forceType) return item.forceType; 
-    
-    const local = state.db.find(i => i.id === item.id);
+    if (item.forceType) return item.forceType;
+
+    const local = state.db.find(i => String(i.id) === String(item.id));
     if (local && local.type) return local.type;
 
     const lang = item.original_language;
@@ -4157,7 +4182,7 @@ function determineCategory(item) {
     const isAsianCountry = origin.some(c => ['CN', 'TW', 'TH', 'PH', 'VN'].includes(c));
     const isAsianLang = ['zh', 'th', 'tl', 'vi'].includes(lang);
     const isJpLiveAction = (lang === 'ja' || origin.includes('JP')) && !genres.includes(16);
-    
+
     if (isAsianCountry || isAsianLang || isJpLiveAction) return 'asian';
 
     return item.title ? 'movie' : 'tv';
@@ -4177,10 +4202,10 @@ function formatTypeLabel(baseType, tmdbType) {
 // --- CRYSTAL CLEAR LIQUID WATER ---
 function getLiquidHTML(item) {
     if (item.type === 'movie' || !item.ep || item.ep <= 0) return '';
-    let max = item.max_ep || item.ep || 1; 
+    let max = item.max_ep || item.ep || 1;
     let ratio = item.ep / max;
-    let percent = Math.max(Math.min(ratio * 100, 100), 4); 
-    
+    let percent = Math.max(Math.min(ratio * 100, 100), 4);
+
     // Clear Water Tints: Dropped the background opacity slightly to ensure the poster is the star
     let textClass = ratio > 0.8 ? 'text-[#22c55e]' : ratio > 0.4 ? 'text-[#f59e0b]' : 'text-white';
     let bgClass = ratio > 0.8 ? 'bg-[#22c55e]/10' : ratio > 0.4 ? 'bg-[#f59e0b]/10' : 'bg-white/5';
@@ -4201,14 +4226,14 @@ function getLiquidHTML(item) {
 function dispatchNotification(item, badge, msg) {
     // 1. DEDUPLICATION: Remove any existing notification for this EXACT item and badge to avoid spam
     notifications = notifications.filter(n => !(n.item.id === item.id && n.badge === badge));
-    
+
     // 2. Add timestamp for auto-clearing
     const newNotif = { id: Date.now(), item, badge, msg, read: false, date: Date.now() };
-    notifications.unshift(newNotif); 
-    
+    notifications.unshift(newNotif);
+
     // 3. HARD LIMIT: Never exceed 30 active notifications
-    if(notifications.length > 30) notifications.length = 30;
-    
+    if (notifications.length > 30) notifications.length = 30;
+
     saveNotifs();
     showToast(newNotif);
     updateHubUI();
@@ -4225,7 +4250,7 @@ function setNotifTab(tab) {
 function archiveNotif(e, id) {
     e.stopPropagation();
     const idx = notifications.findIndex(n => n.id === id);
-    if(idx > -1) {
+    if (idx > -1) {
         archivedNotifs.unshift(notifications[idx]);
         notifications.splice(idx, 1);
         saveNotifs();
@@ -4259,31 +4284,31 @@ function updateHubUI() {
                 <div class="text-xs font-bold text-white line-clamp-1 italic">${n.item.title}</div>
                 <div class="text-[9px] text-gray-500 uppercase mt-1">${n.msg}</div>
             </div>
-            ${currentNotifTab === 'recent' 
-                ? `<button onclick="archiveNotif(event, ${n.id})" class="absolute right-4 text-gray-500 hover:text-white transition-all"><i class="fas fa-archive"></i></button>`
-                : `<button onclick="deleteNotif(event, ${n.id})" class="absolute right-4 text-gray-500 hover:text-pulse transition-all"><i class="fas fa-trash"></i></button>`
-            }
+            ${currentNotifTab === 'recent'
+            ? `<button onclick="archiveNotif(event, ${n.id})" class="absolute right-4 text-gray-500 hover:text-white transition-all"><i class="fas fa-archive"></i></button>`
+            : `<button onclick="deleteNotif(event, ${n.id})" class="absolute right-4 text-gray-500 hover:text-pulse transition-all"><i class="fas fa-trash"></i></button>`
+        }
         </div>
     `).join('');
 }
 function handleCrownSelect(val) {
-    const item = state.db.find(i => i.id === state.active.id);
+    const item = state.db.find(i => String(i.id) === String(state.active.id));
     if (!item) return;
-    
+
     const crownLevel = parseInt(val);
     const realmBox = document.getElementById('mSovereignRealmBox');
-    
+
     // Clear dethroned 1-3 crowns
     if (crownLevel > 0 && crownLevel < 4) {
         state.db.forEach(i => {
-            if (i.type === item.type && i.crown === crownLevel) i.crown = 0; 
+            if (i.type === item.type && i.crown === crownLevel) i.crown = 0;
         });
         realmBox.classList.add('hidden');
     } else if (crownLevel === 4) {
         // Populate the specific genres for THIS item
         const select = document.getElementById('mSovereignRealmSelect');
         const activeGenres = state.active.genres || [];
-        
+
         if (activeGenres.length > 0) {
             select.innerHTML = activeGenres.map(g => `<option value="${g.name}">${g.name}</option>`).join('');
             item.realm = item.realm || activeGenres[0].name; // Default to first genre
@@ -4296,14 +4321,14 @@ function handleCrownSelect(val) {
     } else {
         realmBox.classList.add('hidden');
     }
-    
+
     item.crown = crownLevel;
     save();
     if (state.view === 'masterpieces') renderMasterpieces();
 }
 
 function saveSovereignRealm(realmName) {
-    const item = state.db.find(i => i.id === state.active.id);
+    const item = state.db.find(i => String(i.id) === String(state.active.id));
     if (item) {
         item.realm = realmName;
         save();
@@ -4314,7 +4339,7 @@ function saveSovereignRealm(realmName) {
 function setMpTab(tab) {
     state.mpTab = tab;
     ['crowned', 'perfect', 'ranked'].forEach(t => {
-        document.getElementById(`mpTab-${t}`).className = t === tab 
+        document.getElementById(`mpTab-${t}`).className = t === tab
             ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap"
             : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap";
     });
@@ -4337,15 +4362,15 @@ function renderMasterpieces() {
 
     let displayTypes = state.mpFilter === 'all' ? types : [state.mpFilter];
 
-  if (state.mpTab === 'crowned') {
+    if (state.mpTab === 'crowned') {
         html += displayTypes.map(type => {
             // Main Top 3
-            const crowned = state.db.filter(i => i.type === type && i.crown > 0 && i.crown < 4).sort((a,b) => a.crown - b.crown);
+            const crowned = state.db.filter(i => i.type === type && i.crown > 0 && i.crown < 4).sort((a, b) => a.crown - b.crown);
             // Genre Sovereigns (Unlimited)
             const sovereigns = state.db.filter(i => i.type === type && i.crown === 4);
-            
-            if(!crowned.length && !sovereigns.length) return '';
-            
+
+            if (!crowned.length && !sovereigns.length) return '';
+
             let sectionHtml = `
                 <div class="mb-16 animate-in fade-in duration-500">
                     <h3 class="text-xl md:text-2xl font-black italic uppercase text-yellow-500/80 tracking-widest mb-6 md:mb-8 border-b border-white/5 pb-4 flex items-center gap-4">
@@ -4355,9 +4380,9 @@ function renderMasterpieces() {
                         ${crowned.map(i => getRankedCard(i, i.crown, true)).join('')}
                     </div>
             `;
-            
+
             if (sovereigns.length > 0) {
-                 sectionHtml += `
+                sectionHtml += `
                     <h4 class="text-sm font-black italic uppercase text-pulse tracking-widest mt-12 mb-6 flex items-center gap-3">
                         <i class="fas fa-gem"></i> Genre Sovereigns
                     </h4>
@@ -4366,7 +4391,7 @@ function renderMasterpieces() {
                     </div>
                  `;
             }
-            
+
             sectionHtml += `</div>`;
             return sectionHtml;
         }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">No crowned items in this category.</div>';
@@ -4374,8 +4399,8 @@ function renderMasterpieces() {
     }
     else if (state.mpTab === 'perfect') {
         html += displayTypes.map(type => {
-            const perfect = state.db.filter(i => i.type === type && i.score === 5).sort((a,b) => b.imdb - a.imdb);
-            if(!perfect.length) return '';
+            const perfect = state.db.filter(i => i.type === type && i.score === 5).sort((a, b) => b.imdb - a.imdb);
+            if (!perfect.length) return '';
             return `
                 <div class="mb-16 animate-in fade-in duration-500">
                     <h3 class="text-lg md:text-xl font-black italic uppercase text-white tracking-widest mb-6 border-b border-white/5 pb-2">${typeNames[type]} Masterpieces</h3>
@@ -4386,12 +4411,12 @@ function renderMasterpieces() {
             `;
         }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">Achieve a 5★ rating to see perfect records.</div>';
         container.innerHTML = html;
-    } 
+    }
     else if (state.mpTab === 'ranked') {
         const limit = state.mpLimit || 25;
         const ranked = [...state.db]
             .filter(i => i.score > 0 && (state.mpFilter === 'all' || i.type === state.mpFilter))
-            .sort((a,b) => b.score - a.score || b.imdb - a.imdb)
+            .sort((a, b) => b.score - a.score || b.imdb - a.imdb)
             .slice(0, limit);
 
         html += `
@@ -4412,13 +4437,13 @@ function renderMasterpieces() {
 function getRankedCard(i, rank, isCrownCard = false) {
     let badgeHtml = '';
     let borderShadow = 'border-white/5 shadow-xl';
-    
+
     if (rank) {
         const color = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-pulse';
         if (isCrownCard && rank <= 3) {
             borderShadow = `border-yellow-500/30 shadow-[0_10px_40px_rgba(255,215,0,0.15)]`;
         }
-        
+
         badgeHtml = `
             <div class="absolute bottom-3 md:bottom-4 left-3 md:left-4 right-3 md:right-4 flex items-end justify-between z-30 pointer-events-none">
                 <div class="text-4xl md:text-6xl font-black italic tracking-tighter ${color} drop-shadow-[0_5px_10px_rgba(0,0,0,0.9)] opacity-90 group-hover:scale-110 transition-transform origin-bottom-left">
@@ -4430,7 +4455,7 @@ function getRankedCard(i, rank, isCrownCard = false) {
             </div>
         `;
     } else {
-         badgeHtml = `
+        badgeHtml = `
             <div class="absolute top-3 right-3 z-30 pointer-events-none">
                  <div class="text-[8px] md:text-[10px] font-black uppercase text-pulse bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
                     ★ ${i.score}/5
@@ -4442,7 +4467,7 @@ function getRankedCard(i, rank, isCrownCard = false) {
     return `
     <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
         <div class="aspect-[2/3] rounded-2xl md:rounded-[30px] overflow-hidden mb-3 md:mb-4 border ${borderShadow} group-hover:border-pulse transition-all relative">
-            <img src="${IMG+i.poster}" class="w-full h-full object-cover bg-dark">
+            <img src="${IMG + i.poster}" class="w-full h-full object-cover bg-dark">
             <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
             ${badgeHtml}
             ${getPlayHoverHTML(i)}
@@ -4457,13 +4482,13 @@ function getRankedCard(i, rank, isCrownCard = false) {
     let badgeHtml = '';
     let borderShadow = 'border-white/5 shadow-xl';
     const originalGetRankedCard = getRankedCard;
-getRankedCard = function(i, rank, isCrownCard = false, realmName = '') {
-    // If it's a Sovereign (4), override the badge UI to show the Realm
-    if (rank === 4) {
-        return `
+    getRankedCard = function (i, rank, isCrownCard = false, realmName = '') {
+        // If it's a Sovereign (4), override the badge UI to show the Realm
+        if (rank === 4) {
+            return `
         <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
             <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-pulse/30 shadow-[0_10px_40px_rgba(255,45,85,0.15)] group-hover:border-pulse transition-all relative">
-                <img src="${IMG+i.poster}" class="w-full h-full object-cover bg-dark">
+                <img src="${IMG + i.poster}" class="w-full h-full object-cover bg-dark">
                 <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
                 
                 <div class="absolute bottom-4 left-4 right-4 z-30 pointer-events-none">
@@ -4478,15 +4503,15 @@ getRankedCard = function(i, rank, isCrownCard = false, realmName = '') {
             <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
         </div>
         `;
-    }
-    return originalGetRankedCard(i, rank, isCrownCard);
-};
+        }
+        return originalGetRankedCard(i, rank, isCrownCard);
+    };
     if (rank) {
         const color = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-pulse';
         if (isCrownCard && rank <= 3) {
             borderShadow = `border-yellow-500/30 shadow-[0_10px_40px_rgba(255,215,0,0.15)]`;
         }
-        
+
         badgeHtml = `
             <div class="absolute bottom-4 left-4 right-4 flex items-end justify-between z-30 pointer-events-none">
                 <div class="text-6xl font-black italic tracking-tighter ${color} drop-shadow-[0_5px_10px_rgba(0,0,0,0.9)] opacity-90 group-hover:scale-110 transition-transform origin-bottom-left">
@@ -4499,7 +4524,7 @@ getRankedCard = function(i, rank, isCrownCard = false, realmName = '') {
         `;
     } else {
         // Just the normal score for Perfect 5s
-         badgeHtml = `
+        badgeHtml = `
             <div class="absolute top-3 right-3 z-30 pointer-events-none">
                  <div class="text-[10px] font-black uppercase text-pulse bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
                     ★ ${i.score}/5
@@ -4511,7 +4536,7 @@ getRankedCard = function(i, rank, isCrownCard = false, realmName = '') {
     return `
     <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
         <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border ${borderShadow} group-hover:border-pulse transition-all relative">
-            <img src="${IMG+i.poster}" class="w-full h-full object-cover bg-dark">
+            <img src="${IMG + i.poster}" class="w-full h-full object-cover bg-dark">
             <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
             ${badgeHtml}
             ${getPlayHoverHTML(i)}
@@ -4520,9 +4545,9 @@ getRankedCard = function(i, rank, isCrownCard = false, realmName = '') {
         <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
     </div>
     `;
-    
 
-    
+
+
 }
 
 // --- TITLE COPY ENGINE ---
@@ -4533,14 +4558,14 @@ function copyModalTitle() {
     navigator.clipboard.writeText(titleText).then(() => {
         const btn = document.getElementById('copyTitleBtn');
         const icon = btn.querySelector('i');
-        
+
         // Visual Success Feedback
         icon.className = 'fas fa-check text-[#22c55e]';
         btn.classList.add('border-[#22c55e]', 'bg-[#22c55e]/10');
-        
+
         // Trigger your existing beautiful notification
         showNotification(`Copied "${titleText}" to Neural Clipboard!`);
-        
+
         // Reset after 2 seconds
         setTimeout(() => {
             icon.className = 'fas fa-copy text-xs lg:text-base';
@@ -4559,7 +4584,7 @@ function setupLongPressCopy() {
     const startPress = (e) => {
         // Only allow left clicks or touches
         if (e.type === 'mousedown' && e.button !== 0) return;
-        
+
         pressTimer = setTimeout(() => {
             copyModalTitle();
             // Optional: Trigger a tiny haptic vibration on mobile if supported
@@ -4582,54 +4607,54 @@ function setupLongPressCopy() {
 
 // --- DATA DESTRUCTION: CUSTOM PURGE UI ---
 
-        function clearLibrary() {
-            if (state.db.length === 0) {
-                alert("Your neural library is already empty.");
-                return;
-            }
-            // Open the custom modal
-            document.getElementById('purgeModal').classList.remove('hidden');
-        }
+function clearLibrary() {
+    if (state.db.length === 0) {
+        alert("Your neural library is already empty.");
+        return;
+    }
+    // Open the custom modal
+    document.getElementById('purgeModal').classList.remove('hidden');
+}
 
-        function closePurgeModal() {
-            document.getElementById('purgeModal').classList.add('hidden');
-            checkScrollLock();
-        }
+function closePurgeModal() {
+    document.getElementById('purgeModal').classList.add('hidden');
+    checkScrollLock();
+}
 
-        function backdropClosePurge(e) {
-            if (e.target.id === "purgeModal") {
-                closePurgeModal();
-            }
-        }
+function backdropClosePurge(e) {
+    if (e.target.id === "purgeModal") {
+        closePurgeModal();
+    }
+}
 
-        function executePurge() {
-            TemporalEngine.commit("Pre-Purge Backup");
-            // 1. Wipe the data
-            state.db = []; 
-            
-            // 2. Save the empty state
-            save();        
-            
-            // 3. Clear the UI if we are on the My List page
-            if (state.view === 'mylist') {
-                document.getElementById('listContainer').innerHTML = `
+function executePurge() {
+    TemporalEngine.commit("Pre-Purge Backup");
+    // 1. Wipe the data
+    state.db = [];
+
+    // 2. Save the empty state
+    save();
+
+    // 3. Clear the UI if we are on the My List page
+    if (state.view === 'mylist') {
+        document.getElementById('listContainer').innerHTML = `
                     <div class="text-center py-20 text-gray-600 font-black uppercase tracking-widest italic">
                         Library Successfully Purged.
                     </div>
-                `; 
-            }
-            
-            // 4. Close the modal
-            closePurgeModal();
-        }
-        
+                `;
+    }
+
+    // 4. Close the modal
+    closePurgeModal();
+}
 
 
- //manual type override 
+
+//manual type override 
 function overrideType(newType) {
     if (!state.active) return;
-    const idx = state.db.findIndex(i => i.id === state.active.id);
-    
+    const idx = state.db.findIndex(i => String(i.id) === String(state.active.id));
+
     if (idx !== -1) {
         state.db[idx].type = newType;
         state.db[idx].updatedAt = Date.now();
@@ -4638,21 +4663,21 @@ function overrideType(newType) {
         // If not in library yet, store the forceType to be used when they click '+ Add to List'
         state.active.forceType = newType;
     }
-    
+
     showNotification(`Type overridden to ${newType.toUpperCase()}`);
-    
+
     // Instantly hide/show the episode tracker based on the new logic
     const maxEp = state.active.number_of_episodes || 1;
-    const local = state.db.find(i => i.id === state.active.id);
+    const local = state.db.find(i => String(i.id) === String(state.active.id));
     const calculatedType = newType; // Use the new type being passed in
 
     document.getElementById('mProgressBox').classList.toggle('hidden', calculatedType === 'movie' || !local || maxEp <= 1);
-    
-    if(calculatedType !== 'movie' && local && maxEp > 1) {
+
+    if (calculatedType !== 'movie' && local && maxEp > 1) {
         // Fix for Season Mismatch: Recalculate based on real limits
         document.getElementById('mEpRange').max = maxEp;
         document.getElementById('mEpRange').value = local.ep || 0;
-        
+
         // BUG FIX: Scoped to state.active instead of details
         state.activeSeasons = (state.active.seasons || []).filter(s => s.season_number > 0 && s.episode_count > 0);
         let cumulative = 0;
@@ -4660,14 +4685,14 @@ function overrideType(newType) {
             s.startEp = cumulative;
             cumulative += s.episode_count;
             // Cap it strictly at the total episodes so it doesn't overflow
-            s.endEp = Math.min(cumulative, maxEp); 
+            s.endEp = Math.min(cumulative, maxEp);
         });
-        
+
         updateEpUI(local.ep || 0, maxEp);
-        renderSeasonsUI(); 
+        renderSeasonsUI();
     }
 }
- //country load
+//country load
 // loadCountries() 
 async function loadCountries() {
     // Curated top 15 media-producing regions for a premium, uncluttered UI
@@ -4699,7 +4724,7 @@ async function loadCountries() {
 }
 // --- SAGA MATRIX ENGINE (UPGRADED) ---
 const EXTENDED_SAGAS = [
-    119, 86311, 531241, 1241, 404609, 3033, 10, 230, 645, 295, 
+    119, 86311, 531241, 1241, 404609, 3033, 10, 230, 645, 295,
     124, 9485, 87359, 131635, 1703, 33514, 264, 420, 84, 118, 528, 556, 178
 ];
 let currentSagaTab = 'discover';
@@ -4717,21 +4742,21 @@ function handleSagaSearch(query) {
 async function searchSagas(query) {
     const grid = document.getElementById('sagaGrid');
     grid.innerHTML = '<div class="page-loader"></div>';
-    
+
     try {
         const data = await fetchAPI(`/search/collection?query=${encodeURIComponent(query)}`);
-        
+
         // Filter out sagas that are already tracked
-        let untrackedCollections = data.results.filter(c => 
-            !state.db.some(i => String(i.sagaId) === String(c.id)) && 
+        let untrackedCollections = data.results.filter(c =>
+            !state.db.some(i => String(i.sagaId) === String(c.id)) &&
             !customSagas.some(cs => String(cs.id) === String(c.id))
         );
 
-        if(!untrackedCollections.length) {
+        if (!untrackedCollections.length) {
             grid.innerHTML = `<div class="col-span-full text-center py-20 text-[#22c55e] font-black uppercase tracking-widest">All matching universes are already tracked or none found.</div>`;
             return;
         }
-        
+
         const sagas = await Promise.all(untrackedCollections.slice(0, 10).map(c => fetchAPI(`/collection/${c.id}`)));
         renderSagaGridUI(sagas, grid, false);
     } catch (e) {
@@ -4746,7 +4771,7 @@ async function renderSagaMatrix() {
     try {
         // Shuffle array to randomize recommendations
         const shuffled = EXTENDED_SAGAS.sort(() => 0.5 - Math.random());
-        
+
         let untrackedIds = [];
         for (let id of shuffled) {
             // Check if it's already in the DB or Custom Sagas
@@ -4758,21 +4783,21 @@ async function renderSagaMatrix() {
         }
 
         if (untrackedIds.length === 0) {
-             grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest italic">All known elite universes tracked. Search for more.</div>`;
-             return;
+            grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest italic">All known elite universes tracked. Search for more.</div>`;
+            return;
         }
 
         const sagas = await Promise.all(untrackedIds.map(id => fetchAPI(`/collection/${id}`)));
         renderSagaGridUI(sagas, grid, false);
     } catch (err) {
-       grid.innerHTML = `<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest">Neural Link to Saga Matrix Severed</div>`;
+        grid.innerHTML = `<div class="col-span-full text-center py-20 text-pulse font-black uppercase tracking-widest">Neural Link to Saga Matrix Severed</div>`;
     }
 }
 
 function renderSagaGridUI(sagas, gridElement, isMyList) {
     gridElement.innerHTML = sagas.filter(s => s && s.parts && s.parts.length > 0).map(saga => {
         let overlayHtml = `<div class="absolute -top-3 -right-3 bg-pulse text-white text-[10px] font-black px-3 py-1.5 rounded-full z-40 shadow-[0_0_15px_rgba(255,45,85,0.6)]">${saga.parts.length} Parts</div>`;
-        
+
         if (isMyList) {
             const statusColor = saga.progress === 100 ? 'text-[#22c55e]' : (saga.progress > 0 ? 'text-[#f59e0b]' : 'text-gray-500');
             const statusBg = saga.progress === 100 ? 'bg-[#22c55e]' : (saga.progress > 0 ? 'bg-[#f59e0b]' : 'bg-gray-500');
@@ -4799,7 +4824,7 @@ function renderSagaGridUI(sagas, gridElement, isMyList) {
             </button>
         ` : '';
 
-      return `
+        return `
     <div class="group cursor-pointer mb-8 animate-in zoom-in duration-300 relative saga-selectable-card selectable-card ${isMyList && isSelectMode ? 'select-mode-pulse' : ''}" 
          data-id="${saga.id}" data-issaga="true" 
          onclick="${isMyList ? `handleSagaCardClick(event, '${saga.id}')` : `openSaga('${saga.id}')`}">
@@ -4811,9 +4836,9 @@ function renderSagaGridUI(sagas, gridElement, isMyList) {
         ` : ''}
 
         <div class="memory-cluster mb-4 relative">
-            <img src="${saga.parts[0]?.poster_path ? IMG+saga.parts[0].poster_path : 'https://via.placeholder.com/300'}" class="cluster-top object-cover bg-dark">
-            ${saga.parts[1] ? `<img src="${IMG+saga.parts[1].poster_path}" class="cluster-mid object-cover bg-dark">` : ''}
-            ${saga.parts[2] ? `<img src="${IMG+saga.parts[2].poster_path}" class="cluster-back object-cover bg-dark">` : ''}
+            <img src="${saga.parts[0]?.poster_path ? IMG + saga.parts[0].poster_path : 'https://via.placeholder.com/300'}" class="cluster-top object-cover bg-dark">
+            ${saga.parts[1] ? `<img src="${IMG + saga.parts[1].poster_path}" class="cluster-mid object-cover bg-dark">` : ''}
+            ${saga.parts[2] ? `<img src="${IMG + saga.parts[2].poster_path}" class="cluster-back object-cover bg-dark">` : ''}
             ${overlayHtml}
             ${quickAddBtn}
         </div>
@@ -4828,7 +4853,7 @@ function renderSagaGridUI(sagas, gridElement, isMyList) {
 function renderMySagas() {
     const grid = document.getElementById('sagaGrid'); // Fixed container target
     if (!grid) return;
-    
+
     grid.innerHTML = '<div class="page-loader"></div>';
     let grouped = {}; // FIXED: Was completely missing
 
@@ -4839,9 +4864,9 @@ function renderMySagas() {
             grouped[item.sagaId].parts.push(item);
         }
     });
-    
+
     const mySagas = Object.values(grouped);
-    
+
     // Format Standard Sagas
     const formattedSagas = mySagas.filter(s => !String(s.id).startsWith('custom_')).map(s => {
         const total = s.parts.length;
@@ -4851,21 +4876,21 @@ function renderMySagas() {
 
         return {
             id: s.id, name: s.name,
-            parts: s.parts.sort((a,b) => (a.year || 0) - (b.year || 0)).map(p => ({ poster_path: p.poster })),
+            parts: s.parts.sort((a, b) => (a.year || 0) - (b.year || 0)).map(p => ({ poster_path: p.poster })),
             progress: progress, status: status, finished: finished, total: total
         };
     });
-    
+
     // Format Custom Sagas
     const customSagasList = typeof customSagas !== 'undefined' ? customSagas : [];
     const customFormatted = customSagasList.map(cs => {
         const total = cs.parts.length;
         const watchedCount = cs.parts.filter(p => {
-            const match = state.db.find(d => d.id === p.id);
+            const match = state.db.find(d => String(d.id) === String(p.id));
             return match && match.status === 'Finished';
         }).length;
         const progress = total > 0 ? Math.round((watchedCount / total) * 100) : 0;
-        
+
         return {
             id: cs.id,
             name: cs.name + ' <span class="text-pulse text-[8px] ml-2 border border-pulse px-1 rounded shadow-[0_0_10px_rgba(255,45,85,0.4)]">(CUSTOM)</span>',
@@ -4874,7 +4899,7 @@ function renderMySagas() {
             status: progress === 100 ? 'Completed' : (progress > 0 ? 'In Progress' : 'Custom Realm'),
             finished: watchedCount, total: total, isCustom: true
         };
-        
+
     });
 
     const combinedSagas = [...formattedSagas, ...customFormatted];
@@ -4883,7 +4908,7 @@ function renderMySagas() {
         grid.innerHTML = `<div class="col-span-full text-center py-20 text-gray-500 font-black uppercase tracking-widest italic">No synchronized sagas detected in your library.</div>`;
         return;
     }
-    
+
     renderSagaGridUI(combinedSagas, grid, true);
 }
 
@@ -4892,15 +4917,15 @@ async function syncSagaData(cId, cName) {
     try {
         const col = await fetchAPI(`/collection/${cId}`);
         let addedCount = 0; let linkedCount = 0;
-        
+
         col.parts.forEach(part => {
-            let existing = state.db.find(i => i.id === part.id);
+            let existing = state.db.find(i => String(i.id) === String(part.id));
             if (!existing) {
                 state.db.push({
                     id: part.id, title: part.title, poster: part.poster_path, type: 'movie',
                     status: 'Plan to Watch', ep: 0, max_ep: 1, score: 0, crown: 0, imdb: part.vote_average,
                     year: (part.release_date || '').split('-')[0], genres: part.genre_ids || [],
-                    added: Date.now(), sagaId: cId, sagaName: cName,updatedAt: Date.now()
+                    added: Date.now(), sagaId: cId, sagaName: cName, updatedAt: Date.now()
                 });
                 addedCount++;
             } else {
@@ -4909,18 +4934,18 @@ async function syncSagaData(cId, cName) {
                 linkedCount++;
             }
         });
-        
+
         save();
         showNotification(`Universe Synced: ${addedCount} new, ${linkedCount} linked!`);
         document.getElementById('sagaModal').classList.add('hidden');
-        
+
         // If on Discover tab, replace with new recommendations immediately
         if (currentSagaTab === 'discover') {
-            renderSagaMatrix(); 
+            renderSagaMatrix();
         } else {
-            setSagaTab('mylist'); 
+            setSagaTab('mylist');
         }
-        
+
         return true;
     } catch (e) {
         showNotification("Failed to synchronize universe.", true);
@@ -4945,34 +4970,34 @@ function purgeSagaData(cId, cName) {
 
 // Auto-Prompt Hook when updating a movie's status
 const originalUpdateStatusWithGlow = updateStatus;
-updateStatus = function() {
+updateStatus = function () {
     originalUpdateStatusWithGlow();
-    
+
     if (state.active && state.active.belongs_to_collection) {
         const cId = state.active.belongs_to_collection.id;
         const cName = state.active.belongs_to_collection.name;
         const sagaNavBtn = document.querySelector('button[onclick="setView(\'sagamatrix\')"]');
-        
+
         if (sagaNavBtn) sagaNavBtn.classList.add('saga-glow-active');
-        
-        const localItem = state.db.find(i => i.id === state.active.id);
-        if(localItem) {
+
+        const localItem = state.db.find(i => String(i.id) === String(state.active.id));
+        if (localItem) {
             localItem.sagaId = cId;
             localItem.sagaName = cName;
             save();
         }
 
         const existingParts = state.db.filter(i => i.sagaId === cId).length;
-        
+
         if (existingParts <= 1) {
             document.getElementById('mSagaPromptText').innerHTML = `This title belongs to the <span class="text-pulse font-black">${cName}</span>. Track all associated records?`;
             const confirmBtn = document.getElementById('mSagaPromptConfirm');
-            
+
             confirmBtn.onclick = async () => {
                 confirmBtn.innerText = "Syncing...";
                 await syncSagaData(cId, cName);
                 document.getElementById('mSagaPromptBox').classList.add('hidden');
-                confirmBtn.innerText = "Track Entire Universe"; 
+                confirmBtn.innerText = "Track Entire Universe";
             };
             document.getElementById('mSagaPromptBox').classList.add('hidden');
         }
@@ -4980,20 +5005,20 @@ updateStatus = function() {
 };
 
 // --- NEW: INLINE SAGA EDITING ENGINE ---
-let currentSagaViewContext = null; 
+let currentSagaViewContext = null;
 let inlineSearchTimer = null;
 
 async function openSaga(id, isEditing = false) {
     const modal = document.getElementById('sagaModal');
     if (modal) modal.scrollTop = 0;
-    
+
     const isCustomId = String(id).startsWith('custom_');
 
     if (!isEditing || !currentSagaViewContext) {
         if (isCustomId) {
             const found = customSagas.find(s => String(s.id) === String(id));
             if (!found) return showNotification("Custom Universe lost.", true);
-            currentSagaViewContext = JSON.parse(JSON.stringify(found)); 
+            currentSagaViewContext = JSON.parse(JSON.stringify(found));
         } else {
             currentSagaViewContext = await fetchAPI(`/collection/${id}`);
             if (!currentSagaViewContext) return showNotification("Universe data corrupted.", true);
@@ -5006,11 +5031,11 @@ async function openSaga(id, isEditing = false) {
     if (isEditing) {
         if (!isCustomId && !currentSagaViewContext.isCustom) {
             currentSagaViewContext = {
-                id: 'custom_' + Date.now() + '_' + id, 
+                id: 'custom_' + Date.now() + '_' + id,
                 name: currentSagaViewContext.name + ' (Custom)',
                 description: currentSagaViewContext.overview || '',
                 backdrop_path: currentSagaViewContext.backdrop_path,
-               
+
                 parts: currentSagaViewContext.parts.map(p => ({
                     id: p.id, media_type: p.media_type || 'movie', title: p.title || p.name,
                     poster_path: p.poster_path, release_date: p.release_date || p.first_air_date || '2000-01-01', size: p.size || 'main',
@@ -5064,7 +5089,7 @@ async function openSaga(id, isEditing = false) {
                                 <div class="flex flex-col md:flex-row items-start md:items-center justify-between p-3 md:p-4 bg-white/5 border border-white/10 rounded-2xl hover:border-pulse/30 transition-colors gap-3 md:gap-0">
                                     <div class="flex items-center gap-3 md:gap-4 w-full md:w-2/3">
                                         <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-dark border border-white/10 flex items-center justify-center text-[9px] md:text-[10px] font-black text-gray-500 shrink-0">${idx + 1}</div>
-                                        <img src="${p.poster_path ? IMG+p.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 md:w-10 md:h-14 object-cover rounded-md shadow-lg shrink-0">
+                                        <img src="${p.poster_path ? IMG + p.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 md:w-10 md:h-14 object-cover rounded-md shadow-lg shrink-0">
                                         <div class="truncate flex-1">
                                             <div class="text-[10px] md:text-[11px] font-black uppercase text-white truncate">${p.title || p.name}</div>
                                             <div class="text-[7px] md:text-[8px] text-gray-500 uppercase tracking-widest mt-1">${(p.release_date || p.first_air_date || '').split('-')[0] || 'N/A'} • ${p.media_type || 'movie'}</div>
@@ -5089,43 +5114,43 @@ async function openSaga(id, isEditing = false) {
         return;
     }
 
-   // ============================================
+    // ============================================
     // MODE B: CINEMATIC VIEW MODE 
     // ============================================
     const saga = currentSagaViewContext;
     const ownedParts = state.db.filter(i => String(i.sagaId) === String(id));
     const isFullySynced = ownedParts.length >= saga.parts.length;
-    
+
     // Bulletproof Custom Saga Check (Catches older custom formats too)
     const isCustomSaga = String(id).startsWith('custom_') || customSagas.some(s => String(s.id) === String(id));
 
     let actionButtons = '';
-    
+
     // 1. Add All (Only if there are missing parts AND it's a TMDB saga)
     if (!isFullySynced && !isCustomSaga) {
         actionButtons += `<button onclick="syncSagaData('${id}', '${saga.name.replace(/'/g, "\\'")}')" class="bg-pulse text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-pulse/30 hover:scale-105 transition-all flex items-center gap-2 w-full md:w-auto justify-center"><i class="fas fa-plus"></i> Add All</button>`;
     }
-    
+
     // 2. Finish All (If they own parts of it, or if it's custom)
     if (ownedParts.length > 0 || isCustomSaga) {
         actionButtons += `<button onclick="markSagaFinished('${id}')" class="bg-[#22c55e] text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-105 transition-all flex items-center gap-2 shadow-lg shadow-[#22c55e]/30 w-full md:w-auto justify-center"><i class="fas fa-check-double"></i> Finish All</button>`;
     }
-    
+
     // 3. Eject (For Official TMDB sagas they have tracked)
     if (ownedParts.length > 0 && !isCustomSaga) {
         actionButtons += `<button onclick="purgeSagaData('${id}', '${saga.name.replace(/'/g, "\\'")}')" class="bg-white/5 text-gray-400 hover:text-pulse border border-white/10 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest hover:border-pulse transition-all flex items-center gap-2 w-full md:w-auto justify-center"><i class="fas fa-trash-alt"></i> Eject</button>`;
     }
-    
+
     // 4. Edit Inline (Always available to modify the blueprint)
     actionButtons += `<button onclick="openSaga('${id}', true)" class="bg-[#3b82f6]/20 border border-[#3b82f6]/50 text-[#3b82f6] hover:bg-[#3b82f6] hover:text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-[#3b82f6]/20 w-full md:w-auto justify-center"><i class="fas fa-edit"></i> Edit Inline</button>`;
-    
+
     // 5. Collapse (For Custom Sagas)
     if (isCustomSaga) {
         actionButtons += `<button onclick="deleteCustomUniverse('${id}')" class="bg-red-600/20 border border-red-600/50 text-red-500 hover:bg-red-600 hover:text-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 w-full md:w-auto justify-center"><i class="fas fa-radiation"></i> Collapse</button>`;
     }
 
-    const parts = saga.isCustom 
-        ? saga.parts 
+    const parts = saga.isCustom
+        ? saga.parts
         : saga.parts.sort((a, b) => new Date(a.release_date || a.first_air_date) - new Date(b.release_date || b.first_air_date));
 
     // Fallback logic for TMDB's "overview" vs Custom Forge's "description"
@@ -5153,15 +5178,15 @@ async function openSaga(id, isEditing = false) {
 
             <div class="space-y-6 md:space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-px before:bg-gradient-to-b before:from-pulse before:via-white/10 before:to-transparent px-2 md:px-0">
                 ${parts.map((p, index) => {
-                    const localData = state.db.find(i => i.id === p.id);
-                    const isFinished = localData && localData.status === 'Finished';
-                    const statusIcon = isFinished ? '<i class="fas fa-check text-[#22c55e]"></i>' : (localData ? '<i class="fas fa-eye text-pulse"></i>' : '');
-                    const borderHighlight = localData ? (isFinished ? 'border-[#22c55e]/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-pulse/50 shadow-[0_0_15px_rgba(255,45,85,0.1)]') : 'border-white/5';
-                    
-                    // FIX: Extract personal score safely
-                    const personalScore = localData && localData.score ? localData.score : 0;
+        const localData = state.db.find(i => String(i.id) === String(p.id));
+        const isFinished = localData && localData.status === 'Finished';
+        const statusIcon = isFinished ? '<i class="fas fa-check text-[#22c55e]"></i>' : (localData ? '<i class="fas fa-eye text-pulse"></i>' : '');
+        const borderHighlight = localData ? (isFinished ? 'border-[#22c55e]/50 shadow-[0_0_15px_rgba(34,197,94,0.1)]' : 'border-pulse/50 shadow-[0_0_15px_rgba(255,45,85,0.1)]') : 'border-white/5';
 
-                    return `
+        // FIX: Extract personal score safely
+        const personalScore = localData && localData.score ? localData.score : 0;
+
+        return `
                     <div class="saga-movie-card relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group transition-all duration-500 overflow-hidden" style="max-height: 500px; opacity:1;">
                         <div class="flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-dark ${localData ? (isFinished ? 'bg-[#22c55e]' : 'bg-pulse') : 'bg-gray-800'} text-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 transition-colors ml-1 md:ml-0">
                             <span class="text-[9px] md:text-[10px] font-black">${statusIcon || (index + 1)}</span>
@@ -5218,17 +5243,17 @@ async function saveInlineSaga() {
 
     let addedCount = 0;
     currentSagaViewContext.parts.forEach(part => {
-        let localItem = state.db.find(i => i.id === part.id);
+        let localItem = state.db.find(i => String(i.id) === String(part.id));
         if (localItem) {
             localItem.sagaId = sId;
             localItem.sagaName = title;
         } else {
             state.db.push({
                 id: part.id, title: part.title || part.name, poster: part.poster_path || part.poster,
-                type: part.media_type || 'movie', status: 'Plan to Watch', 
-                ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0, 
+                type: part.media_type || 'movie', status: 'Plan to Watch',
+                ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0,
                 year: (part.release_date || '').split('-')[0], genres: [], added: Date.now(),
-                sagaId: sId, sagaName: title,updatedAt: Date.now()
+                sagaId: sId, sagaName: title, updatedAt: Date.now()
             });
             addedCount++;
         }
@@ -5283,7 +5308,7 @@ function markSagaFinished(sagaId) {
     if (isCustom) {
         // Custom Sagas: Ensure all blueprint parts exist in DB and mark as Finished
         sagaParts.forEach(part => {
-            let item = state.db.find(i => i.id === part.id);
+            let item = state.db.find(i => String(i.id) === String(part.id));
             if (item) {
                 item.status = 'Finished';
                 item.ep = item.max_ep || 1;
@@ -5292,10 +5317,10 @@ function markSagaFinished(sagaId) {
             } else {
                 state.db.push({
                     id: part.id, title: part.title || part.name, poster: part.poster_path,
-                    type: part.media_type || 'movie', status: 'Finished', 
-                    ep: 1, max_ep: 1, score: 0, crown: 0, imdb: 0, 
+                    type: part.media_type || 'movie', status: 'Finished',
+                    ep: 1, max_ep: 1, score: 0, crown: 0, imdb: 0,
                     year: (part.release_date || '').split('-')[0], genres: [], added: Date.now(),
-                    sagaId: sagaId, sagaName: "Custom Universe",updatedAt: Date.now()
+                    sagaId: sagaId, sagaName: "Custom Universe", updatedAt: Date.now()
                 });
                 updated++;
             }
@@ -5311,7 +5336,7 @@ function markSagaFinished(sagaId) {
         });
     }
 
-    save(); 
+    save();
     document.getElementById('sagaModal').classList.add('hidden');
     showNotification(updated > 0 ? `Universe Completed! ${updated} records updated.` : "Universe marked as completed.");
 
@@ -5323,7 +5348,7 @@ function closeSagaModal() {
     document.getElementById('sagaModal').classList.add('hidden');
     checkScrollLock();
     if (state.view === 'sagamatrix') {
-        setSagaTab(currentSagaTab); 
+        setSagaTab(currentSagaTab);
     }
 }
 function closeAdvancedIO() {
@@ -5367,7 +5392,7 @@ function populateSagaDropdown(currentSagaId) {
     if (!select) return;
 
     let optionsHTML = '<option value="">None / Independent</option>';
-    
+
     // Inject Custom Sagas
     customSagas.forEach(s => {
         const selected = (currentSagaId && String(currentSagaId) === String(s.id)) ? 'selected' : '';
@@ -5391,8 +5416,8 @@ function populateSagaDropdown(currentSagaId) {
 
 function assignToSaga(sagaId) {
     if (!state.active) return;
-    const item = state.db.find(i => i.id === state.active.id);
-    
+    const item = state.db.find(i => String(i.id) === String(state.active.id));
+
     if (!item) {
         showNotification("Initialize record first by setting a status.", true);
         document.getElementById('mSagaAssign').value = "";
@@ -5456,7 +5481,7 @@ async function handleInlineSagaSearch(query) {
 function renderInlineResults(results, label) {
     const container = document.getElementById('inlineSagaSearchResults');
     container.innerHTML = `<div class="p-3 text-[8px] font-black uppercase text-pulse bg-white/5 border-b border-white/10 tracking-[0.2em]">${label}</div>`;
-    
+
     results.forEach(item => {
         if (item.media_type === 'person') return;
         const div = document.createElement('div');
@@ -5479,17 +5504,17 @@ function renderInlineResults(results, label) {
 function setSagaTab(tab) {
     currentSagaTab = tab;
     const tabs = ['discover', 'mylist', 'forge'];
-    
+
     // 1. Update Tab Button Styles
     tabs.forEach(t => {
         const btn = document.getElementById(`sagaTab-${t}`);
-        if(btn) {
-            btn.className = t === tab 
-                ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap" 
+        if (btn) {
+            btn.className = t === tab
+                ? "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all bg-pulse text-white shadow-lg shadow-pulse/20 whitespace-nowrap"
                 : "px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white whitespace-nowrap border-l border-white/10 ml-2 pl-6";
         }
     });
-    
+
     // 2. Toggle View Containers
     document.getElementById('sagaGrid').classList.toggle('hidden', tab === 'forge');
     document.getElementById('sagaActionBar').classList.toggle('hidden', tab === 'forge');
@@ -5519,14 +5544,14 @@ function handleForgeSearch(query) {
     forgeSearchTimer = setTimeout(async () => {
         const data = await fetchAPI(`/search/multi?query=${encodeURIComponent(query)}&include_adult=${!prefs.safeMode}`);
         const results = data.results.filter(i => i.media_type === 'movie' || i.media_type === 'tv').slice(0, 8);
-        
-       document.getElementById('forgeSearchResults').innerHTML = results.map(i => `
+
+        document.getElementById('forgeSearchResults').innerHTML = results.map(i => `
             <div class="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl hover:border-pulse/50 transition-all cursor-pointer group w-full min-w-0" 
                 draggable="true" 
                 ondragstart="forgeSearchDragStart(event, ${i.id}, '${i.media_type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')"
                 onclick="addToForge(${i.id}, '${i.media_type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')">
                 <div class="flex items-center gap-3 min-w-0 w-[85%]">
-                    <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 object-cover rounded-md pointer-events-none shrink-0">
+                    <img src="${i.poster_path ? IMG + i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 object-cover rounded-md pointer-events-none shrink-0">
                     <div class="pointer-events-none truncate flex-1 min-w-0">
                         <div class="text-[10px] font-black uppercase text-white truncate group-hover:text-pulse">${i.title || i.name}</div>
                         <div class="text-[8px] font-bold text-gray-500 tracking-widest mt-1">${i.media_type} • ${(i.release_date || i.first_air_date || '').split('-')[0]}</div>
@@ -5538,12 +5563,12 @@ function handleForgeSearch(query) {
     }, 400);
 }
 function forgeSearchDragStart(e, id, type, title, poster, year) {
-    e.dataTransfer.setData('application/json', JSON.stringify({id, type, title, poster, year}));
+    e.dataTransfer.setData('application/json', JSON.stringify({ id, type, title, poster, year }));
     e.dataTransfer.effectAllowed = 'copy';
 }
 function addToForge(id, type, title, poster, year) {
     if (activeForgeItems.find(i => i.id === id)) return showNotification("Entity already in canvas.", true);
-    
+
     activeForgeItems.push({
         id: id, type: type, title: title, poster: poster, year: year, size: 'main' // default size
     });
@@ -5561,9 +5586,9 @@ function removeFromForge(index) {
 function moveForgeItem(index, direction) {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= activeForgeItems.length) return;
-    
+
     // Add [0] to extract the actual object from the spliced array
-    const item = activeForgeItems.splice(index, 1)[0]; 
+    const item = activeForgeItems.splice(index, 1)[0];
     activeForgeItems.splice(newIndex, 0, item);
     renderForgeCanvas();
 }
@@ -5588,7 +5613,7 @@ function forgeDragEnd(e) {
 function forgeDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = e.dataTransfer.types.includes('application/json') ? "copy" : "move";
-    
+
     const targetCard = e.target.closest('.forge-item');
     if (targetCard && targetCard.dataset.index != draggedItemIndex) {
         targetCard.classList.add('drag-over');
@@ -5610,21 +5635,21 @@ function forgeDrop(e) {
             addToForge(data.id, data.type, data.title, data.poster, data.year);
             return;
         }
-    } catch(err) {}
+    } catch (err) { }
 
     // 2. Existing Canvas Reorder Logic
     const targetCard = e.target.closest('.forge-item');
     if (!targetCard || draggedItemIndex === null) return;
-    
+
     const dropIndex = parseInt(targetCard.dataset.index);
     if (draggedItemIndex === dropIndex) return;
 
     // Add [0] here as well
-    const itemToMove = activeForgeItems.splice(draggedItemIndex, 1)[0]; 
+    const itemToMove = activeForgeItems.splice(draggedItemIndex, 1)[0];
     activeForgeItems.splice(dropIndex, 0, itemToMove);
-    
+
     draggedItemIndex = null;
-    setTimeout(() => { renderForgeCanvas(); }, 10); 
+    setTimeout(() => { renderForgeCanvas(); }, 10);
 }
 
 function renderForgeCanvas() {
@@ -5648,7 +5673,7 @@ function renderForgeCanvas() {
             
             <div class="flex items-center gap-4 pointer-events-none">
                 <div class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 font-black text-[10px]">${index + 1}</div>
-                <img src="${item.poster ? IMG+item.poster : 'https://via.placeholder.com/50'}" class="w-12 h-16 rounded object-cover shadow-lg">
+                <img src="${item.poster ? IMG + item.poster : 'https://via.placeholder.com/50'}" class="w-12 h-16 rounded object-cover shadow-lg">
                 <div>
                     <h4 class="text-[12px] font-black uppercase text-white line-clamp-1">${item.title}</h4>
                     <span class="text-[8px] uppercase tracking-widest text-gray-500">${item.type} • ${item.year}</span>
@@ -5672,10 +5697,10 @@ function deleteCustomUniverse(id) {
 
     // 1. Remove from the local array
     customSagas = customSagas.filter(s => String(s.id) !== String(id));
-    
+
     // 2. Update localStorage
     localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
-    
+
     // 3. Clean up the state: Remove the saga link from any items in your DB
     state.db.forEach(item => {
         if (String(item.sagaId) === String(id)) {
@@ -5685,11 +5710,11 @@ function deleteCustomUniverse(id) {
     });
 
     save();
-    
+
     // 4. UI Refresh
     document.getElementById('sagaModal').classList.add('hidden');
     showNotification("Universe collapsed and erased from memory.");
-    
+
     // Go back to the matrix to show it's gone
     setSagaTab('mylist');
 }
@@ -5711,9 +5736,9 @@ function editCustomUniverse(id) {
     currentEditingSagaId = saga.id;
     document.getElementById('forgeTitleInput').value = saga.name;
     document.getElementById('forgeDescInput').value = saga.description || '';
-    
+
     activeForgeItems = saga.parts.map(p => ({
-        id: p.id, type: p.media_type || 'movie', title: p.title, 
+        id: p.id, type: p.media_type || 'movie', title: p.title,
         poster: p.poster_path, year: (p.release_date || '').split('-')[0], size: p.size || 'main'
     }));
 
@@ -5725,7 +5750,7 @@ function editCustomUniverse(id) {
 async function loadForgeRecommendations() {
     const container = document.getElementById('forgeRecGrid');
     if (!container) return;
-    
+
     if (activeForgeItems.length === 0) {
         container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">Add an entity to see neural suggestions.</div>';
         return;
@@ -5733,11 +5758,11 @@ async function loadForgeRecommendations() {
 
     const seed = activeForgeItems[activeForgeItems.length - 1];
     const apiType = seed.type === 'tv' ? 'tv' : 'movie';
-    
+
     try {
         const data = await fetchAPI(`/${apiType}/${seed.id}/recommendations`);
         let recs = (data.results || []).filter(r => !activeForgeItems.find(f => f.id === r.id)).slice(0, 5);
-        
+
         if (recs.length === 0) {
             container.innerHTML = '<div class="col-span-full text-[9px] text-gray-500 uppercase tracking-widest">No matching suggestions found.</div>';
             return;
@@ -5746,7 +5771,7 @@ async function loadForgeRecommendations() {
         container.innerHTML = recs.map(i => `
             <div class="flex items-center gap-3 bg-dark/50 border border-white/5 p-3 rounded-xl hover:border-pulse/50 cursor-pointer transition-all group"
                  onclick="addToForge(${i.id}, '${apiType}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}', '${(i.release_date || i.first_air_date || '').split('-')[0]}')">
-                <img src="${i.poster_path ? IMG+i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 rounded object-cover shadow">
+                <img src="${i.poster_path ? IMG + i.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 rounded object-cover shadow">
                 <div class="flex-1 overflow-hidden">
                     <div class="text-[10px] font-black uppercase text-white truncate group-hover:text-pulse">${i.title || i.name}</div>
                     <div class="text-[8px] font-bold text-gray-500 uppercase mt-1 tracking-widest"><i class="fas fa-plus"></i> Add Entity</div>
@@ -5782,7 +5807,7 @@ function renderInlineSagaList() {
              
             <div class="flex items-center gap-3 md:gap-4 w-full md:w-2/3 pointer-events-none">
                 <div class="w-6 h-6 md:w-8 md:h-8 rounded-full bg-dark border border-white/10 flex items-center justify-center text-[9px] md:text-[10px] font-black text-gray-500 shrink-0">${idx + 1}</div>
-                <img src="${p.poster_path ? IMG+p.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 md:w-10 md:h-14 object-cover rounded-md shadow-lg shrink-0">
+                <img src="${p.poster_path ? IMG + p.poster_path : 'https://via.placeholder.com/50'}" class="w-8 h-12 md:w-10 md:h-14 object-cover rounded-md shadow-lg shrink-0">
                 <div class="truncate flex-1">
                     <div class="text-[10px] md:text-[11px] font-black uppercase text-white truncate">${p.title || p.name}</div>
                     <div class="text-[7px] md:text-[8px] text-gray-500 uppercase tracking-widest mt-1">${(p.release_date || p.first_air_date || '').split('-')[0] || 'N/A'} • ${p.media_type || 'movie'}</div>
@@ -5804,7 +5829,7 @@ function renderInlineSagaList() {
 function moveInlineSagaItem(index, direction) {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= currentSagaViewContext.parts.length) return;
-    
+
     const itemToMove = currentSagaViewContext.parts.splice(index, 1)[0];
     currentSagaViewContext.parts.splice(newIndex, 0, itemToMove);
     renderInlineSagaList();
@@ -5821,16 +5846,16 @@ function addEntityToSaga(item) {
     if (currentSagaViewContext.parts.find(p => p.id === item.id)) {
         return showNotification("Entity is already in the blueprint.", true);
     }
-    
+
     currentSagaViewContext.parts.push({
-    id: item.id,
-    title: item.title || item.name,
-    poster_path: item.poster_path,
-    media_type: item.media_type || 'movie',
-    release_date: item.release_date || item.first_air_date || '2000-01-01',
-    vote_average: item.vote_average || 0 // <-- This saves it for newly injected items
+        id: item.id,
+        title: item.title || item.name,
+        poster_path: item.poster_path,
+        media_type: item.media_type || 'movie',
+        release_date: item.release_date || item.first_air_date || '2000-01-01',
+        vote_average: item.vote_average || 0 // <-- This saves it for newly injected items
     });
-    
+
     renderInlineSagaList();
     showNotification(`Injected ${item.title || item.name} into Universe.`);
     document.getElementById('inlineSagaSearchResults').classList.add('hidden');
@@ -5873,12 +5898,12 @@ function inlineDrop(e, dropIndex) {
     document.querySelectorAll('.inline-saga-item').forEach(el => {
         el.classList.remove('border-t-4', 'border-t-pulse', 'mt-4');
     });
-    
+
     if (draggedInlineIndex === null || draggedInlineIndex === dropIndex) return;
 
     const itemToMove = currentSagaViewContext.parts.splice(draggedInlineIndex, 1)[0];
     currentSagaViewContext.parts.splice(dropIndex, 0, itemToMove);
-    
+
     draggedInlineIndex = null;
     renderInlineSagaList();
 }
@@ -5886,17 +5911,17 @@ function inlineDrop(e, dropIndex) {
 function saveCustomUniverse() {
     let title = document.getElementById('forgeTitleInput').value.trim();
     let desc = document.getElementById('forgeDescInput').value.trim();
-    
+
     if (!title) title = "Universe " + Math.floor(Math.random() * 1000);
     if (activeForgeItems.length < 2) return showNotification("Add at least 2 items to forge.", true);
 
     const sagaId = currentEditingSagaId || ('custom_' + Date.now());
-    
+
     // Prevent duplicates only if creating new
     if (!currentEditingSagaId) {
         let finalTitle = title;
         let counter = 1;
-        while(customSagas.some(s => s.name === finalTitle)) {
+        while (customSagas.some(s => s.name === finalTitle)) {
             finalTitle = `${title} (${counter})`;
             counter++;
         }
@@ -5921,21 +5946,21 @@ function saveCustomUniverse() {
     }
 
     localStorage.setItem('cp_elite_custom_sagas', JSON.stringify(customSagas));
-    
+
     // Smart Syncing with the Neural DB
     let addedCount = 0;
     activeForgeItems.forEach(part => {
-        let existing = state.db.find(i => i.id === part.id);
+        let existing = state.db.find(i => String(i.id) === String(part.id));
         if (existing) {
             existing.sagaId = sagaId;
             existing.sagaName = title;
         } else {
             state.db.push({
                 id: part.id, title: part.title, poster: part.poster,
-                type: part.type === 'tv' ? 'tv' : 'movie', status: 'Plan to Watch', 
-                ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0, 
+                type: part.type === 'tv' ? 'tv' : 'movie', status: 'Plan to Watch',
+                ep: 0, max_ep: 1, score: 0, crown: 0, imdb: 0,
                 year: part.year, genres: [], added: Date.now(),
-                sagaId: sagaId, sagaName: title,updatedAt: Date.now()
+                sagaId: sagaId, sagaName: title, updatedAt: Date.now()
             });
             addedCount++;
         }
@@ -5949,8 +5974,8 @@ function saveCustomUniverse() {
             }
         });
     }
-    
-    save(); 
+
+    save();
     showNotification(currentEditingSagaId ? `Universe "${title}" updated!` : `Universe "${title}" forged! ${addedCount} new items tracked.`);
     setSagaTab('mylist');
     renderMySagas();
@@ -5968,27 +5993,26 @@ function updateSelectButtonVisibility(tabName) {
         separator.classList.add('hidden');
     }
 }
-  // --- NOTIFICATION CLEANUP ROUTINE ---
-    if (state.notifications && state.notifications.length > 0) {
-        const now = Date.now();
-        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-        
-        // 1. Keep only notifications from the last 3 days
-        state.notifications = state.notifications.filter(notif => {
-            return (now - notif.date) < THREE_DAYS_MS; // Assuming notif.date is a timestamp
-        });
-        
-        // 2. Hard cap at 30 items to prevent hoarding
-        state.notifications = state.notifications.slice(0, 30);
-        
-        // Save the cleaned-up state back to local storage
-        save();
-    }
+// --- NOTIFICATION CLEANUP ROUTINE ---
+if (state.notifications && state.notifications.length > 0) {
+    const now = Date.now();
+    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+
+    // 1. Keep only notifications from the last 3 days
+    state.notifications = state.notifications.filter(notif => {
+        return (now - notif.date) < THREE_DAYS_MS; // Assuming notif.date is a timestamp
+    });
+
+    // 2. Hard cap at 30 items to prevent hoarding
+    state.notifications = state.notifications.slice(0, 30);
+
+    // Save the cleaned-up state back to local storage
+    save();
+}
 function getContinueWatchingHTML() {
-    // Filter the database for items currently being watched
     const watchingList = state.db.filter(item => item.status === 'Watching').sort((a, b) => b.added - a.added);
-    
-    if (watchingList.length === 0) return ''; // Don't show the section if it's empty
+
+    if (watchingList.length === 0) return '';
 
     let html = `
     <div class="mb-12 mt-6">
@@ -5998,13 +6022,53 @@ function getContinueWatchingHTML() {
         <div class="flex gap-4 overflow-x-auto hide-scroll pb-4 px-1">
     `;
 
+    const movieTypes = ['movie'];
+    const tvTypes = ['tv', 'series', 'anime', 'kdrama', 'turkish', 'asian'];
+
     watchingList.forEach(item => {
-        // Use the tmdb_type safely. Default to movie if missing.
-        const type = item.tmdb_type || (item.type === 'Series' || item.type === 'Anime' ? 'tv' : 'movie');
-        
+        const type = item.tmdb_type || (item.type && !movieTypes.includes(item.type.toLowerCase()) ? 'tv' : 'movie');
+        const isTV = type === 'tv' || tvTypes.includes(item.type?.toLowerCase());
+        const isMovie = !isTV;
+
+        const timestamp = item.timestamp || 0;
+
+        let statusText = '';
+        let progressBar = '';
+
+        if (isTV) {
+            const ep = item.ep || 0;
+            const maxEp = item.max_ep || 1;
+            // FIX: Absolute percentage calculation
+            const progressPercent = Math.min((ep / maxEp) * 100, 100);
+
+            statusText = `S${item.season || 1} • ${ep}/${maxEp} EPS`;
+            progressBar = maxEp > 0 ? `
+                <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
+                    <div class="h-full bg-[#a855f7] shadow-[0_0_10px_rgba(168,85,247,0.8)]" style="width: ${progressPercent}%"></div>
+                </div>` : '';
+        } else {
+            const progressPercent = isMovie && timestamp > 0 ? Math.min((timestamp / (item.duration || 1)) * 100, 95) : 0;
+            if (timestamp > 0) {
+                statusText = formatTimestampProgress(timestamp) + ' left';
+                progressBar = `
+                <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
+                    <div class="h-full bg-pulse shadow-[0_0_10px_rgba(255,45,85,0.8)]" style="width: ${progressPercent}%"></div>
+                </div>`;
+            } else {
+                statusText = 'START WATCHING';
+            }
+        }
+
+        // Simpler URL: Let player.js handle figuring out the exact episode to resume!
+        const navigateUrl = `pages/player.html?id=${item.id}&type=${type}`;
+
         html += `
-        <div onclick="window.location.href='pages/player.html?id=${item.id}&type=${type}'" class="relative w-48 sm:w-56 shrink-0 group cursor-pointer">
-            <div class="aspect-video rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg group-hover:shadow-[0_0_20px_rgba(255,45,85,0.3)] transition-all bg-dark">
+        <div class="relative w-48 sm:w-56 shrink-0 group cursor-pointer">
+            <button onclick="event.stopPropagation(); event.preventDefault(); window.removeContinueWatching(${item.id})" class="absolute top-2 right-2 w-7 h-7 bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-pulse hover:border-pulse z-50 transition-all opacity-0 group-hover:opacity-100 shadow-xl">
+                <i class="fas fa-times text-[10px]"></i>
+            </button>
+
+            <div onclick="window.location.href='${navigateUrl}'" class="aspect-video rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg group-hover:shadow-[0_0_20px_rgba(255,45,85,0.3)] transition-all bg-dark relative">
                 <img src="${IMG}${item.poster}" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity">
                 
                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
@@ -6015,25 +6079,45 @@ function getContinueWatchingHTML() {
 
                 <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black/80 to-transparent p-3 pt-8">
                     <div class="text-[10px] font-black uppercase text-white line-clamp-1 drop-shadow-md">${item.title}</div>
-                    <div class="text-[8px] font-bold tracking-widest text-pulse uppercase mt-1">
-                        ${type === 'tv' ? `EPISODE ${item.ep} / ${item.max_ep}` : 'MOVIE'}
-                    </div>
+                    <div class="text-[8px] font-bold tracking-widest text-pulse uppercase mt-1">${statusText}</div>
                 </div>
                 
-                ${type === 'tv' && item.max_ep > 0 ? `
-                <div class="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-                    <div class="h-full bg-pulse" style="width: ${(item.ep / item.max_ep) * 100}%"></div>
-                </div>` : ''}
+                ${progressBar}
             </div>
         </div>
         `;
     });
-
     html += `</div></div>`;
     return html;
 }
+window.removeContinueWatching = function (id) {
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+    const idx = db.findIndex(i => String(i.id) === String(id));
+    if (idx !== -1) {
+        // Demote it back to Plan to Watch and clear the timestamp so it disappears from the list
+        db[idx].status = 'Plan to Watch';
+        if (db[idx].type === 'movie') db[idx].timestamp = 0;
 
-    function renderContinueWatching() {
+        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+        state.db = db;
+        renderContinueWatching();
+        if (state.view === 'mylist') renderList();
+    }
+};
+
+function formatTimestampProgress(seconds) {
+    if (!seconds || isNaN(seconds)) return '';
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    if (hrs > 0) {
+        return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function renderContinueWatching() {
     const wrapper = document.getElementById('homeContinueWatchingWrapper');
     if (wrapper) {
         const html = getContinueWatchingHTML();
@@ -6042,27 +6126,48 @@ function getContinueWatchingHTML() {
     }
 }
 // --- AUTO-MARK ENGINE FOR CONTINUE WATCHING ---
-async function autoMarkWatching(id, type) {
-    let existing = state.db.find(i => i.id === id);
+async function autoMarkWatching(id, type, season = 1, episode = 1) {
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+    const existing = db.find(i => String(i.id) === String(id));
     if (existing) {
-        if (existing.status !== 'Finished') existing.status = 'Watching';
+        const currentStatus = existing.status;
+        if (currentStatus !== 'Finished' && currentStatus !== 'Ongoing') {
+            existing.status = 'Watching';
+            existing.updatedAt = Date.now();
+        }
+        if (type === 'tv') {
+            // Only update if current is 0 (new) or if we are moving forward
+            if (!existing.ep || existing.ep === 0) {
+                existing.season = season || 1;
+                existing.ep = (episode > 0) ? (episode - 1) : 0; // Store as "Last Finished"
+            }
+        }
     } else {
-        // If not in library, instantly fetch and add it silently
+        // NOT IN DB: Fetch and add as Watching
         try {
             const data = await fetchAPI(`/${type}/${id}`);
             let cat = determineCategory(data);
-            state.db.push({
+            db.push({
                 id: data.id, title: data.title || data.name, poster: data.poster_path,
-                type: cat, tmdb_type: type, status: 'Watching', ep: 0, max_ep: data.number_of_episodes || 1, 
-                score: 0, crown: 0, imdb: data.vote_average, year: (data.release_date || data.first_air_date || '').split('-')[0], 
-                genres: (data.genres || []).map(g => g.id), added: Date.now(),updatedAt: Date.now()
+                type: cat, tmdb_type: type, status: 'Watching',
+                ep: type === 'tv' ? (episode > 0 ? episode - 1 : 0) : 0,
+                season: type === 'tv' ? (season || 1) : 0,
+                max_ep: data.number_of_episodes || 1,
+                score: 0, crown: 0, imdb: data.vote_average,
+                year: (data.release_date || data.first_air_date || '').split('-')[0],
+                genres: (data.genres || []).map(g => g.id),
+                added: Date.now(), updatedAt: Date.now(),
+                timestamp: 0, duration: 0
             });
-        } catch(e) { return; }
+        } catch (e) { return; }
     }
-    save(); // Triggers renderContinueWatching instantly
+    localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+    state.db = db;
+
+    if (typeof renderContinueWatching === 'function') renderContinueWatching();
 }
-        init();
-        
+init();
+
 
 
 
@@ -6070,30 +6175,40 @@ async function autoMarkWatching(id, type) {
 // --- BUILT-IN NEURAL PLAYER ENGINE ---
 
 const EMBED_SERVERS = [
-    { 
-        id: 'vidsrccc', 
-        name: 'Neural Alpha (VidSrc CC)', 
-        build: (t, id, s, e) => `https://vidsrc.cc/v2/embed/${t}/${id}${t==='tv'?`/${s}/${e}`:''}` 
+    {
+        id: 'vidsrccc',
+        name: 'VidSrc CC',
+        build: (t, id, s, e) => `https://vidsrc.cc/v2/embed/${t}/${id}${t === 'tv' ? `/${s}/${e}` : ''}`
     },
-    { 
-        id: 'autoembed', 
-        name: 'Eastern Relay (AutoEmbed)', // Historically strong for K-Drama and Asian cinema
-        build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t==='tv'?`-${s}-${e}`:''}` 
+    {
+        id: 'autoembed',
+        name: 'AutoEmbed',
+        build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t === 'tv' ? `-${s}-${e}` : ''}`
     },
-    { 
-        id: 'multiembed', 
-        name: 'Nexus Stream (MultiEmbed)', // Excellent fallback aggregator
-        build: (t, id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1${t==='tv'?`&s=${s}&e=${e}`:''}` 
+    {
+        id: 'multiembed',
+        name: 'MultiEmbed',
+        build: (t, id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1${t === 'tv' ? `&s=${s}&e=${e}` : ''}`
     },
-    { 
-        id: 'vidsrcme', 
-        name: 'Neural Beta (VidSrc ME)', // Classic, highly reliable backup
-        build: (t, id, s, e) => `https://vidsrc.me/embed/${t}?tmdb=${id}${t==='tv'?`&season=${s}&episode=${e}`:''}` 
+    {
+        id: 'vidsrcme',
+        name: 'VidSrc ME',
+        build: (t, id, s, e) => `https://vidsrc.me/embed/${t}?tmdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`
     },
-    { 
-        id: 'smashy', 
-        name: 'Smashy Proxy', // Good global coverage, slightly different UI
-        build: (t, id, s, e) => `https://embed.smashystream.com/playere.php?tmdb=${id}${t==='tv'?`&season=${s}&episode=${e}`:''}` 
+    {
+        id: 'streamsb',
+        name: 'StreamSB',
+        build: (t, id, s, e) => `https://streamsb.net/embed/${t}?id=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`
+    },
+    {
+        id: 'viking',
+        name: 'VikingEmbed',
+        build: (t, id, s, e) => `https://vembed.stream/embed?imdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`
+    },
+    {
+        id: 'smashy',
+        name: 'Smashy Stream',
+        build: (t, id, s, e) => `https://embed.smashystream.com/playere.php?tmdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`
     }
 ];
 
@@ -6114,7 +6229,7 @@ function openWatchOptions(id, type, title) {
     // Decode safe strings just in case
     const displayTitle = decodeURIComponent(title);
     titleEl.innerText = displayTitle;
-    
+
     // 1. Setup Internal Player Route
     const safeTitle = encodeURIComponent(displayTitle);
     btnInternal.onclick = () => {
@@ -6145,7 +6260,7 @@ function closeWatchOptions() {
 }
 
 // Close modal if clicking outside the box
-document.getElementById('watchOptionsModal').addEventListener('click', function(e) {
+document.getElementById('watchOptionsModal').addEventListener('click', function (e) {
     if (e.target === this) closeWatchOptions();
 });
 
@@ -6153,16 +6268,66 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     document.getElementById('watchModal').classList.add('hidden');
     const safeTitle = encodeURIComponent(title || '');
 
-    // TRIGER NEURAL AUTO-MARK
-    autoMarkWatching(id, tmdbType);
+    // Get current episode and season from modal if available
+    let currentSeason = 1;
+    let currentEpisode = 1;
+
+    if (tmdbType === 'tv') {
+        const dbItem = state.db.find(i => String(i.id) === String(id));
+        const epSlider = document.getElementById('mEpRange');
+
+        // Ensure we have season data to calculate against
+        const seasons = (state.active && state.active.seasons)
+            ? state.active.seasons.filter(s => s.season_number > 0)
+            : [];
+
+        if (dbItem && seasons.length > 0) {
+            let targetAbsolute = dbItem.ep || 0;
+
+            // If user manually dragged slider in modal, respect that exact absolute episode!
+            if (epSlider && parseInt(epSlider.value) !== dbItem.ep) {
+                targetAbsolute = parseInt(epSlider.value);
+            } else {
+                // Otherwise, play the NEXT episode after what they just finished
+                targetAbsolute += 1;
+            }
+
+            // Cap it at max episodes so it doesn't break at the end of a series
+            const maxEp = dbItem.max_ep || 1;
+            if (targetAbsolute > maxEp) targetAbsolute = maxEp;
+            if (targetAbsolute < 1) targetAbsolute = 1;
+
+            // Convert Absolute Target -> Relative Season & Episode
+            let accumulated = 0;
+            for (let s of seasons) {
+                if (targetAbsolute <= accumulated + s.episode_count) {
+                    currentSeason = s.season_number;
+                    currentEpisode = targetAbsolute - accumulated;
+                    break;
+                }
+                accumulated += s.episode_count;
+            }
+        } else {
+            // Safe fallback if no TMDB season data is cached
+            currentSeason = dbItem?.season || 1;
+            currentEpisode = 1;
+        }
+    }
+
+    // TRIGER NEURAL AUTO-MARK with episode info
+    autoMarkWatching(id, tmdbType, currentSeason, currentEpisode);
 
     if (typeof showNotification === 'function') {
-        showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream for ${title}...`, false);
+        const epInfo = tmdbType === 'tv' ? ` S${currentSeason}:E${currentEpisode}` : '';
+        showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream for ${title}${epInfo}...`, false);
     }
 
     // ALWAYS open in the same tab to preserve PWA seamless experience
     setTimeout(() => {
-        window.location.href = `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+        const playerUrl = tmdbType === 'tv'
+            ? `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}&season=${currentSeason}&episode=${currentEpisode}`
+            : `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+        window.location.href = playerUrl;
     }, 800);
 }
 
@@ -6170,17 +6335,17 @@ function renderPlayerEpisodes(seasonNum) {
     playerState.season = parseInt(seasonNum);
     const validSeasons = playerState.activeItemData.seasons.filter(s => s.season_number > 0);
     const targetSeason = validSeasons.find(s => s.season_number === playerState.season);
-    
+
     const grid = document.getElementById('playerEpGrid');
     if (!targetSeason) return grid.innerHTML = '';
 
     let html = '';
     for (let i = 1; i <= targetSeason.episode_count; i++) {
         const isActive = (playerState.episode === i);
-        const btnClass = isActive 
-            ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.5)]' 
+        const btnClass = isActive
+            ? 'bg-[#3b82f6] text-white border-[#3b82f6] shadow-[0_0_15px_rgba(59,130,246,0.5)]'
             : 'bg-white/5 text-gray-400 border-white/10 hover:border-white/30 hover:text-white';
-            
+
         html += `<button onclick="switchPlayerEpisode(${i})" class="w-full aspect-square rounded-xl border flex items-center justify-center text-[11px] font-black transition-all ${btnClass}">${i}</button>`;
     }
     grid.innerHTML = html;
@@ -6206,10 +6371,10 @@ function highlightActiveServer() {
 function syncProgressToLibrary() {
     // Calculates absolute episode number and saves it so the "Liquid" UI stays updated
     if (playerState.tmdbType !== 'tv') return;
-    
+
     let absoluteEp = 0;
     const validSeasons = playerState.activeItemData.seasons.filter(s => s.season_number > 0);
-    
+
     for (let s of validSeasons) {
         if (s.season_number < playerState.season) {
             absoluteEp += s.episode_count;
@@ -6219,7 +6384,7 @@ function syncProgressToLibrary() {
         }
     }
 
-    const idx = state.db.findIndex(i => i.id === playerState.tmdbId);
+    const idx = state.db.findIndex(i => String(i.id) === String(playerState.tmdbId));
     if (idx !== -1) {
         state.db[idx].ep = absoluteEp;
         state.db[idx].status = 'Watching'; // Auto-mark as watching
@@ -6242,7 +6407,7 @@ function closeFactoryResetModal() {
 // --- TEMPORAL ARCHIVE (VERSION CONTROL) ENGINE ---
 const TemporalEngine = {
     maxCommits: 15, // Keeps the last 15 states to save storage space
-    
+
     getHistory: () => JSON.parse(localStorage.getItem('cp_temporal_archive')) || [],
     saveHistory: (h) => localStorage.setItem('cp_temporal_archive', JSON.stringify(h)),
 
@@ -6256,15 +6421,15 @@ const TemporalEngine = {
             itemCount: state.db.length,
             data: JSON.parse(JSON.stringify(state.db)) // Deep copy to prevent reference mutation
         };
-        
+
         history.unshift(snapshot); // Add to the top of the timeline
         if (history.length > TemporalEngine.maxCommits) history.pop(); // Trim oldest
-        
+
         TemporalEngine.saveHistory(history);
-        
+
         // Only show notification if it's a manual commit
         if (message === "Manual Commit") showNotification(`Timeline Committed: ${message}`);
-        
+
         // Live-update UI if the modal is open
         const modal = document.getElementById('temporalArchiveModal');
         if (modal && !modal.classList.contains('hidden')) renderTemporalArchive();
@@ -6274,12 +6439,12 @@ const TemporalEngine = {
     revert: (commitId) => {
         const history = TemporalEngine.getHistory();
         const target = history.find(c => c.id === commitId);
-        
+
         if (!target) return showNotification("Temporal coordinates lost.", true);
 
         // 1. Safety Net: Auto-commit the present state before reverting so the user can "Redo"
-        const backupMsg = `Pre-Revert Backup (from ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})})`;
-        
+        const backupMsg = `Pre-Revert Backup (from ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+
         const currentSnapshot = {
             id: 'commit_' + Date.now(),
             timestamp: Date.now(),
@@ -6294,10 +6459,10 @@ const TemporalEngine = {
         // 2. Apply the old state
         state.db = JSON.parse(JSON.stringify(target.data));
         save(true); // Save to local storage silently
-        
+
         showNotification(`Timeline shifted to: ${target.message}`);
         closeTemporalArchive();
-        
+
         // 3. Force UI refresh
         if (state.view === 'mylist') renderList();
         if (state.view === 'rhythmlab') runLab();
@@ -6308,18 +6473,18 @@ const TemporalEngine = {
 };
 
 // UI Triggers
-window.openTemporalArchive = function() {
+window.openTemporalArchive = function () {
     renderTemporalArchive();
     document.getElementById('temporalArchiveModal').classList.remove('hidden');
     if (typeof checkScrollLock === 'function') checkScrollLock();
 }
 
-window.closeTemporalArchive = function() {
+window.closeTemporalArchive = function () {
     document.getElementById('temporalArchiveModal').classList.add('hidden');
     if (typeof checkScrollLock === 'function') checkScrollLock();
 }
 
-window.renderTemporalArchive = function() {
+window.renderTemporalArchive = function () {
     const container = document.getElementById('temporalTimeline');
     const history = TemporalEngine.getHistory();
 
@@ -6335,8 +6500,8 @@ window.renderTemporalArchive = function() {
     container.innerHTML = history.map((commit, index) => {
         const date = new Date(commit.timestamp);
         const dateStr = date.toLocaleDateString();
-        const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
+        const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
         // The newest commit gets a special glowing node
         const isLatest = index === 0;
         const nodeClass = isLatest ? "bg-pulse shadow-[0_0_15px_rgba(255,45,85,0.8)] animate-pulse" : "bg-gray-600";
@@ -6375,18 +6540,18 @@ window.renderTemporalArchive = function() {
 // --- PAGE INFO MODAL SYSTEM ---
 // ============================================================
 const PAGE_INFO_DATA = {
-    search: { icon:'fa-search', color:'#ff2d55', title:'Discover & Search', desc:'Your gateway to the entire cinematic universe. Search millions of titles or browse curated trending content.', features:['<b>Type Filters</b> — Instantly switch between Movies, Series, Anime, K-Drama, Turkish & Asian.','<b>Search + Filter</b> — Type a query then use type pills to narrow results to a specific category.','<b>Genre Pills</b> — Click Genres to expand genre pills for deep filtering.','<b>Year & Region</b> — Use the dropdowns to filter by release year or country of origin.','<b>Layout Toggle</b> — Switch between grid densities or list view in the top-right controls.','<b>Load More</b> — Scroll to the bottom and hit Load More to fetch additional results.'] },
-    mylist: { icon:'fa-layer-group', color:'#3b82f6', title:'My Library', desc:'Your personal neural database. Every title you track lives here with full status, score, and episode tracking.', features:['<b>Status Tracking</b> — Mark titles as Watching, Plan to Watch, Ongoing, or Finished.','<b>Star Ratings</b> — Score each title 0–5 stars. Crowned titles appear in Masterpieces.','<b>Import / Export</b> — Back up or migrate your library using the Import/Export tools.','<b>Timeline</b> — Use Version Control to view and revert to past library snapshots.','<b>Multi-Select</b> — Long-press or click Select to batch-edit or delete entries.','<b>Random Picker</b> — Let the neural engine pick what to watch next.'] },
-    upcoming: { icon:'fa-calendar-alt', color:'#a855f7', title:'Coming Soon', desc:'Track unreleased movies and shows. Get notified when episodes drop and monitor active season schedules.', features:['<b>Radar Tracking</b> — Add any title to your Radar to track its release.','<b>Episode Alerts</b> — Actively airing shows you track show the next episode countdown.','<b>Search Future Releases</b> — Use the search bar to find and track any upcoming title.','<b>Highly Anticipated</b> — Discover the most buzzed-about upcoming releases.'] },
-    sagamatrix: { icon:'fa-cubes', color:'#ff2d55', title:'Saga Matrix', desc:'Map cinematic universes, trilogies, and multi-part sagas. Forge custom universes with your own watch order.', features:['<b>Discover Sagas</b> — Browse pre-built cinematic universes with recommended watch orders.','<b>My Sagas</b> — View custom universes you have forged.','<b>Universe Forge</b> — Build your own saga by searching and arranging any titles in order.','<b>Drag & Drop</b> — Re-order entries inside the canvas to set your timeline.','<b>Mainline vs Spin-off</b> — Scale entries to indicate their importance in the saga.'] },
-    masterpieces: { icon:'fa-crown', color:'#eab308', title:'Masterpieces', desc:'Your hall of fame. Perfect scores and crowned titles curated from your library.', features:['<b>Crowned</b> — Titles you manually marked with the crown icon from their detail card.','<b>Perfect 5/5s</b> — Every title you rated a full 5 stars.','<b>Rankings</b> — A sorted leaderboard of your entire library by your personal score.','<b>Add a Masterpiece</b> — Open any title detail and use the Crown button to add it here.'] },
-    rhythmlab: { icon:'fa-layer-group', color:'#ff2d55', title:'Collection', desc:'A high-density view of your entire library organized with advanced filtering and sorting.', features:['<b>Type & Genre Filters</b> — Drill into specific categories using the type and genre pills.','<b>Advanced Filters</b> — Access status, year, IMDb score, and personal score filters.','<b>Local Search</b> — Instantly search your collection by title.','<b>Grid / List View</b> — Toggle between compact grid and expanded list view.','<b>Back to Top / Bottom</b> — Floating buttons appear when scrolled for quick navigation.'] },
-    sync: { icon:'fa-magic', color:'#22c55e', title:'For You', desc:'AI-powered neural recommendations based on what you have watched and tracked in your library.', features:['<b>Smart Matching</b> — Recommendations are generated from your library genres and patterns.','<b>Resync</b> — Hit Resync to regenerate fresh recommendations.','<b>Safe Mode</b> — Toggle Safe Mode to filter adult content from recommendations.','<b>Direct Add</b> — Add recommended titles to your library directly from this view.'] },
-    sources: { icon:'fa-satellite-dish', color:'#ff2d55', title:'Sources', desc:'Browse all available streaming source engines that CinePulse uses to serve content in the Player.', features:['<b>Source Cards</b> — Each card shows source capabilities (Movies, TV, Anime, etc.).','<b>Test Link</b> — Open any source in a new tab to verify it is operational.','<b>Player Integration</b> — Sources map directly to the Source Engine buttons in the Player.','<b>Sandbox Mode</b> — Use the Sandbox Toggle in the Player if a source shows a blank screen.'] },
-    neurallink: { icon:'fa-microchip', color:'#3b82f6', title:'Neural Link', desc:'Peer-to-peer library synchronization. Share your entire database between devices in real-time with no cloud needed.', features:['<b>Primary Hub</b> — Generate a Sync Key on your main device to broadcast your library.','<b>Secondary Node</b> — Join a hub via QR scan or by pasting the Host Key.','<b>Payload Filters</b> — Choose which types to share before syncing.','<b>Network Topology</b> — View all connected devices and their status.','<b>Merge Strategy</b> — Choose to merge incoming data or replace your local library.'] }
+    search: { icon: 'fa-search', color: '#ff2d55', title: 'Discover & Search', desc: 'Your gateway to the entire cinematic universe. Search millions of titles or browse curated trending content.', features: ['<b>Type Filters</b> — Instantly switch between Movies, Series, Anime, K-Drama, Turkish & Asian.', '<b>Search + Filter</b> — Type a query then use type pills to narrow results to a specific category.', '<b>Genre Pills</b> — Click Genres to expand genre pills for deep filtering.', '<b>Year & Region</b> — Use the dropdowns to filter by release year or country of origin.', '<b>Layout Toggle</b> — Switch between grid densities or list view in the top-right controls.', '<b>Load More</b> — Scroll to the bottom and hit Load More to fetch additional results.'] },
+    mylist: { icon: 'fa-layer-group', color: '#3b82f6', title: 'My Library', desc: 'Your personal neural database. Every title you track lives here with full status, score, and episode tracking.', features: ['<b>Status Tracking</b> — Mark titles as Watching, Plan to Watch, Ongoing, or Finished.', '<b>Star Ratings</b> — Score each title 0–5 stars. Crowned titles appear in Masterpieces.', '<b>Import / Export</b> — Back up or migrate your library using the Import/Export tools.', '<b>Timeline</b> — Use Version Control to view and revert to past library snapshots.', '<b>Multi-Select</b> — Long-press or click Select to batch-edit or delete entries.', '<b>Random Picker</b> — Let the neural engine pick what to watch next.'] },
+    upcoming: { icon: 'fa-calendar-alt', color: '#a855f7', title: 'Coming Soon', desc: 'Track unreleased movies and shows. Get notified when episodes drop and monitor active season schedules.', features: ['<b>Radar Tracking</b> — Add any title to your Radar to track its release.', '<b>Episode Alerts</b> — Actively airing shows you track show the next episode countdown.', '<b>Search Future Releases</b> — Use the search bar to find and track any upcoming title.', '<b>Highly Anticipated</b> — Discover the most buzzed-about upcoming releases.'] },
+    sagamatrix: { icon: 'fa-cubes', color: '#ff2d55', title: 'Saga Matrix', desc: 'Map cinematic universes, trilogies, and multi-part sagas. Forge custom universes with your own watch order.', features: ['<b>Discover Sagas</b> — Browse pre-built cinematic universes with recommended watch orders.', '<b>My Sagas</b> — View custom universes you have forged.', '<b>Universe Forge</b> — Build your own saga by searching and arranging any titles in order.', '<b>Drag & Drop</b> — Re-order entries inside the canvas to set your timeline.', '<b>Mainline vs Spin-off</b> — Scale entries to indicate their importance in the saga.'] },
+    masterpieces: { icon: 'fa-crown', color: '#eab308', title: 'Masterpieces', desc: 'Your hall of fame. Perfect scores and crowned titles curated from your library.', features: ['<b>Crowned</b> — Titles you manually marked with the crown icon from their detail card.', '<b>Perfect 5/5s</b> — Every title you rated a full 5 stars.', '<b>Rankings</b> — A sorted leaderboard of your entire library by your personal score.', '<b>Add a Masterpiece</b> — Open any title detail and use the Crown button to add it here.'] },
+    rhythmlab: { icon: 'fa-layer-group', color: '#ff2d55', title: 'Collection', desc: 'A high-density view of your entire library organized with advanced filtering and sorting.', features: ['<b>Type & Genre Filters</b> — Drill into specific categories using the type and genre pills.', '<b>Advanced Filters</b> — Access status, year, IMDb score, and personal score filters.', '<b>Local Search</b> — Instantly search your collection by title.', '<b>Grid / List View</b> — Toggle between compact grid and expanded list view.', '<b>Back to Top / Bottom</b> — Floating buttons appear when scrolled for quick navigation.'] },
+    sync: { icon: 'fa-magic', color: '#22c55e', title: 'For You', desc: 'AI-powered neural recommendations based on what you have watched and tracked in your library.', features: ['<b>Smart Matching</b> — Recommendations are generated from your library genres and patterns.', '<b>Resync</b> — Hit Resync to regenerate fresh recommendations.', '<b>Safe Mode</b> — Toggle Safe Mode to filter adult content from recommendations.', '<b>Direct Add</b> — Add recommended titles to your library directly from this view.'] },
+    sources: { icon: 'fa-satellite-dish', color: '#ff2d55', title: 'Sources', desc: 'Browse all available streaming source engines that CinePulse uses to serve content in the Player.', features: ['<b>Source Cards</b> — Each card shows source capabilities (Movies, TV, Anime, etc.).', '<b>Test Link</b> — Open any source in a new tab to verify it is operational.', '<b>Player Integration</b> — Sources map directly to the Source Engine buttons in the Player.', '<b>Sandbox Mode</b> — Use the Sandbox Toggle in the Player if a source shows a blank screen.'] },
+    neurallink: { icon: 'fa-microchip', color: '#3b82f6', title: 'Neural Link', desc: 'Peer-to-peer library synchronization. Share your entire database between devices in real-time with no cloud needed.', features: ['<b>Primary Hub</b> — Generate a Sync Key on your main device to broadcast your library.', '<b>Secondary Node</b> — Join a hub via QR scan or by pasting the Host Key.', '<b>Payload Filters</b> — Choose which types to share before syncing.', '<b>Network Topology</b> — View all connected devices and their status.', '<b>Merge Strategy</b> — Choose to merge incoming data or replace your local library.'] }
 };
 
-window.openPageInfo = function(pageId) {
+window.openPageInfo = function (pageId) {
     var data = PAGE_INFO_DATA[pageId];
     if (!data) return;
     var overlay = document.getElementById('pageInfoOverlay');
@@ -6395,7 +6560,7 @@ window.openPageInfo = function(pageId) {
     titleEl.innerText = data.title;
     titleEl.style.color = data.color;
     document.getElementById('pageInfoDesc').innerText = data.desc;
-    document.getElementById('pageInfoList').innerHTML = data.features.map(function(f) {
+    document.getElementById('pageInfoList').innerHTML = data.features.map(function (f) {
         return '<li class="flex items-start gap-3 text-[11px] text-gray-300 leading-relaxed"><i class="fas fa-chevron-right text-[8px] mt-1 shrink-0" style="color:' + data.color + '"></i><span>' + f + '</span></li>';
     }).join('');
     overlay.classList.remove('hidden');
@@ -6405,24 +6570,24 @@ window.openPageInfo = function(pageId) {
     document.body.style.overflow = 'hidden';
 };
 
-window.closePageInfo = function() {
+window.closePageInfo = function () {
     var overlay = document.getElementById('pageInfoOverlay');
     overlay.classList.add('hidden');
     overlay.classList.remove('flex');
     document.body.style.overflow = 'auto';
 };
 
-window.scrollToTop = function() { window.scrollTo({ top: 0, behavior: 'smooth' }); };
-window.scrollToBottom = function() { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
+window.scrollToTop = function () { window.scrollTo({ top: 0, behavior: 'smooth' }); };
+window.scrollToBottom = function () { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
 
 // Setup Global Scroll Interaction Observer
-(function() {
+(function () {
     const scrollObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const isVisible = !entry.isIntersecting;
             const opacity = isVisible ? '1' : '0';
             const pointerEvents = isVisible ? 'auto' : 'none';
-            
+
             ['pcBackToTop', 'pcBackToBot', 'mobileBackToTop', 'mobileBackToBot'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) {
@@ -6435,9 +6600,9 @@ window.scrollToBottom = function() { window.scrollTo({ top: document.body.scroll
 
     const anchor = document.getElementById('topScrollAnchor');
     if (anchor) scrollObserver.observe(anchor);
-    
+
     // Horizontal Scroll Hints Initiation
-    setTimeout(initScrollHints, 2000); 
+    setTimeout(initScrollHints, 2000);
 })();
 
 function initScrollHints() {
@@ -6449,7 +6614,7 @@ function initScrollHints() {
             if (entry.isIntersecting) {
                 const el = entry.target;
                 if (seenHints.has(el)) return;
-                
+
                 // Only show if actually scrollable
                 if (el.scrollWidth > el.clientWidth) {
                     showSwipeHint(el);
@@ -6469,13 +6634,13 @@ function showSwipeHint(container) {
         <i class="fas fa-hand-pointer text-pulse text-lg scroll-hint-icon"></i>
         <span class="text-[9px] font-black uppercase text-white tracking-widest">Swipe for more</span>
     `;
-    
+
     // Ensure container is relative for absolute positioning of hint
     const originalPosition = window.getComputedStyle(container).position;
     if (originalPosition === 'static') container.style.position = 'relative';
-    
+
     container.appendChild(hint);
-    
+
     setTimeout(() => {
         hint.classList.replace('fade-in', 'fade-out');
         setTimeout(() => hint.remove(), 1000);
@@ -6488,11 +6653,11 @@ function dismissInstallReminder(e) {
         e.preventDefault();
         e.stopPropagation();
     }
-    
+
     // Hide only the floating card (sidebar version removed per request)
     const floatCard = document.getElementById('installReminderCard');
     if (floatCard) floatCard.classList.add('hidden');
-    
+
     // Set snooze for 3 days (in milliseconds)
     const snoozeUntil = Date.now() + (3 * 24 * 60 * 60 * 1000);
     localStorage.setItem('cp_install_dismissed_until', snoozeUntil);
