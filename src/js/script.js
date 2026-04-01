@@ -6053,8 +6053,28 @@ if (state.notifications && state.notifications.length > 0) {
     save();
 }
 function getContinueWatchingHTML() {
-    const watchingList = state.db.filter(item => item.status === 'Watching').sort((a, b) => b.updatedAt - a.updatedAt);
+    const dbWatching = state.db.filter(item => item.status === 'Watching');
+    const historyRaw = JSON.parse(localStorage.getItem('sumi_history') || '[]');
 
+    let mergedMap = new Map();
+
+    // 1. Load History (Untracked Temporary Items)
+    historyRaw.forEach(h => {
+        mergedMap.set(String(h.id), {
+            id: h.id, title: h.title, poster: h.poster_path || h.poster,
+            type: h.type, tmdb_type: h.type, season: h.last_season || 1, ep: h.last_episode || 1,
+            max_ep: 0, updatedAt: h.watched_at || 0, isUntracked: true
+        });
+    });
+
+    // 2. Load DB (Tracked Official Items - overwrites history if duplicates exist)
+    dbWatching.forEach(item => {
+        mergedMap.set(String(item.id), {
+            ...item, updatedAt: item.updatedAt || item.added || 0, isUntracked: false
+        });
+    });
+
+    const watchingList = Array.from(mergedMap.values()).sort((a, b) => b.updatedAt - a.updatedAt);
     if (watchingList.length === 0) return '';
 
     let html = `
@@ -6070,44 +6090,47 @@ function getContinueWatchingHTML() {
         <div class="flex gap-4 overflow-x-auto hide-scroll pb-4 px-1">
     `;
 
-    const movieTypes = ['movie'];
     const tvTypes = ['tv', 'series', 'anime', 'kdrama', 'turkish', 'asian'];
 
     watchingList.forEach(item => {
-        const type = item.tmdb_type || (item.type && !movieTypes.includes(item.type.toLowerCase()) ? 'tv' : 'movie');
-        const isTV = type === 'tv' || tvTypes.includes(item.type?.toLowerCase());
-
-        let statusText = '';
+        const type = item.tmdb_type || 'movie';
+        const isTV = tvTypes.includes(item.type?.toLowerCase()) || type === 'tv';
+        let statusText = 'WATCHING';
         let progressBar = '';
 
         if (isTV) {
-            const ep = item.ep || 0;
-            const maxEp = item.max_ep || 1;
-            const progressPercent = Math.min((ep / maxEp) * 100, 100);
-
-            statusText = `S${item.season || 1} • ${ep}/${maxEp} EPS`;
-            progressBar = maxEp > 0 ? `
-                <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
-                    <div class="h-full bg-[#a855f7] shadow-[0_0_10px_rgba(168,85,247,0.8)]" style="width: ${progressPercent}%"></div>
-                </div>` : '';
-        } else {
-            statusText = 'WATCHING';
-            progressBar = `
-                <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
-                    <div class="h-full bg-pulse shadow-[0_0_10px_rgba(255,45,85,0.8)]" style="width: 100%"></div>
-                </div>`;
+            const ep = item.ep || 1;
+            const maxEp = item.max_ep || 0;
+            if (!item.isUntracked && maxEp > 0) {
+                const progressPercent = Math.min((ep / maxEp) * 100, 100);
+                statusText = `S${item.season || 1} • ${ep}/${maxEp} EPS`;
+                progressBar = `
+                    <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/10">
+                        <div class="h-full bg-[#a855f7] shadow-[0_0_10px_rgba(168,85,247,0.8)]" style="width: ${progressPercent}%"></div>
+                    </div>`;
+            } else {
+                statusText = `S${item.season || 1} • EP ${ep}`; // Untracked display
+            }
+        } else if (!item.isUntracked) {
+            progressBar = `<div class="absolute bottom-0 left-0 right-0 h-1.5 bg-pulse shadow-[0_0_10px_rgba(255,45,85,0.8)]"></div>`;
         }
 
-        // Properly escape titles for inline onclick handlers
         const safeTitle = (item.title || '').replace(/'/g, "\\'");
+
+        // Add URL Slug logic directly to the card
+        const cleanTitle = (item.title || 'watch').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const typeChar = type === 'movie' ? 'm' : 't';
+        let cleanSlug = `${cleanTitle}-${typeChar}${item.id}`;
+        if (isTV) cleanSlug += `-s${item.season || 1}e${item.ep || 1}`;
 
         html += `
         <div class="relative w-32 sm:w-40 shrink-0 group cursor-pointer" title="Click to resume ${item.title}">
-            <button onclick="event.stopPropagation(); event.preventDefault(); window.removeContinueWatching(${item.id})" class="absolute top-2 right-2 w-7 h-7 bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-pulse hover:border-pulse z-50 transition-all opacity-0 group-hover:opacity-100 shadow-xl" title="Remove from Continue Watching">
+            <button onclick="event.stopPropagation(); event.preventDefault(); window.removeContinueWatching(${item.id})" class="absolute top-2 right-2 w-7 h-7 bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-pulse hover:border-pulse z-50 transition-all opacity-0 group-hover:opacity-100 shadow-xl">
                 <i class="fas fa-times text-[10px]"></i>
             </button>
 
-            <div onclick="launchInternalPlayer(${item.id}, '${type}', '${safeTitle}')" class="aspect-[2/3] rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg group-hover:shadow-[0_0_20px_rgba(255,45,85,0.3)] transition-all bg-dark relative">
+            <div onclick="window.location.href='pages/player.html?v=${cleanSlug}'" class="aspect-[2/3] rounded-xl overflow-hidden border border-white/10 group-hover:border-pulse shadow-lg transition-all bg-dark relative">
+                ${item.isUntracked ? '<div class="absolute top-2 left-2 bg-dark/80 backdrop-blur-md px-2 py-1 rounded text-[7px] font-black uppercase text-gray-400 z-30 border border-white/10"><i class="fas fa-history"></i> History</div>' : ''}
                 <img src="${IMG}${item.poster}" class="w-full h-full object-cover opacity-50 group-hover:opacity-80 transition-opacity">
                 
                 <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
@@ -6120,7 +6143,6 @@ function getContinueWatchingHTML() {
                     <div class="text-[10px] font-black uppercase text-white line-clamp-1 drop-shadow-md">${item.title}</div>
                     <div class="text-[8px] font-bold tracking-widest text-pulse uppercase mt-1">${statusText}</div>
                 </div>
-                
                 ${progressBar}
             </div>
         </div>
@@ -6129,20 +6151,28 @@ function getContinueWatchingHTML() {
     html += `</div></div>`;
     return html;
 }
+
+// Update the Remove logic to handle both DB and History items
 window.removeContinueWatching = function (id) {
+    // 1. Remove from DB
     let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
     const idx = db.findIndex(i => String(i.id) === String(id));
     if (idx !== -1) {
-        // Demote it back to Plan to Watch and clear the timestamp so it disappears from the list
         db[idx].status = 'Plan to Watch';
         if (db[idx].type === 'movie') db[idx].timestamp = 0;
-
         localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
         state.db = db;
-        renderContinueWatching();
-        if (state.view === 'mylist') renderList();
     }
+
+    // 2. Remove from History
+    let history = JSON.parse(localStorage.getItem('sumi_history') || '[]');
+    history = history.filter(i => String(i.id) !== String(id));
+    localStorage.setItem('sumi_history', JSON.stringify(history));
+
+    renderContinueWatching();
+    if (state.view === 'mylist') renderList();
 };
+
 
 function formatTimestampProgress(seconds) {
     if (!seconds || isNaN(seconds)) return '';
@@ -6165,44 +6195,28 @@ function renderContinueWatching() {
     }
 }
 // --- AUTO-MARK ENGINE FOR CONTINUE WATCHING ---
+// --- AUTO-MARK ENGINE ---
 async function autoMarkWatching(id, type, season = 1, episode = 1) {
     let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
     const existing = db.find(i => String(i.id) === String(id));
+
     if (existing) {
-        const currentStatus = existing.status;
-        if (currentStatus !== 'Finished' && currentStatus !== 'Ongoing') {
+        // ONLY update items that the user has explicitly added to their database
+        if (existing.status !== 'Finished' && existing.status !== 'Ongoing') {
             existing.status = 'Watching';
             existing.updatedAt = Date.now();
         }
         if (type === 'tv') {
-            // Only update if current is 0 (new) or if we are moving forward
             if (!existing.ep || existing.ep === 0) {
                 existing.season = season || 1;
-                existing.ep = (episode > 0) ? (episode - 1) : 0; // Store as "Last Finished"
+                existing.ep = (episode > 0) ? (episode - 1) : 0;
             }
         }
-    } else {
-        // NOT IN DB: Fetch and add as Watching
-        try {
-            const data = await fetchAPI(`/${type}/${id}`);
-            let cat = determineCategory(data);
-            db.push({
-                id: data.id, title: data.title || data.name, poster: data.poster_path,
-                type: cat, tmdb_type: type, status: 'Watching',
-                ep: type === 'tv' ? (episode > 0 ? episode - 1 : 0) : 0,
-                season: type === 'tv' ? (season || 1) : 0,
-                max_ep: data.number_of_episodes || 1,
-                score: 0, crown: 0, imdb: data.vote_average,
-                year: (data.release_date || data.first_air_date || '').split('-')[0],
-                genres: (data.genres || []).map(g => g.id),
-                added: Date.now(), updatedAt: Date.now(),
-                timestamp: 0, duration: 0
-            });
-        } catch (e) { return; }
+        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+        state.db = db;
     }
-    localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-    state.db = db;
 
+    // BUG FIX: Removed the `else { db.push(...) }` block. Untracked items will now only go to sumi_history!
     if (typeof renderContinueWatching === 'function') renderContinueWatching();
 }
 init();
@@ -6306,7 +6320,7 @@ document.getElementById('watchOptionsModal').addEventListener('click', function 
 function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     document.getElementById('watchModal').classList.add('hidden');
     const safeTitle = encodeURIComponent(title || '');
-    let playerUrl = `pages/player.html?id=${id}&type=${tmdbType}&title=${safeTitle}`;
+    let playerUrl = `pages/player.html?v=${cleanSlug}`;
     let epInfo = '';
 
     // Only force episode via URL if we are in the modal AND the user changed the slider
@@ -6352,14 +6366,16 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     } else {
         autoMarkWatching(id, tmdbType);
     }
+    const cleanTitle = (title || 'watch').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const typeChar = tmdbType === 'movie' ? 'm' : 't';
+    let cleanSlug = `${cleanTitle}-${typeChar}${id}`;
+    if (tmdbType === 'tv') cleanSlug += `-s${cSeason}e${cEp}`;
 
     if (typeof showNotification === 'function') {
-        showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream${epInfo}...`, false);
+        showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream...`, false);
     }
 
-    setTimeout(() => {
-        window.location.href = playerUrl;
-    }, 800);
+    setTimeout(() => { window.location.href = playerUrl; }, 800);
 }
 
 function renderPlayerEpisodes(seasonNum) {
@@ -6837,6 +6853,51 @@ function copyToClipboard(text, successMessage) {
         prompt("Copy this link to share:", text);
     });
 }
+// --- CUSTOM UI SHARE ENGINE ---
+function openCustomShare(title, desc, url, richText) {
+    const modal = document.getElementById('customShareModal');
+    document.getElementById('shareModalTitle').innerText = title;
+    document.getElementById('shareModalDesc').innerText = desc;
+    document.getElementById('shareModalLink').value = url;
+
+    // Setup Social Quick Links
+    const encodedText = encodeURIComponent(richText);
+    const socialHtml = `
+        <a href="https://wa.me/?text=${encodedText}" target="_blank" class="flex items-center justify-center gap-2 py-3 bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#25D366] hover:text-white transition-all">
+            <i class="fab fa-whatsapp text-sm"></i> WhatsApp
+        </a>
+        <a href="https://twitter.com/intent/tweet?text=${encodedText}" target="_blank" class="flex items-center justify-center gap-2 py-3 bg-[#1DA1F2]/10 text-[#1DA1F2] border border-[#1DA1F2]/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#1DA1F2] hover:text-white transition-all">
+            <i class="fab fa-twitter text-sm"></i> X / Twitter
+        </a>
+    `;
+    document.getElementById('shareSocialButtons').innerHTML = socialHtml;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('scale-95');
+    }, 10);
+}
+
+window.closeCustomShare = function () {
+    const modal = document.getElementById('customShareModal');
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    // Reset copy icon
+    document.getElementById('shareCopyIcon').className = 'fas fa-copy';
+}
+
+window.copyCustomShareLink = function () {
+    const linkInput = document.getElementById('shareModalLink');
+    linkInput.select();
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+        const icon = document.getElementById('shareCopyIcon');
+        icon.className = 'fas fa-check text-white';
+        showNotification("Link secured to clipboard!");
+        setTimeout(() => { icon.className = 'fas fa-copy'; }, 2000);
+    });
+}
 
 window.shareActiveItem = async function () {
     if (!state.active) return showNotification("No active item to share.", true);
@@ -6844,54 +6905,47 @@ window.shareActiveItem = async function () {
     const id = state.active.id;
     const type = state.active.media_type || (state.active.title ? 'movie' : 'tv');
     const title = state.active.title || state.active.name;
+    const year = (state.active.release_date || state.active.first_air_date || '').split('-')[0] || '';
+    const rating = state.active.vote_average ? state.active.vote_average.toFixed(1) : 'N/A';
+
+    // Safe synopsis grab (limit length for texts)
+    let synopsis = state.active.overview || "Explore this cinematic archive.";
+    if (synopsis.length > 150) synopsis = synopsis.substring(0, 147) + '...';
 
     const baseUrl = window.location.origin + window.location.pathname;
     const shareUrl = `${baseUrl}?share=${type}-${id}`;
 
-    const shareData = {
-        title: `CinePulse: ${title}`,
-        text: `Check out ${title} on my Neural Database!`,
-        url: shareUrl
-    };
+    // Rich Text format for WhatsApp/iMessage
+    const richText = `🎬 *${title}* (${year})\n⭐ IMDb: ${rating}/10\n\n📖 ${synopsis}\n\nWatch securely on CinePulse ⬇️\n${shareUrl}`;
 
-    // Attempt Native OS Share Sheet (Mobile / Modern Desktop)
-    if (navigator.share) {
+    if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
         try {
-            await navigator.share(shareData);
-        } catch (err) {
-            // Fallback to clipboard if user cancels or share fails
-            copyToClipboard(shareUrl, `Link for ${title} copied to clipboard!`);
-        }
+            await navigator.share({ title: `CinePulse: ${title}`, text: richText });
+        } catch (err) { openCustomShare(`Share ${title}`, "Transmit Entity Data", shareUrl, richText); }
     } else {
-        // Fallback for browsers that don't support native sharing
-        copyToClipboard(shareUrl, `Link for ${title} copied to clipboard!`);
+        openCustomShare(`Share ${title}`, "Transmit Entity Data", shareUrl, richText);
     }
 };
+
+
 
 window.shareWatchlist = async function () {
     if (!state.db || state.db.length === 0) {
         return showNotification("Library is empty.", true);
     }
 
-    // Compress the list: 'm' for movie, 't' for tv. Example output: m12345,t67890
-    const compressedList = state.db.map(item => `${item.type === 'movie' ? 'm' : 't'}${item.id}`).join(',');
+    // Compression mechanism (still long for massive DBs, but much better)
+    const compressedList = state.db.map(item => `${item.type === 'movie' ? 'm' : 't'}${item.id}`).join('-');
     const baseUrl = window.location.origin + window.location.pathname;
     const shareUrl = `${baseUrl}?list=${compressedList}`;
 
-    const shareData = {
-        title: 'My CinePulse Library',
-        text: `Explore my curated cinematic library containing ${state.db.length} neural records!`,
-        url: shareUrl
-    };
+    const richText = `🧠 *My CinePulse Neural Database*\nI'm tracking ${state.db.length} entities in my cinematic library.\n\nMerge timelines with me here ⬇️\n${shareUrl}`;
 
-    // Attempt Native OS Share Sheet
-    if (navigator.share) {
+    if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
         try {
-            await navigator.share(shareData);
-        } catch (err) {
-            copyToClipboard(shareUrl, `Watchlist copied to clipboard! (${state.db.length} items)`);
-        }
+            await navigator.share({ title: 'My CinePulse Library', text: richText });
+        } catch (err) { openCustomShare("Share Library", `Total Records: ${state.db.length}`, shareUrl, richText); }
     } else {
-        copyToClipboard(shareUrl, `Watchlist copied to clipboard! (${state.db.length} items)`);
+        openCustomShare("Share Library", `Total Records: ${state.db.length}`, shareUrl, richText);
     }
 };

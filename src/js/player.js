@@ -37,16 +37,47 @@ let state = {
     season: 1, episode: 1, absoluteEp: 1,
     serverIdx: 0, audioMode: 'sub', data: null
 };
-
+window.generateCleanUrl = function (title, type, id, s = null, e = null) {
+    const cleanTitle = (title || 'watch').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const typeChar = type === 'movie' ? 'm' : 't';
+    let slug = `${cleanTitle}-${typeChar}${id}`;
+    if (type === 'tv' && s && e) slug += `-s${s}e${e}`;
+    return slug;
+};
+window.parseCleanUrl = function (slug) {
+    if (!slug) return null;
+    const match = slug.match(/-([mt])(\d+)(?:-s(\d+)e(\d+))?$/);
+    if (match) {
+        return { type: match[1] === 'm' ? 'movie' : 'tv', id: match[2], s: match[3] || null, e: match[4] || null };
+    }
+    return null;
+};
 async function initPlayer() {
     const urlParams = new URLSearchParams(window.location.search);
+    const cleanSlug = urlParams.get('v');
     state.id = urlParams.get('id');
     state.type = urlParams.get('type') || 'movie';
     const urlSeason = urlParams.get('season');
     const urlEpisode = urlParams.get('episode');
+    if (cleanSlug) {
+        const parsed = parseCleanUrl(cleanSlug);
+        if (parsed) {
+            state.id = parsed.id; state.type = parsed.type;
+            state.season = parseInt(parsed.s) || 1; state.episode = parseInt(parsed.e) || 1;
+        }
+    } else {
+        // Fallback for old legacy links + Auto-clean address bar
+        state.id = urlParams.get('id'); state.type = urlParams.get('type') || 'movie';
+        state.season = parseInt(urlParams.get('season')) || 1; state.episode = parseInt(urlParams.get('episode')) || 1;
+        if (state.id) {
+            const newUrl = `${window.location.pathname}?v=${generateCleanUrl('watch', state.type, state.id, state.season, state.episode)}`;
+            window.history.replaceState({}, '', newUrl);
+        }
+    }
 
     if (!state.id) {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
+
         return;
     }
 
@@ -289,7 +320,6 @@ function saveCurrentEpisodeToDb() {
         localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
     }
 }
-
 function updateStream() {
     const serverList = SERVERS[state.category] || SERVERS['default'];
     if (state.serverIdx >= serverList.length) state.serverIdx = 0;
@@ -305,6 +335,9 @@ function updateStream() {
         nextBtn.innerHTML = '<span>Next Ep</span> <i class="fas fa-step-forward"></i>';
         nextBtn.classList.remove('bg-pulse', 'border-pulse');
     }
+
+    // NEW: Always push to temporary history so it shows in "Continue Watching" without polluting the DB
+    if (state.data) trackWatchHistory(state.data, state.season, state.episode);
 
     initSmartNextButton();
 }
@@ -485,36 +518,36 @@ function initPlayerLibraryState() {
         iconEl.innerHTML = '<i class="fas fa-check text-[#22c55e]"></i>';
         iconEl.className = "w-10 h-10 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 flex items-center justify-center";
     } else {
+        // BUG FIX: Do NOT push to DB. Just mark as Uncharted.
+        textEl.innerText = 'Uncharted';
+        textEl.className = "text-xs font-bold uppercase text-gray-500";
+        iconEl.innerHTML = '<i class="fas fa-bookmark text-gray-500"></i>';
+        iconEl.className = "w-10 h-10 rounded-full bg-dark border border-white/10 flex items-center justify-center text-gray-500";
+    }
+}
+function togglePlayerLibraryStatus() {
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+    let existingIdx = db.findIndex(i => String(i.id) === String(state.id));
+
+    if (existingIdx === -1 && state.data) {
+        // BUG FIX: Actually add the item to the library when the button is clicked
         const newItem = {
-            id: state.id,
-            title: state.data?.title || state.data?.name || '',
-            poster: state.data?.poster_path || '',
-            type: state.category === 'anime' || state.category === 'kdrama' ? state.category : (state.type === 'tv' ? 'tv' : 'movie'),
-            tmdb_type: state.type,
-            status: 'Watching',
-            ep: state.type === 'tv' ? 1 : 0,
-            max_ep: state.data?.number_of_episodes || 1,
-            season: state.type === 'tv' ? 1 : 0,
-            score: 0,
-            crown: 0,
-            imdb: state.data?.vote_average || 0,
-            year: (state.data?.release_date || state.data?.first_air_date || '').split('-')[0],
-            genres: (state.data?.genres || []).map(g => g.id),
-            added: Date.now(),
-            updatedAt: Date.now()
+            id: state.id, title: state.data.title || state.data.name || '',
+            poster: state.data.poster_path || '', type: state.category === 'anime' || state.category === 'kdrama' ? state.category : (state.type === 'tv' ? 'tv' : 'movie'),
+            tmdb_type: state.type, status: 'Watching',
+            ep: state.type === 'tv' ? state.episode : 0, season: state.type === 'tv' ? state.season : 0,
+            max_ep: state.data.number_of_episodes || 1, score: 0, crown: 0,
+            imdb: state.data.vote_average || 0, year: (state.data.release_date || state.data.first_air_date || '').split('-')[0],
+            genres: (state.data.genres || []).map(g => g.id), added: Date.now(), updatedAt: Date.now()
         };
         db.push(newItem);
         localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
-
-        textEl.innerText = 'Watching';
-        textEl.className = "text-xs font-bold uppercase text-[#22c55e]";
-        iconEl.innerHTML = '<i class="fas fa-check text-[#22c55e]"></i>';
-        iconEl.className = "w-10 h-10 rounded-full bg-[#22c55e]/10 border border-[#22c55e]/30 flex items-center justify-center";
+        initPlayerLibraryState(); // Refresh UI
+        playerShowNotification("Entity Added to Neural Library!");
+    } else {
+        // If already tracked, send them to the details modal to edit status/score
+        goBackToModal();
     }
-}
-
-function togglePlayerLibraryStatus() {
-    goBackToModal();
 }
 
 function openPlayerMiniModal(id, type, title, poster) {
@@ -579,5 +612,136 @@ window.triggerNextEpisode = function () {
     btn.classList.add('bg-pulse', 'border-pulse');
     playNextEpisode();
 };
+// ==========================================
+// PLAYER SHARING ENGINE
+// ==========================================
 
+window.shareCurrentMedia = async function () {
+    const urlParams = new URLSearchParams(window.location.search);
+    let id, type, s, e;
+    const cleanSlug = urlParams.get('v');
+
+    if (cleanSlug) {
+        const parsedData = parseCleanUrl(cleanSlug);
+        if (parsedData) {
+            id = parsedData.id;
+            type = parsedData.type;
+            s = parsedData.s;
+            e = parsedData.e;
+        }
+    } else {
+        // 2. Fallback for old legacy links
+        id = urlParams.get('id');
+        type = urlParams.get('type');
+        s = urlParams.get('s');
+        e = urlParams.get('e');
+
+        // 3. Auto-clean the address bar if an old link is used
+        if (id && type) {
+            // We might not have the title immediately, use 'watch' as a placeholder until metadata loads
+            const fallbackSlug = generateCleanUrl('watch', type, id, s, e);
+            const newUrl = `${window.location.pathname}?v=${fallbackSlug}`;
+            window.history.replaceState({}, '', newUrl); // Changes URL without reloading the page
+        }
+    }
+    // Capture precise current viewing state
+    const currentSeason = state.season;
+    const currentEp = state.episode;
+    const title = document.getElementById('playerTitle')?.innerText || 'video';
+
+    // Direct player deep link
+    const rootUrl = window.location.href.split('/pages/')[0] + '/';
+    const shareUrl = `${rootUrl}pages/player.html?v=${cleanSlug}`; // Clean URL!
+
+    let epContext = "";
+    if (type === 'tv') {
+        shareUrl += `&season=${currentSeason}&episode=${currentEp}`;
+        epContext = `(S${currentSeason}:E${currentEp})`;
+    }
+
+    const richText = `🍿 Come watch *${title}* ${epContext} with me on CinePulse!\n\nJoin the stream here ⬇️\n${shareUrl}`;
+
+    // Uses the same custom UI modal injected into player.html
+    if (navigator.share && /mobile|android|iphone|ipad/i.test(navigator.userAgent)) {
+        try {
+            await navigator.share({ title: `Watching ${title}`, text: richText });
+        } catch (err) {
+            if (typeof openCustomShare === 'function') openCustomShare("Share Stream", "Transmit Direct Link", shareUrl, richText);
+            else { prompt("Copy Link:", shareUrl); }
+        }
+    } else {
+        if (typeof openCustomShare === 'function') openCustomShare("Share Stream", "Transmit Direct Link", shareUrl, richText);
+        else { prompt("Copy Link:", shareUrl); }
+    }
+};
+// --- CUSTOM UI SHARE ENGINE ---
+function openCustomShare(title, desc, url, richText) {
+    const modal = document.getElementById('customShareModal');
+    document.getElementById('shareModalTitle').innerText = title;
+    document.getElementById('shareModalDesc').innerText = desc;
+    document.getElementById('shareModalLink').value = url;
+
+    // Setup Social Quick Links
+    const encodedText = encodeURIComponent(richText);
+    const socialHtml = `
+        <a href="https://wa.me/?text=${encodedText}" target="_blank" class="flex items-center justify-center gap-2 py-3 bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#25D366] hover:text-white transition-all">
+            <i class="fab fa-whatsapp text-sm"></i> WhatsApp
+        </a>
+        <a href="https://twitter.com/intent/tweet?text=${encodedText}" target="_blank" class="flex items-center justify-center gap-2 py-3 bg-[#1DA1F2]/10 text-[#1DA1F2] border border-[#1DA1F2]/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#1DA1F2] hover:text-white transition-all">
+            <i class="fab fa-twitter text-sm"></i> X / Twitter
+        </a>
+    `;
+    document.getElementById('shareSocialButtons').innerHTML = socialHtml;
+
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('div').classList.remove('scale-95');
+    }, 10);
+}
+
+window.closeCustomShare = function () {
+    const modal = document.getElementById('customShareModal');
+    modal.classList.add('opacity-0');
+    modal.querySelector('div').classList.add('scale-95');
+    setTimeout(() => { modal.classList.add('hidden'); }, 300);
+    // Reset copy icon
+    document.getElementById('shareCopyIcon').className = 'fas fa-copy';
+}
+
+window.copyCustomShareLink = function () {
+    const linkInput = document.getElementById('shareModalLink');
+    linkInput.select();
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+        const icon = document.getElementById('shareCopyIcon');
+        icon.className = 'fas fa-check text-white';
+        showNotification("Link secured to clipboard!");
+        setTimeout(() => { icon.className = 'fas fa-copy'; }, 2000);
+    });
+}
+// --- DEDICATED WATCH HISTORY ENGINE ---
+function trackWatchHistory(itemDetails, season = null, episode = null) {
+    // 1. Pull the dedicated history array (NOT the main library db)
+    let history = JSON.parse(localStorage.getItem('sumi_history') || '[]');
+
+    // 2. Remove the item if it already exists so we can push it to the front
+    history = history.filter(i => i.id !== itemDetails.id);
+
+    // 3. Add to the front of the array with timestamp and progress
+    history.unshift({
+        id: itemDetails.id,
+        type: itemDetails.media_type || (itemDetails.name ? 'tv' : 'movie'),
+        title: itemDetails.title || itemDetails.name,
+        poster_path: itemDetails.poster_path,
+        watched_at: Date.now(),
+        last_season: season,
+        last_episode: episode
+    });
+
+    // 4. Cap the history at 30 items so it doesn't bloat local storage
+    if (history.length > 30) history.pop();
+
+    // 5. Save it back
+    localStorage.setItem('sumi_history', JSON.stringify(history));
+}
 initPlayer();

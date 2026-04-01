@@ -24,18 +24,11 @@ function getDevicePlatform() {
 // ... getDevicePlatform() remains untouched above this ...
 
 const P2P_CONFIG = {
-    debug: 2,
+    debug: 1, // Lowered debug level to prevent console freezing
     config: {
         iceServers: [
-            // Expanded Google STUN servers (Handles standard Wi-Fi traversal)
             { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun2.l.google.com:19302' },
-            { urls: 'stun:stun.services.mozilla.com' },
-
-            // Public TURN server (Relays data across strict Mobile Networks)
-            // Note: Public TURNs get throttled. If connection still fails on 5G, 
-            // you must replace these credentials with your own free Metered.ca account.
+            { urls: 'stun:global.stun.twilio.com:3478' }, // Added reliable Twilio STUN
             {
                 urls: 'turn:openrelay.metered.ca:80',
                 username: 'openrelayproject',
@@ -52,16 +45,16 @@ const P2P_CONFIG = {
                 credential: 'openrelayproject'
             }
         ],
+        iceTransportPolicy: 'all', // Force testing of TURN servers
         iceCandidatePoolSize: 10
     }
 };
-
 
 const SIGNALING_SERVER = {
     host: '0.peerjs.com',
     port: 443,
     secure: true,
-    key: 'cinepulse'
+    key: 'peerjs' // Default public key is usually 'peerjs'
 };
 
 const NeuralSync = {
@@ -113,10 +106,14 @@ window.editTopologyNodeName = function (dId) {
 
 
 let reconnectInterval = null;
+let isReconnecting = false; // Prevent WebSocket spamming
+
 // --- TRUE AUTO-RECONNECT ENGINE ---
 function startAutoReconnectLoop() {
     if (reconnectInterval) clearInterval(reconnectInterval);
     reconnectInterval = setInterval(() => {
+        if (isReconnecting) return;
+
         const savedRole = localStorage.getItem('cp_neural_role');
         const savedHostId = localStorage.getItem('cp_neural_host_id');
 
@@ -126,8 +123,17 @@ function startAutoReconnectLoop() {
             const connDead = !conn || !conn.open;
 
             if (peerDead || connDead) {
-                console.log("Neural Link severed. Auto-reconnecting to Hub...");
-                joinNeuralNetwork(savedHostId, true);
+                console.log("Neural Link severed. Auto-reconnecting...");
+                isReconnecting = true;
+
+                // If peer exists but disconnected, try native reconnect first to save websocket limits
+                if (NeuralSync.peer && NeuralSync.peer.disconnected && !NeuralSync.peer.destroyed) {
+                    NeuralSync.peer.reconnect();
+                    setTimeout(() => { isReconnecting = false; }, 3000);
+                } else {
+                    joinNeuralNetwork(savedHostId, true);
+                    setTimeout(() => { isReconnecting = false; }, 5000);
+                }
             }
         }
     }, 8000);
