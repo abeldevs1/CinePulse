@@ -764,10 +764,17 @@
                                     class="w-full text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-white/5 transition-all">
                                     <i class="fas fa-sliders-h mr-2"></i> Advanced Export
                                 </button>
+
                             </div>
                         </div>
                     </div>
+                    <div class="w-px h-6 bg-white/10 mx-2 hidden md:block"></div>
 
+                    <button onclick="shareWatchlist()"
+                        class="lib-btn shrink-0 text-[#22c55e] hover:bg-[#22c55e]/10 border-[#22c55e]/30 shadow-lg shadow-[#22c55e]/10"
+                        title="Share Watchlist">
+                        <i class="fas fa-share-nodes"></i> <span>Share Link</span>
+                    </button>
                     <div class="w-px h-6 bg-white/10 mx-2 hidden md:block"></div>
 
                     <button onclick="openFactoryResetModal()" class="lib-btn danger shrink-0" title="Factory Reset">
@@ -1117,7 +1124,8 @@
 
             <div class="relative z-10 w-full max-w-5xl text-center mb-12">
                 <h2 class="text-4xl md:text-6xl font-black italic uppercase tracking-tighter text-white mb-4">Neural
-                    <span class="text-pulse">Link</span></h2>
+                    <span class="text-pulse">Link</span>
+                </h2>
                 <p class="text-[11px] text-gray-400 font-bold tracking-[0.2em] uppercase">Multi-Master P2P
                     Synchronization</p>
             </div>
@@ -1585,6 +1593,11 @@
                         class="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-white/10 border border-white/5 hover:bg-pulse hover:border-pulse flex items-center justify-center transition-all text-white/50 hover:text-white shrink-0 mt-1 lg:mt-0 shadow-lg"
                         title="Copy Title">
                         <i class="fas fa-copy text-xs lg:text-base"></i>
+                    </button>
+                    <button onclick="shareActiveItem()"
+                        class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 hover:border-[#3b82f6]/30 transition-all shadow-lg"
+                        title="Share Entity Link">
+                        <i class="fas fa-share-nodes text-[10px] md:text-sm"></i>
                     </button>
                 </div>
 

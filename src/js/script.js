@@ -366,26 +366,59 @@ async function fetchAPI(path) {
     return res.json();
 }
 // --- URL ROUTING (Handles returning from Player) ---
+// --- URL ROUTING & DEEP LINK INTERCEPTOR ---
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
+
+    // Legacy/Standard Open
     const openId = urlParams.get('open');
     const openType = urlParams.get('type');
+
+    // New Deep Link Parameters
+    const shareParam = urlParams.get('share');
+    const listParam = urlParams.get('list');
     const searchQuery = urlParams.get('search');
 
+    // Helper to clean the URL silently so it doesn't loop if the user refreshes
+    const cleanURL = () => window.history.replaceState({}, document.title, window.location.pathname);
 
-    if (openId && openType) {
-        // Clean the URL silently so it doesn't get stuck in a loop if refreshed
-        window.history.replaceState({}, document.title, window.location.pathname);
-        // Wait half a second for the app to finish initializing, then open the modal
+    if (shareParam) {
+        cleanURL();
+        const [type, id] = shareParam.split('-');
+        if (type && id) {
+            setTimeout(() => {
+                state.db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+                openModal(id, type);
+            }, 500);
+        }
+    } else if (openId && openType) {
+        cleanURL();
         setTimeout(() => {
-            // Refresh database from localStorage first to get latest changes from player
             state.db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
             openModal(openId, openType);
-            // Refresh continue watching after returning from player
             if (typeof renderContinueWatching === 'function') renderContinueWatching();
         }, 500);
+    } else if (listParam) {
+        cleanURL();
+        const items = listParam.split(',');
+
+        // Confirm before mass-importing into their DB
+        if (confirm(`Incoming Neural Link: Import ${items.length} items to your library?`)) {
+            showNotification(`Importing ${items.length} items. Please wait...`);
+
+            // Sequentially trigger your existing quickAdd function
+            items.reduce(async (promise, encodedItem) => {
+                await promise;
+                const type = encodedItem.charAt(0) === 'm' ? 'movie' : 'tv';
+                const id = encodedItem.substring(1);
+                return quickAdd(id, type);
+            }, Promise.resolve()).then(() => {
+                showNotification("Watchlist import complete!");
+                if (state.view === 'mylist') renderList();
+            });
+        }
     } else if (searchQuery) {
-        window.history.replaceState({}, document.title, window.location.pathname);
+        cleanURL();
         document.getElementById('mainSearch').value = searchQuery;
         setTimeout(() => {
             navigate('search');
@@ -393,9 +426,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     }
 
-    // --- NEW: Check Install Reminder Snooze State ---
     checkInstallSnooze();
 });
+
 // api helper 
 function getTodayAPI() {
     const d = new Date();
@@ -6788,5 +6821,77 @@ window.executeClearContinueWatching = function () {
         renderContinueWatching();
         if (state.view === 'mylist') renderList();
         showNotification(`${clearedCount} records wiped from Continue Watching.`);
+    }
+};
+
+
+// ==========================================
+// DEEP LINKING & MULTI-PLATFORM SHARING ENGINE
+// ==========================================
+
+// Internal Helper for Clipboard Fallback
+function copyToClipboard(text, successMessage) {
+    navigator.clipboard.writeText(text).then(() => {
+        showNotification(successMessage);
+    }).catch(err => {
+        prompt("Copy this link to share:", text);
+    });
+}
+
+window.shareActiveItem = async function () {
+    if (!state.active) return showNotification("No active item to share.", true);
+
+    const id = state.active.id;
+    const type = state.active.media_type || (state.active.title ? 'movie' : 'tv');
+    const title = state.active.title || state.active.name;
+
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?share=${type}-${id}`;
+
+    const shareData = {
+        title: `CinePulse: ${title}`,
+        text: `Check out ${title} on my Neural Database!`,
+        url: shareUrl
+    };
+
+    // Attempt Native OS Share Sheet (Mobile / Modern Desktop)
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            // Fallback to clipboard if user cancels or share fails
+            copyToClipboard(shareUrl, `Link for ${title} copied to clipboard!`);
+        }
+    } else {
+        // Fallback for browsers that don't support native sharing
+        copyToClipboard(shareUrl, `Link for ${title} copied to clipboard!`);
+    }
+};
+
+window.shareWatchlist = async function () {
+    if (!state.db || state.db.length === 0) {
+        return showNotification("Library is empty.", true);
+    }
+
+    // Compress the list: 'm' for movie, 't' for tv. Example output: m12345,t67890
+    const compressedList = state.db.map(item => `${item.type === 'movie' ? 'm' : 't'}${item.id}`).join(',');
+    const baseUrl = window.location.origin + window.location.pathname;
+    const shareUrl = `${baseUrl}?list=${compressedList}`;
+
+    const shareData = {
+        title: 'My CinePulse Library',
+        text: `Explore my curated cinematic library containing ${state.db.length} neural records!`,
+        url: shareUrl
+    };
+
+    // Attempt Native OS Share Sheet
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            copyToClipboard(shareUrl, `Watchlist copied to clipboard! (${state.db.length} items)`);
+        }
+    } else {
+        copyToClipboard(shareUrl, `Watchlist copied to clipboard! (${state.db.length} items)`);
     }
 };
