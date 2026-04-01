@@ -6320,22 +6320,23 @@ document.getElementById('watchOptionsModal').addEventListener('click', function 
 function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     document.getElementById('watchModal').classList.add('hidden');
     const safeTitle = encodeURIComponent(title || '');
-    let playerUrl = `pages/player.html?v=${cleanSlug}`;
-    let epInfo = '';
 
-    // Only force episode via URL if we are in the modal AND the user changed the slider
+    // Default episodes to prevent undefined errors
+    let cSeason = 1;
+    let cEp = 1;
+
     const isContextActive = state.active && String(state.active.id) === String(id);
     const epSlider = document.getElementById('mEpRange');
     const dbItem = state.db.find(i => String(i.id) === String(id));
 
     if (tmdbType === 'tv') {
         if (isContextActive && epSlider && dbItem && parseInt(epSlider.value) !== (dbItem.ep || 0)) {
-            // User adjusted slider manually. Calculate relative season/ep and pass via URL.
+            // User adjusted slider manually. Calculate relative season/ep.
             let targetAbsolute = parseInt(epSlider.value);
             if (targetAbsolute < 1) targetAbsolute = 1;
 
             const seasons = state.active.seasons.filter(s => s.season_number > 0);
-            let cSeason = 1, cEp = 1, acc = 0;
+            let acc = 0;
             for (let s of seasons) {
                 if (targetAbsolute <= acc + s.episode_count) {
                     cSeason = s.season_number;
@@ -6344,8 +6345,6 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
                 }
                 acc += s.episode_count;
             }
-            playerUrl += `&season=${cSeason}&episode=${cEp}`;
-            epInfo = ` S${cSeason}:E${cEp}`;
 
             // Sync database immediately
             dbItem.ep = targetAbsolute;
@@ -6353,8 +6352,7 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
             dbItem.status = 'Watching';
             save();
         } else if (dbItem) {
-            // User clicked Quick Play or Continue Watching.
-            // Ensure it's marked as watching, let player.js figure out the exact episode.
+            // User clicked Quick Play. Ensure it's marked as watching.
             if (dbItem.status !== 'Finished' && dbItem.status !== 'Ongoing') {
                 dbItem.status = 'Watching';
                 save();
@@ -6366,10 +6364,17 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     } else {
         autoMarkWatching(id, tmdbType);
     }
+
+    // Safely generate the URL slug AFTER all variables are processed
     const cleanTitle = (title || 'watch').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const typeChar = tmdbType === 'movie' ? 'm' : 't';
     let cleanSlug = `${cleanTitle}-${typeChar}${id}`;
-    if (tmdbType === 'tv') cleanSlug += `-s${cSeason}e${cEp}`;
+
+    if (tmdbType === 'tv') {
+        cleanSlug += `-s${cSeason}e${cEp}`;
+    }
+
+    const playerUrl = `pages/player.html?v=${cleanSlug}`;
 
     if (typeof showNotification === 'function') {
         showNotification(`<i class="fas fa-spinner fa-spin mr-2"></i> Initializing Neural Stream...`, false);
@@ -6377,7 +6382,6 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
 
     setTimeout(() => { window.location.href = playerUrl; }, 800);
 }
-
 function renderPlayerEpisodes(seasonNum) {
     playerState.season = parseInt(seasonNum);
     const validSeasons = playerState.activeItemData.seasons.filter(s => s.season_number > 0);
