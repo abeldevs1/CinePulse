@@ -921,22 +921,28 @@ function renderDrop(items, query) {
 }
 
 // Logic for the Quick Add Button
-function quickWatch(event, id, cat, title, year) {
+function quickWatch(event, id, cat, tmdbType, title, year) {
+    // Stop the click from opening the info modal underneath
     event.preventDefault();
     event.stopPropagation();
 
-    const availableSources = sourcesDb[cat] || [];
-    const tmdbType = (cat === 'tv' || cat === 'anime' || cat === 'kdrama' || cat === 'turkish' || cat === 'asian') ? 'tv' : 'movie';
+    // Failsafe: if called from old cached HTML without tmdbType, shift the arguments
+    if (year === undefined) {
+        year = title;
+        title = tmdbType;
+        tmdbType = (cat === 'tv' || cat === 'anime' || cat === 'kdrama' || cat === 'turkish' || cat === 'asian') ? 'tv' : 'movie';
+    }
 
-    // NEW: Auto-Launch Internal Player and bypass Modal if no external sources exist
+    const availableSources = sourcesDb[cat] || [];
+    const safeTitle = encodeURIComponent(title);
+    const safeYear = year;
+
+    // Auto-Launch Internal Player and bypass Modal if no external sources exist
     if (availableSources.length === 0) {
         showNotification(`Launching Built-in Player. <u onclick="navigate('sources')" class="cursor-pointer text-white hover:text-pulse ml-1">Configure External Sources Here</u>`);
         launchInternalPlayer(id, tmdbType, title);
         return;
     }
-
-    const safeTitle = encodeURIComponent(title);
-    const safeYear = year;
 
     // 1. BUILT-IN PLAYER SECTION
     let html = `
@@ -3529,9 +3535,12 @@ function removeSource(cat, idx) {
 
 // --- UNIFIED HOVER PLAY ENGINE ---
 function getPlayHoverHTML(item) {
-    // 1. Determine exact category natively
+    // 1. Determine exact category natively for styling
     const local = state.db.find(i => String(i.id) === String(item.id));
     const cat = local ? local.type : determineCategory(item);
+
+    // CRITICAL FIX: Determine actual TMDB type natively, ignoring custom categories
+    const actualTmdbType = item.media_type || (item.title ? 'movie' : 'tv');
 
     // 2. Escape strings safely for inline HTML
     const title = (item.title || item.name || '').replace(/'/g, "\\'");
@@ -3548,7 +3557,7 @@ function getPlayHoverHTML(item) {
     if (isUpcoming) {
         return `
         <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 pointer-events-none flex items-center justify-center">
-            <button onclick="quickTrailer(event, ${item.id}, '${cat}')" class="w-14 h-14 rounded-full bg-white/10 border border-pulse text-pulse flex items-center justify-center text-xl hover:bg-pulse hover:text-white hover:scale-110 transition-all pointer-events-auto shadow-[0_5px_15px_rgba(255,45,85,0.4)]">
+            <button onclick="quickTrailer(event, ${item.id}, '${actualTmdbType}')" class="w-14 h-14 rounded-full bg-white/10 border border-pulse text-pulse flex items-center justify-center text-xl hover:bg-pulse hover:text-white hover:scale-110 transition-all pointer-events-auto shadow-[0_5px_15px_rgba(255,45,85,0.4)]">
                 <i class="fab fa-youtube"></i>
             </button>
         </div>`;
@@ -3557,94 +3566,12 @@ function getPlayHoverHTML(item) {
     // 5. RETURN STANDARD PLAY BUTTON
     return `
     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-50 pointer-events-none flex items-center justify-center">
-        <button onclick="quickWatch(event, ${item.id}, '${cat}', '${title}', '${year}')" class="w-14 h-14 rounded-full bg-white/10 border border-white/40 flex items-center justify-center text-white text-xl hover:bg-pulse hover:border-pulse hover:scale-110 transition-all pointer-events-auto shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+        <button onclick="quickWatch(event, ${item.id}, '${cat}', '${actualTmdbType}', '${title}', '${year}')" class="w-14 h-14 rounded-full bg-white/10 border border-white/40 flex items-center justify-center text-white text-xl hover:bg-pulse hover:border-pulse hover:scale-110 transition-all pointer-events-auto shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
             <i class="fas fa-play ml-1"></i>
         </button>
     </div>`;
 }
-function quickWatch(event, id, cat, title, year) {
-    // Stop the click from opening the info modal underneath
-    event.preventDefault();
-    event.stopPropagation();
 
-    const availableSources = sourcesDb[cat] || [];
-    const safeTitle = encodeURIComponent(title);
-    const safeYear = year;
-    const tmdbType = (cat === 'tv' || cat === 'anime' || cat === 'kdrama' || cat === 'turkish' || cat === 'asian') ? 'tv' : 'movie';
-
-    // 1. BUILT-IN PLAYER SECTION
-    let html = `
-        <div class="mb-6 border-b border-white/10 pb-6">
-            <h4 class="text-[10px] font-black uppercase text-[#22c55e] tracking-[0.2em] mb-4 flex items-center gap-2">
-                <i class="fas fa-play"></i> Built-in Player
-            </h4>
-            <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
-                    class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
-            </button>
-        </div>
-        <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2">
-            <i class="fas fa-external-link-alt"></i> External Sources
-        </h4>
-    `;
-
-    // 2. EXTERNAL SOURCES SECTION
-    if (availableSources.length === 0) {
-        html += `
-            <div class="text-center py-4 space-y-3 bg-dark/50 rounded-xl border border-white/5">
-                <p class="text-[9px] text-gray-500 uppercase font-bold px-4 leading-relaxed">
-                    No custom external links configured for <span class="text-${cat}">${cat}</span>.
-                </p>
-                <button onclick="document.getElementById('watchModal').classList.add('hidden'); navigate('sources');" 
-                        class="px-6 py-2 bg-white/5 border border-white/10 text-white rounded-lg text-[9px] uppercase font-black hover:bg-white/10 transition-all w-full">
-                    Configure Sources
-                </button>
-            </div>
-        `;
-    } else if (availableSources.length === 1) {
-        // Exactly ONE external source -> Show a single, distinct button for it
-        const src = availableSources[0];
-        const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
-        let domain = 'Link';
-        try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
-
-        html += `
-            <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
-               class="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
-                <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-8 h-8 rounded-md grayscale group-hover:grayscale-0 transition-all">
-                <div class="flex-1">
-                    <div class="text-[10px] font-black uppercase text-white group-hover:text-${cat} line-clamp-1">Launch ${src.name}</div>
-                    <div class="text-[8px] text-gray-500 uppercase tracking-widest mt-1">Direct External Link</div>
-                </div>
-                <i class="fas fa-external-link-alt text-gray-700 group-hover:text-${cat} transition-all text-[10px]"></i>
-            </a>
-        `;
-    } else {
-        // MULTIPLE sources -> Show the scrolling list picker
-        html += `<div class="space-y-2 max-h-[30vh] overflow-y-auto hide-scroll pr-1">`;
-        html += availableSources.map(src => {
-            const finalUrl = src.url.replace(/{title}/g, safeTitle).replace(/{tmdb_id}/g, id).replace(/{year}/g, safeYear);
-            let domain = 'Link';
-            try { domain = new URL(src.url.replace(/{.*?}/g, '')).hostname; } catch (e) { }
-
-            return `
-               <a href="${finalUrl}" target="_blank" onclick="autoMarkWatching(${id}, '${tmdbType}'); document.getElementById('watchModal').classList.add('hidden')"
-                   class="flex items-center gap-4 p-3 bg-white/5 border border-white/10 rounded-xl hover:border-${cat} hover:bg-${cat}/10 transition-all group">
-                    <img src="https://www.google.com/s2/favicons?domain=${domain}&sz=64" class="w-6 h-6 rounded-md grayscale group-hover:grayscale-0 transition-all">
-                    <div class="flex-1">
-                        <div class="text-[10px] font-black uppercase text-white group-hover:text-${cat} line-clamp-1">${src.name}</div>
-                        <div class="text-[7px] text-gray-500 uppercase tracking-widest mt-1">${domain}</div>
-                    </div>
-                    <i class="fas fa-chevron-right text-gray-700 group-hover:text-${cat} transition-all text-[10px]"></i>
-                </a>
-            `;
-        }).join('');
-        html += `</div>`;
-    }
-
-    document.getElementById('watchSourceList').innerHTML = html;
-    document.getElementById('watchModal').classList.remove('hidden');
-}
 function openWatchMenu() {
     if (!state.active) return;
 
