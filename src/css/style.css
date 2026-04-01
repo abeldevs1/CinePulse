@@ -1,1780 +1,2453 @@
-      body { background-color: #020408; color: #f3f4f6; overflow-x: hidden; font-family: 'Outfit', sans-serif; }
-        
-        /* Preloader */
-       /* Premium Cinematic Preloader */
-#preloader {
-    position: fixed; inset: 0; z-index: 9999; background: #020408;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    transition: opacity 0.8s ease, visibility 0.8s ease;
-}
-.loader-ring {
-    width: 120px; height: 120px; border-radius: 50%;
-    border: 3px solid rgba(255, 255, 255, 0.05);
-    border-top-color: #ff2d55; border-right-color: #ff2d55;
-    animation: spin-smooth 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-    position: relative;
-    box-shadow: 0 0 30px rgba(255, 45, 85, 0.2);
-}
-.loader-ring::before {
-    content: ''; position: absolute; inset: 8px; border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.1); border-bottom-color: #3b82f6;
-    animation: spin-smooth 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite reverse;
-}
-.loader-text {
-    margin-top: 30px; font-size: 10px; font-weight: 900; text-transform: uppercase;
-    letter-spacing: 0.5em; color: white; animation: pulse-text 2s infinite;
-}
-@keyframes spin-smooth { to { transform: rotate(360deg); } }
-@keyframes pulse-text { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; text-shadow: 0 0 10px rgba(255,45,85,0.5); } }
-        /* Liquid Glass Typography */
-        .liquid-glass {
-            background: none;
-            color: rgba(255, 255, 255, 0.85);
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.2), 
-                         0 0 20px rgba(255, 255, 255, 0.1),
-                         0 0 40px rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            line-height: 1;
-            letter-spacing: -0.04em;
-            pointer-events: none;
-            mix-blend-mode: hard-light;
-        }
-
-        /* Responsive Title Scaling Logic */
-        .slider-title {
-            font-size: var(--title-size, 5rem);
-            font-weight: 800;
-            text-transform: uppercase;
-            transition: font-size 0.3s ease;
-        }
-
-        /* Components */
-        .sidebar-link.active { color: #ff2d55; background: rgba(255, 45, 85, 0.05); border-right: 3px solid #ff2d55; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Rating Stars Animation */
-        .star-box i { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
-        .star-box i:hover { transform: scale(1.3); color: #fbbf24; }
-        .star-box i.active { color: #fbbf24; }
-       /* Refined Transparent Frost */
-  /* Liquid Pill Search Bar */
-.glass-search {
-    background: rgba(255, 255, 255, 0.02) !important;
-    backdrop-filter: blur(25px) saturate(210%) contrast(110%) !important;
-    -webkit-backdrop-filter: blur(25px) saturate(210%) contrast(110%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    border-radius: 9999px !important; /* Full Pill Shape */
-    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.7);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-#searchBar.active .glass-search {
-    background: rgba(255, 255, 255, 0.05) !important;
-    border-color: rgba(255, 45, 85, 0.5) !important;
-    transform: scale(1.02);
-}
-
-#searchBar.neural-diff-active {
-    max-width: 240px !important;
-}
-
-#searchBar.neural-diff-active .glass-search {
-    transform: scale(0.94) !important;
-    border-color: rgba(34, 197, 94, 0.7) !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-}
-
-#searchBar.neural-diff-active .glass-search .fa-search,
-#searchBar.neural-diff-active .glass-search #clearSearch {
-    opacity: 0.8;
-}
-
-/* Fix Search Icon & X Button Visibility */
-.search-icon-fixed {
-    color: white !important;
-    opacity: 0.8;
-    filter: drop-shadow(0 0 8px rgba(0,0,0,0.8));
-}
-
-#clearSearch {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
-    color: #666;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 10px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#clearSearch:hover {
-    background: #ff2d55;
-    color: white;
-    border-color: #ff2d55;
-    box-shadow: 0 0 15px rgba(255, 45, 85, 0.4);
-    transform: translateY(-50%) rotate(90deg) scale(1.1);
-}
-
-/* Person Modal Scrolling */
-#personModal {
-    scrollbar-width: thin;
-    scrollbar-color: #ff2d55 rgba(255,255,255,0.05);
-}
-        /* Global Loaders */
-        .page-loader { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 40px; height: 40px; border: 3px solid rgba(255,45,85,0.1); border-top-color: #ff2d55;
-            border-radius: 50%; animation: spin 1s linear infinite;
-        }
-        @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-
-        /* Hierarchy Status Colors */
-        .status-watching { border-left: 4px solid #3b82f6; }
-        .status-plan { border-left: 4px solid #94a3b8; }
-        .status-finished { border-left: 4px solid #22c55e; }
-
-        /* Android TV / Large Screen Support */
-        @media (min-width: 1920px) {
-            .slider-title { --title-size: 8rem; }
-        }
-        /* Ensure search icon stands out on frosted background */
-.fa-search {
-    opacity: 0.8 !important;
-    color: white !important;
-    text-shadow: 0 0 10px rgba(0,0,0,0.5);
-    z-index: 10;
-}
-/* --- MOBILE OPTIMIZATION --- */
-@media (max-width: 1024px) {
-    /* 1. NAVIGATION (STAYS THE SAME) */
- 
-    aside {
-        width: calc(100% - 40px) !important;
-        max-width: 380px !important;
-        height: 65px !important;
-        top: 75px !important; /* Positioned below header & notifications */
-        right: 20px !important;
-        left: auto !important;
-        flex-direction: row !important;
-        border: 1px solid rgba(255, 45, 85, 0.3) !important;
-        border-radius: 20px !important;
-        background: rgba(10, 12, 18, 0.95) !important;
-        backdrop-filter: blur(25px);
-        padding: 0 !important;
-        z-index: 100;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-    }
-    aside .p-8, #clock { display: none !important; }
-    /* --- BOTTOM NAVIGATION REVOLUTION (SWIPEABLE) --- */
-nav {
-        flex-direction: row !important;
-        margin-top: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        justify-content: flex-start !important; 
-        align-items: center !important;
-        display: flex !important;
-        overflow-x: auto !important; 
-        
-        /* --- CRITICAL FIXES FOR PREMIUM FEEL --- */
-        overflow-y: hidden !important; 
-        touch-action: pan-x !important; /* Forces the browser to ONLY accept horizontal swipes */
-        overscroll-behavior-y: none !important; /* Stops the elastic bounce on the Y axis */
-        /* --------------------------------------- */
-        
-        scroll-snap-type: x mandatory !important;
-        scroll-behavior: smooth !important;
-        -webkit-overflow-scrolling: touch !important;
-        padding: 0 10px !important;
-        gap: 8px !important;
-    }
-nav::-webkit-scrollbar { display: none; } /* Hide scrollbar for sleekness */
-
-.nav-btn {
-    padding: 0 !important;
-    width: 75px !important; /* Fixed width to prevent squishing */
-    flex: 0 0 auto !important; /* Prevent shrinking */
-    scroll-snap-align: center !important;
-    flex-direction: column !important;
-    gap: 6px !important;
-    color: #94a3b8 !important;
-    justify-content: center !important;
-    opacity: 0.6;
-    transition: all 0.3s ease;
-}
-.nav-btn i { font-size: 1.2rem !important; }
-.nav-btn span { display: block !important; font-size: 8px !important; font-weight: 800; }
-
-.sidebar-link.active {
-    background: none !important;
-    border-right: none !important;
-    border-top: none !important;
-    color: #ff2d55 !important;
-    opacity: 1;
-    transform: scale(1.05) translateY(-2px); /* Pop active item up slightly */
-}
-.sidebar-link.active i {
-    text-shadow: 0 0 15px rgba(255,45,85,0.6);
-}
-
-/* --- RESPONSIVE DIFF CARDS (MOBILE FIXES) --- */
-@media (max-width: 768px) {
-    .diff-card-new {
-        flex-direction: column !important;
-        padding: 1rem !important;
-        gap: 0.75rem !important;
-    }
-    .diff-card-new .min-w-0 {
-        min-width: 0 !important;
-    }
-    .diff-card-new img {
-        width: 3rem !important;
-        height: 4.5rem !important;
-    }
-    .diff-card-new .gap-x-2 {
-        column-gap: 0.5rem !important;
-        row-gap: 0.25rem !important;
-    }
-}
-
-/* --- RHYTHM LAB (MOBILE CLEANUP) --- */
-#labCounters {
-    display: none !important; /* Hides counters on mobile only for a slicker UI */
-}
-
-/* Make Delta action controls always visible on mobile */
-@media (max-width: 768px) {
-    #neuralDiffOverlay .sticky, #neuralDiffOverlay .sticky .relative {
-        position: sticky !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        z-index: 40 !important;
-    }
-    #neuralDiffOverlay .sticky button {
-        min-width: 45% !important;
-        font-size: 11px !important;
-        display: inline-flex !important;
-    }
-    #neuralDiffOverlay .sticky .flex-col {
-        flex-direction: column !important;
-    }
-}
-
-/* --- MASTERPIECES MOBILE OVERHAUL --- */
-#view-masterpieces {
-    padding: 20px !important;
-    padding-top: 90px !important;
-}
-#view-masterpieces h2.liquid-glass {
-    font-size: 2.5rem !important;
-    line-height: 1.1;
-    margin-bottom: 20px !important;
-}
-/* Swipeable Tabs Container */
-#view-masterpieces .flex.bg-\[\#0a0c12\] {
-    width: 100% !important;
-    padding: 8px !important;
-    justify-content: flex-start !important;
-}
-/* Force Grid adjustment for Crowned/Ranked */
-#mpContainer .grid {
-    grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
-}
-/* Ranking Limit Buttons Mobile */
-#mpContainer .flex.gap-4.mb-12 {
-    gap: 8px !important;
-    margin-bottom: 20px !important;
-}
-#mpContainer .flex.gap-4.mb-12 button {
-    padding: 12px 16px !important;
-    font-size: 9px !important;
-}
-@media (max-width: 1024px) {
-    /* --- TOP-RIGHT FLOATING MENU --- */
-    @media (max-width: 1024px) {
-    #sidebar-toggle {
-        /* Move from bottom-left to top-right */
-        bottom: auto !important;
-        left: auto !important;
-        top: 85px !important; /* Positioned below the notification icon */
-        right: 20px !important;
-        
-        /* Slicker mobile look */
-        width: 48px !important;
-        height: 48px !important;
-        background: rgba(10, 12, 18, 0.8) !important;
-        border: 1px solid rgba(255, 45, 85, 0.3) !important;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    }
-
-    /* Horizontal Nav Logic */
- nav {
-        flex-direction: row !important;
-        margin-top: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        justify-content: flex-start !important; 
-        align-items: center !important;
-        display: flex !important;
-        overflow-x: auto !important; 
-        scroll-snap-type: x mandatory !important;
-        scroll-behavior: smooth !important;
-        -webkit-overflow-scrolling: touch !important;
-        padding: 0 10px !important;
-        gap: 12px !important;
-    }
-    nav::-webkit-scrollbar { display: none; }
-}
-
-    .nav-btn {
-        flex: 0 0 auto !important; /* Prevents squishing */
-        scroll-snap-align: start;
-        width: 70px;
-    }
-/* The Scroll Hint Sign - Refined Animated Indicator */
-    .scroll-indicator-hint {
-        position: absolute;
-        bottom: 85px; /* Sits above the navigation bar */
-        left: 50%;
-        transform: translateX(-50%) translateY(10px);
-        z-index: 200;
-        display: none;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 22px;
-        background: rgba(10, 12, 18, 0.95);
-        backdrop-filter: blur(20px);
-        -webkit-backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 45, 85, 0.5);
-        border-radius: 100px;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 45, 85, 0.2);
-        pointer-events: none;
-        transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        opacity: 0;
-    }
-
-    .scroll-indicator-hint i {
-        color: #ff2d55;
-        font-size: 18px;
-        filter: drop-shadow(0 0 8px rgba(255, 45, 85, 0.8));
-        animation: hintSwipeMotion 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .scroll-indicator-hint span {
-        font-size: 10px;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        color: white;
-        text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-    }
-
-    @keyframes hintSwipeMotion {
-        0% { transform: translateX(20px) scale(1); opacity: 0; }
-        20% { opacity: 1; }
-        80% { opacity: 1; }
-        100% { transform: translateX(-30px) scale(0.8); opacity: 0; }
-    }
-
-    /* --- LAB COUNTER REMOVAL (MOBILE ONLY) --- */
-    .lab-stats-container, #labCounters {
-        display: none !important;
-    }
-}
-    /* 2. HERO SLIDER (75% HEIGHT & TEXT FIX) */
-    #view-home > div:first-child { 
-        height: 60vh !important; /* Shorter vertical height */
-        min-height: 400px !important;
-        overflow: hidden;
-    }
-
-    #heroSlider {
-        width: 100% !important;
-        height: 100% !important;
-        position: absolute !important;
-        top: 0; left: 0;
-    }
-    
-    #heroSlider img {
-        object-fit: cover !important; 
-        height: 100% !important;
-        width: 100% !important;
-        opacity: 0.7; /* Dimmed slightly for text readability */
-    }
-
-    /* Slider Text Overlay */
-    #view-home .bottom-32 { 
-        position: absolute !important;
-        bottom: 80px !important; /* Sits above the hero bottom */
-        left: 0 !important;
-        padding: 0 20px !important;
-        background: none !important;
-        z-index: 20;
-    }
-
-    .slider-title { 
-        font-size: 2rem !important; 
-        text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
-        margin-bottom: 10px !important;
-    }
-
-    /* 3. COLLAPSIBLE SEARCH BAR (CSS ONLY) */
-    header {
-        left: 0 !important;
-        padding: 10px 15px !important;
-        background: transparent !important;
-        z-index: 50;
-    }
-
-   /* 3. REFINED COLLAPSIBLE SEARCH BAR (NO OVERLAP) */
-    header {
-        left: 0 !important;
-        padding: 15px !important;
-        background: transparent !important;
-        z-index: 50;
-        display: flex !important;
-        justify-content: flex-start !important; /* Forces search to the left */
-        align-items: center !important;
-    }
-
-    /* Glass Search Container */
-    header .max-w-xl {
-        width: 48px !important; /* Perfect circle for icon */
-        height: 48px !important;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        background: rgba(255, 255, 255, 0.08) !important; /* Translucent Glass */
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 24px;
-        overflow: hidden;
-        margin-left: 0 !important;
-        position: relative;
-    }
-
-  /* Expand when clicked/focused */
-    header .max-w-xl:focus-within {
-        width: 90% !important;
-        background: rgba(30, 30, 30, 0.7) !important; /* Semi-transparent dark glass */
-        border-color: rgba(255, 45, 85, 0.5);
-        overflow: visible !important; /* <--- ADD THIS LINE */
-    }
-
-    /* Search Icon Positioning (Prevents Overlap) */
-    header .fa-search {
-        position: absolute;
-        left: 16px !important;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 10;
-        pointer-events: none;
-    }
-
-    header input {
-        opacity: 0;
-        width: 100%;
-        height: 100%;
-        transition: opacity 0.3s;
-        padding-left: 50px !important; /* Massive padding to clear the icon */
-        background: transparent !important;
-        color: white !important;
-        font-size: 14px !important;
-    }
-
-    header .max-w-xl:focus-within input {
-        opacity: 1;
-    }
-
-    /* Fix for the 'X' button inside the search */
-    header button[onclick*="searchInput.value = ''"] {
-        position: absolute;
-        right: 12px !important;
-        top: 50%;
-        transform: translateY(-50%);
-        padding: 5px !important;
-    }
-
-    /* 4. RECOMMENDATIONS (STAYS THE SAME - SMOOTH SLIDE) */
-.hide-scroll {
-        display: flex !important;
-        overflow-x: auto !important;
-        scroll-behavior: smooth !important;
-        -webkit-overflow-scrolling: touch !important;
-        scroll-snap-type: x mandatory !important;
-        gap: 12px !important;
-        padding: 0 20px 20px 20px !important;
-    }
-    .hide-scroll > div { flex: 0 0 42% !important; scroll-snap-align: start !important; }
-    /* 5. GLOBAL FIXES */
-    main { padding-left: 0 !important; padding-bottom: 90px !important; }
-    .breadcrumb { display: none !important; }
-    #homeCounters {
-        grid-template-columns: repeat(2, 1fr) !important;
-        padding: 0 20px !important;
-    }
-}
-/* --- MOBILE OPTIMIZATION (MOBILE ONLY) --- */
-@media (max-width: 1024px) {
-    /* 1. BOTTOM NAVIGATION BAR */
-    aside {
-        width: 100% !important;
-        height: 75px !important;
-        top: auto !important;
-        bottom: 0 !important;
-        flex-direction: row !important;
-        border-right: none !important;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(2, 4, 8, 0.95) !important;
-        backdrop-filter: blur(25px);
-        padding: 0 !important;
-        z-index: 100;
-    }
-    aside .p-8, #clock { display: none !important; }
-    nav {
-        flex-direction: row !important;
-        margin-top: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        justify-content: space-around !important;
-        align-items: center !important;
-        display: flex !important;
-    }
-    .nav-btn {
-        padding: 0 !important;
-        width: 20% !important;
-        flex-direction: column !important;
-        gap: 4px !important;
-        color: #94a3b8 !important;
-        justify-content: center !important;
-    }
-    .nav-btn i { font-size: 1.2rem !important; }
-    .nav-btn span { display: block !important; font-size: 8px !important; font-weight: 800; }
-    .sidebar-link.active {
-        background: none !important;
-        border-right: none !important;
-        border-top: 3px solid #ff2d55;
-        color: #ff2d55 !important;
-    }
-
-    /* 2. HERO SLIDER (70% HEIGHT & OVERLAY) */
-    #view-home > div:first-child { 
-        height: 70vh !important; /* Fixed proportional height */
-        min-height: 450px !important;
-        position: relative !important;
-        overflow: hidden;
-    }
-    #heroSlider {
-        width: 100% !important;
-        height: 100% !important;
-        position: absolute !important;
-        top: 0; left: 0;
-    }
-    #heroSlider img {
-        object-fit: cover !important; 
-        height: 100% !important;
-        width: 100% !important;
-    }
-    #view-home .bottom-32 { 
-        position: absolute !important;
-        bottom: 40px !important; 
-        left: 0 !important;
-        padding: 0 20px !important;
-        background: linear-gradient(to top, #020408 30%, transparent) !important;
-        width: 100%;
-        z-index: 20;
-    }
-    .slider-title { font-size: 2rem !important; margin-bottom: 10px !important; }
-    #heroInfoBtn, #heroTrailerBtn { flex: 1 !important; padding: 14px 0 !important; font-size: 10px !important; }
-
-    /* 3. STATIC BENTO GRID COUNTERS (NO SLIDING) */
-    #homeCounters {
-        display: grid !important;
-        grid-template-columns: repeat(3, 1fr) !important;
-        gap: 10px !important;
-        padding: 20px 15px !important;
-        margin-top: 0 !important;
-        overflow-x: hidden !important;
-    }
-    #homeCounters > div {
-        height: 80px !important;
-        background: rgba(255, 255, 255, 0.04) !important;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 18px !important;
-    }
-
-    /* 4. COLLAPSIBLE LEFT SEARCH BAR */
-    header {
-        left: 0 !important;
-        padding: 15px !important;
-        background: transparent !important;
-        z-index: 50;
-        justify-content: flex-start !important;
-    }
-    header .max-w-xl {
-        width: 48px !important;
-        height: 48px !important;
-        transition: all 0.4s ease;
-        background: rgba(255, 255, 255, 0.1) !important;
-        backdrop-filter: blur(15px);
-        border-radius: 24px;
-        margin-left: 0 !important;
-    }
-    header .max-w-xl:focus-within {
-        width: 90% !important;
-        background: rgba(10, 10, 10, 0.9) !important;
-    }
-    header input { opacity: 0; padding-left: 45px !important; }
-    header .max-w-xl:focus-within input { opacity: 1; }
-    header .fa-search { left: 16px !important; position: absolute; }
-
-    /* 5. SMOOTH SLIDING RECOMMENDATIONS */
-    .hide-scroll {
-        display: flex !important;
-        overflow-x: auto !important;
-        scroll-behavior: smooth !important;
-        -webkit-overflow-scrolling: touch !important;
-        scroll-snap-type: x mandatory !important;
-        gap: 12px !important;
-        padding: 0 20px 20px 20px !important;
-    }
-    .hide-scroll > div { flex: 0 0 42% !important; scroll-snap-align: start !important; }
-
-    /* LAYOUT REPAIR */
-    main { padding-left: 0 !important; padding-bottom: 90px !important; }
-    .breadcrumb { display: none !important; }
-}
-
-/* --- PHENOMENAL DISCOVER PAGE (MOBILE) --- */
-   
-    #searchHeader {
-        font-size: 24px !important; /* Smaller, cleaner header on mobile */
-        letter-spacing: -1px !important;
-        margin-bottom: 0 !important;
-        display: block !important;
-        width: 100%;
-    }
-
-    /* Horizontal Filter Strip */
-    #view-search .flex.flex-wrap.gap-4 {
-        display: flex !important;
-        flex-wrap: nowrap !important; /* Force single row */
-        overflow-x: auto !important; /* Allow side-scrolling filters */
-        padding-bottom: 5px;
-        width: 100%;
-        gap: 8px !important;
-        scrollbar-width: none;
-    }
-    #view-search .flex.flex-wrap.gap-4::-webkit-scrollbar { display: none; }
-
-    /* Pill-Style Select Boxes */
-    #view-search select {
-        flex: 0 0 auto !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 50px !important; /* Rounder "Pill" look */
-        padding: 8px 15px !important;
-        font-size: 9px !important;
-        border-color: rgba(255, 255, 255, 0.1) !important;
-        min-width: 100px;
-    }
-
-   /* --- SEARCH LAYOUT UTILITIES (DESKTOP LIST VIEW) --- */
-#searchGrid.list-view {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 16px !important;
-}
-#searchGrid.list-view .group {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 24px !important;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 12px;
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-#searchGrid.list-view .group .aspect-\[2\/3\] {
-    width: 70px !important;
-    min-width: 70px !important;
-    height: 105px !important;
-    margin-bottom: 0 !important;
-    border-radius: 16px !important;
-}
-#searchGrid.list-view .group > div:nth-child(2) { font-size: 16px !important; flex: 1; }
-
-/* --- PHENOMENAL DISCOVER PAGE (MOBILE ONLY) --- */
-@media (max-width: 1024px) {
-    #searchHeader {
-        font-size: 32px !important;
-        letter-spacing: -1px !important;
-        margin-bottom: 0 !important;
-        display: block !important;
-        width: 100%;
-    }
-
-    /* Hide the complex layout selector on mobile to save space */
-    #layoutSelector { display: none !important; }
-
-    /* Horizontal Filter Strip */
-    #view-search .flex.flex-wrap.gap-4 {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        padding-bottom: 5px;
-        width: 100%;
-        gap: 8px !important;
-        scrollbar-width: none;
-    }
-    #view-search .flex.flex-wrap.gap-4::-webkit-scrollbar { display: none; }
-
-    /* Pill-Style Select Boxes */
-    #view-search select {
-        flex: 0 0 auto !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border-radius: 50px !important;
-        padding: 10px 18px !important;
-        font-size: 10px !important;
-        border-color: rgba(255, 255, 255, 0.1) !important;
-        min-width: 110px;
-    }
-
-    /* Optimized Grid for Mobile Discovery */
-    #searchGrid {
-        display: grid !important;
-        grid-template-columns: repeat(2, 1fr) !important; 
-        gap: 15px !important;
-        margin-top: 30px !important;
-    }
-
-    #searchGrid .group {
-        background: rgba(255, 255, 255, 0.02);
-        border-radius: 20px;
-        overflow: hidden;
-        transition: transform 0.2s;
-    }
-    #searchGrid .group:active { transform: scale(0.95); }
-    #searchGrid .aspect-\[2\/3\] { border-radius: 18px !important; margin-bottom: 8px !important; }
-
-    /* Load More Button Mobile */
-    #btnDiscoverLoadMore {
-        width: 100% !important;
-        background: #ff2d55 !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 18px !important;
-        padding: 18px !important;
-        font-size: 11px !important;
-        box-shadow: 0 10px 30px rgba(255, 45, 85, 0.2);
-    }
-}
-
-    /* Load More Button - Center & App Style */
-    #btnDiscoverLoadMore {
-        width: 90% !important;
-        background: #ff2d55 !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 15px !important;
-        padding: 18px !important;
-        font-size: 11px !important;
-        box-shadow: 0 10px 20px rgba(255, 45, 85, 0.2);
-    }
-    
-    /* --- MY LIST ELITE REDESIGN --- */
-.library-action-bar {
-    background: rgba(10, 12, 18, 0.7);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 20px;
-    padding: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.lib-btn {
-    padding: 12px 20px;
-    border-radius: 14px;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #9ca3af;
-    background: transparent;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.lib-btn:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
-.lib-btn i { font-size: 14px; }
-.lib-btn.danger:hover { background: rgba(255, 45, 85, 0.1); color: #ff2d55; }
-.lib-btn.primary { background: #ff2d55; color: white; box-shadow: 0 4px 15px rgba(255,45,85,0.3); }
-.lib-btn.primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,45,85,0.4); }
-
-.lib-section-title {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    font-size: 12px;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.4em;
-    color: white;
-    margin-bottom: 24px;
-}
-
-.lib-section-title::before {
-    content: '';
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #ff2d55;
-    box-shadow: 0 0 10px #ff2d55;
-}
-
-.lib-section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.1), transparent);
-}
-
-.lib-card-row {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 20px;
-    padding: 16px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    border-radius: 24px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.lib-card-row:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 45, 85, 0.3);
-    transform: translateX(8px);
-}
-
-@media (max-width: 768px) {
-    .library-action-bar { flex-wrap: wrap; justify-content: center; }
-    .lib-btn span { display: none; } /* Show only icons on mobile for secondary buttons */
-    .lib-btn.primary span { display: inline; } /* Keep text for Random Picker */
-    .lib-card-row { flex-direction: column; align-items: flex-start; gap: 12px; }
-    .lib-card-row img { width: 100%; height: 180px; object-fit: cover; }
-    .lib-card-row .stats { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
-    .lib-card-row .stats .text-right { text-align: left !important; }
-}
-/* --- LOCAL SMART SEARCH UI --- */
-.local-search-wrapper {
-    position: relative;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.local-search-input {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    transition: all 0.3s ease;
-}
-
-.local-search-input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 45, 85, 0.5);
-    box-shadow: 0 0 20px rgba(255, 45, 85, 0.1);
-}
-
-@media (max-width: 768px) {
-    /* Mobile: Search bar takes full width on its own row */
-    .mobile-full-search {
-        width: 100% !important;
-        order: 99; /* Pushes to bottom of the flex container */
-        margin-top: 10px;
-    }
-}
- @keyframes wave-slide {
-                0% { transform: translateX(0); }
-                100% { transform: translateX(-50%); }
-        }
-        .animate-wave-slide {
-         animation: wave-slide 4s linear infinite;
-        }
-        /* --- GLOBAL NETWORK LOADER --- */
-#globalLoader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 3px;
-    background: #ff2d55;
-    z-index: 99999;
-    transition: width 0.3s ease, opacity 0.3s ease;
-    box-shadow: 0 0 15px #ff2d55, 0 0 5px #ff2d55;
-    pointer-events: none;
-    opacity: 0;
-    width: 0%;
-}
-
-/* From Uiverse.io by Pradeepsaranbishnoi */ 
-/* The loader container */
-.loader {
-  width: 200px;
-  height: 200px;
-  perspective: 200px;
-}
-
-
-/* The dot */
-.dot {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 120px;
-  height: 120px;
-  margin-top: -60px;
-  margin-left: -60px;
-  border-radius: 100px;
-  border: 40px outset #ff2d55;
-  transform-origin: 50% 50%;
-  transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
-  background-color: transparent;
-  animation: dot1 1000ms cubic-bezier(.49,.06,.43,.85) infinite;
-}
-
-.dot:nth-child(2) {
-  width: 140px;
-  height: 140px;
-  margin-top: -70px;
-  margin-left: -70px;
-  border-width: 30px;
-  border-color: #ffffff;
-  animation-name: dot2;
-  animation-delay: 75ms;
-  box-shadow: inset 0 0 15px 0 rgba(0, 0, 0, 0.1);
-  transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
-}
-
-.dot:nth-child(3) {
-  width: 160px;
-  height: 160px;
-  margin-top: -80px;
-  margin-left: -80px;
-  border-width: 20px;
-  border-color: #eb012c;
-  animation-name: dot3;
-  animation-delay: 150ms;
-  box-shadow: inset 0 0 15px 0 rgba(0, 0, 0, 0.1);
-  transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
-}
-
-@keyframes dot1 {
-  0% { 
-    border-color: #80162a; /* Deep Dark Red */
-    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
-  }
-  50% { 
-    border-color: #ff2d55; /* Signature Pulse Red */
-    transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px); 
-  }
-  100% { 
-    border-color: #ffffff; /* Pure White */
-    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
-  }
-}
-
-@keyframes dot2 {
-  0% { 
-    border-color: #ffffff; 
-    box-shadow: inset 0 0 15px 0 rgba(255, 255, 255, 0.4); 
-    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
-  }
-  50% { 
-    border-color: #ff8a9f; /* Soft Frosted Pink/Red */
-    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.4); 
-    transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px); 
-  }
-  100% { 
-    border-color: #ff2d55; 
-    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.8); 
-    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
-  }
-}
-
-@keyframes dot3 {
-  0% { 
-    border-color: #ff2d55; 
-    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.6); 
-    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
-  }
-  50% { 
-    border-color: #ffffff; 
-    box-shadow: inset 0 0 15px 0 rgba(255, 255, 255, 0.8); 
-    transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px); 
-  }
-  100% { 
-    border-color: #80162a; 
-    box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.2); 
-    transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px); 
-  }
-}
-
-/* New Constructing Text CSS */
-.constructing-text {
-    margin-top: 40px;
-    perspective: 500px;
-}
-.constructing-text span {
-    display: inline-block;
-    opacity: 0;
-    transform: rotateX(-90deg) scale(0.5);
-    animation: constructText 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite alternate;
-}
-.constructing-text span:nth-child(1) { animation-delay: 0.1s; }
-.constructing-text span:nth-child(2) { animation-delay: 0.2s; }
-.constructing-text span:nth-child(3) { animation-delay: 0.3s; }
-.constructing-text span:nth-child(4) { animation-delay: 0.4s; }
-.constructing-text span:nth-child(5) { animation-delay: 0.5s; color: white; }
-.constructing-text span:nth-child(6) { animation-delay: 0.6s; color: white; }
-.constructing-text span:nth-child(7) { animation-delay: 0.7s; color: white; }
-.constructing-text span:nth-child(8) { animation-delay: 0.8s; color: white; }
-.constructing-text span:nth-child(9) { animation-delay: 0.9s; color: white; }
-
-@keyframes constructText {
-    0% { opacity: 0; transform: rotateX(-90deg) rotateY(180deg) scale(0.5) translateZ(-50px); filter: blur(4px); }
-    50% { opacity: 1; transform: rotateX(0deg) rotateY(0deg) scale(1.2) translateZ(20px); filter: blur(0px); text-shadow: 0 0 15px rgba(255, 45, 85, 0.8); }
-    100% { opacity: 1; transform: rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px); filter: blur(0px); text-shadow: 0 0 5px rgba(255, 45, 85, 0.4); }
-}
-/* --- GLOBAL CUSTOM SCROLLBAR --- */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-::-webkit-scrollbar-track {
-    background: #020408;
-    border-radius: 10px;
-}
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 45, 85, 0.3);
-    border-radius: 10px;
-    transition: background 0.3s ease;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 45, 85, 0.8);
-}
-* {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 45, 85, 0.5) #020408;
-}
-
-/* Hide scrollbar completely only where explicitly requested */
-.hide-scroll::-webkit-scrollbar { display: none; }
-.hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* --- AMAZING PAGE TRANSITIONS --- */
-@keyframes pageEnter {
-    0% { 
-        opacity: 0; 
-        transform: translateY(40px) scale(0.98); 
-        filter: blur(10px); 
-    }
-    100% { 
-        opacity: 1; 
-        transform: translateY(0) scale(1); 
-        filter: blur(0px); 
-    }
-}
-.page-transition-enter {
-    animation: pageEnter 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-}
-
-/* --- NAV BUTTON HOVER EFFECTS --- */
-.nav-btn-effect {
-    position: relative;
-    overflow: hidden;
-}
-.nav-btn-effect::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 4px;
-    background: #ff2d55;
-    transform: scaleY(0);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    transform-origin: bottom;
-}
-.nav-btn-effect:hover::before, .nav-btn-effect.active::before {
-    transform: scaleY(1);
-    transform-origin: top;
-    box-shadow: 0 0 15px rgba(255,45,85,0.8);
-}
-.nav-btn-effect:hover {
-    background: rgba(255, 45, 85, 0.05);
-    color: white !important;
-    transform: translateX(5px);
-}
-/* Glowing Hover for Section Titles */
-.glow-title { transition: all 0.3s ease; cursor: pointer; }
-.glow-title:hover { color: #ff2d55; text-shadow: 0 0 15px rgba(255, 45, 85, 0.8); transform: translateX(5px); }
-
-@media (max-width: 1024px) {
-    /* 1. Dynamic Text Reveal for Active Nav Item */
-    .nav-btn span { 
-        display: none !important; /* Hide all text by default */
-    }
-    .nav-btn.active span { 
-        display: block !important; 
-        animation: slideUpFade 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
-    .nav-btn {
-        width: 60px !important; /* Shrink inactive items */
-        transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .nav-btn.active {
-        width: 80px !important; /* Expand active item to fit text */
-    }
-
-    @keyframes slideUpFade {
-        from { opacity: 0; transform: translateY(5px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* 2. Floating Swipe Hint Centered Above Nav */
-    .scroll-indicator-hint {
-        bottom: 85px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        display: flex !important;
-        animation: gentlePulse 2s infinite !important;
-    }
-
-    @keyframes gentlePulse {
-        0%, 100% { opacity: 0.8; transform: translateX(-50%) translateY(0); }
-        50% { opacity: 1; transform: translateX(-50%) translateY(-3px); border-color: #ff2d55; box-shadow: 0 0 15px rgba(255, 45, 85, 0.3); }
-    }
-}
-/* Mobile State: "Collapsed" */
-    @media (max-width: 768px) {
-        #modalSearchWrapper {
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        #modalSearchWrapper.expanded {
-            width: 85%;
-        }
-        #modalSearchWrapper.expanded #modalSearchContainer {
-            width: 100%;
-        }
-        #modalSearchWrapper.expanded #modalSearch {
-            opacity: 1;
-        }
-    }
-    
-    /* Hover expansion for PC */
-    @media (min-width: 1024px) {
-        #modalSearchContainer:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 45, 85, 0.4);
-            width: 350px;
-        }
-    }
-    @media (max-width: 768px) {
-    #mobileInstallLink {
-        display: block !important;
-    }
-}
-/* --- SAGA MATRIX: MEMORY CLUSTERS --- */
-.memory-cluster {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 2/3;
-    perspective: 1000px;
-}
-.memory-cluster img {
-    border-radius: 24px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.cluster-top { position: relative; z-index: 30; width: 100%; height: 100%; border: 1px solid rgba(255,255,255,0.1); }
-.cluster-mid { position: absolute; top: -8px; right: -8px; width: 100%; height: 100%; z-index: 20; opacity: 0.6; transform: scale(0.95); border: 1px solid rgba(255,255,255,0.05); }
-.cluster-back { position: absolute; top: -16px; right: -16px; width: 100%; height: 100%; z-index: 10; opacity: 0.3; transform: scale(0.9); border: 1px solid rgba(255,255,255,0.02); }
-
-/* Hover Expansion Animation */
-.group:hover .cluster-mid { transform: translate(12px, -12px) scale(0.95) rotate(2deg); opacity: 0.8; border-color: rgba(255,45,85,0.3); }
-.group:hover .cluster-back { transform: translate(24px, -24px) scale(0.9) rotate(4deg); opacity: 0.5; border-color: rgba(255,45,85,0.1); }
-
-
-/* --- SAGA MODAL FIXES --- */
-
-/* 1. The Photo Frame: Zero Stretch */
-.saga-backdrop-img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important; /* Perfect crop, no stretch */
-    object-position: center 20%;
-}
-
-/* 2. Mobile Button Position Fix */
-/* --- SAGA CLOSE BUTTON MOBILE FIX --- */
-@media (max-width: 768px) {
-    /* Position the Close Button inside the top-right of the poster frame */
-    .saga-action-header .close-btn {
-        position: absolute !important;
-        top: 20px !important;    /* Safely inside the poster top-right */
-        right: 20px !important;
-        z-index: 100 !important;
-        background: rgba(0, 0, 0, 0.5) !important; /* Darker for better contrast on images */
-        backdrop-filter: blur(10px) !important;
-        -webkit-backdrop-filter: blur(10px) !important;
-        width: 44px !important; /* Slightly larger touch target for thumbs */
-        height: 44px !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    }
-
-    /* Keep the other buttons (Toggle/Sync) at the bottom as discussed */
-    .action-buttons-wrap {
-        position: fixed;
-        bottom: 30px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 90;
-        display: flex;
-        gap: 8px;
-        background: rgba(10, 12, 18, 0.9);
-        padding: 12px 20px;
-        border-radius: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        width: fit-content;
-        max-width: 90%;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-    }
-}
-
-/* Ensure the Poster Frame never stretches */
-.saga-backdrop-img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover !important; /* Perfect photo-frame crop */
-    object-position: center 20%;
-}
-
-/* Desktop spacing for close button */
-@media (min-width: 769px) {
-    .saga-action-header .close-btn {
-        position: absolute;
-        top: 30px;
-        right: 30px;
-    }
-}
-/* --- SAGA MODAL CLOSE BUTTON REFINEMENT --- */
-
-/* Desktop / PC Version */
-@media (min-width: 769px) {
-    .saga-close-btn {
-        position: fixed !important;
-        top: 60px !important;    /* Lowered slightly for better visual balance */
-        right: 40px !important;
-        z-index: 999 !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        backdrop-filter: blur(12px) !important;
-        -webkit-backdrop-filter: blur(12px) !important;
-        width: 54px !important;
-        height: 54px !important;
-        cursor: pointer !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
-    }
-
-    /* Cinematic Hover Effect */
-    .saga-close-btn:hover {
-        background: #ff2d55 !important;
-        transform: scale(1.1) rotate(90deg); /* Scales up and spins slightly */
-        border-color: #ff2d55 !important;
-        box-shadow: 0 0 25px rgba(255, 45, 85, 0.6);
-        color: white !important;
-    }
-}
-
-/* Mobile Version */
-@media (max-width: 768px) {
-    .saga-close-btn {
-        position: absolute !important;
-        top: 35px !important;    /* Lowered slightly to avoid status bar overlap */
-        right: 20px !important;
-        z-index: 999 !important;
-        background: rgba(0, 0, 0, 0.7) !important;
-        backdrop-filter: blur(15px) !important;
-        -webkit-backdrop-filter: blur(15px) !important;
-        width: 48px !important;
-        height: 48px !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
-        color: white !important;
-        /* Massive touch area for easy closing */
-        box-shadow: 0 0 0 15px transparent; 
-    }
-}
-
-/* Fix for Actor Banner Biography/Description */
-#pBio {
-    display: -webkit-box;
-    -webkit-line-clamp: 4; /* Limits description to 4 lines */
-    line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-height: 100px; /* Safety cap */
-    line-height: 1.6;
-    transition: all 0.3s ease;
-}
-
-/* Optional: Expand on hover if you want users to read more */
-#pBio:hover {
-    -webkit-line-clamp: 12;
-    line-clamp: 12;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-/* Saga Forge Drag & Drop Utilities */
-.forge-item {
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
-}
-.forge-item.dragging {
-    opacity: 0.5;
-    transform: scale(1.02);
-    box-shadow: 0 15px 30px rgba(255,45,85,0.3);
-    border-color: #ff2d55 !important;
-    z-index: 100;
-}
-.forge-item.drag-over {
-    border-top: 4px solid #ff2d55;
-    margin-top: 15px;
-}
-/* Sizing scales */
-.forge-size-main { border-left: 4px solid #ff2d55; }
-.forge-size-spinoff { border-left: 4px solid #3b82f6; opacity: 0.8; transform: scale(0.95); transform-origin: left center;}
-/* Mobile Optimized Saga Cards */
-@media (max-width: 768px) {
-    #sagaModal .max-w-4xl {
-        padding-bottom: 100px; /* Space for the fixed buttons */
-    }
-    
-    #inlineSagaList .flex-col {
-        background: rgba(255, 255, 255, 0.02);
-        padding: 12px;
-        border-radius: 16px;
-    }
-
-    /* Prevent text overflow on small screens */
-    .truncate-saga-title {
-        max-width: 150px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-}
-
-/* Dynamic Shadow for the 'Commit' Button */
-#saveSagaBtn {
-    box-shadow: 0 10px 30px -10px rgba(34, 197, 94, 0.5);
-}
-/* Multi-Select Bar Animation Classes */
-#multiSelectBar.active {
-    transform: translate(-50%, 0);
-    opacity: 1;
-    pointer-events: auto;
-}
-
-/* Custom Checkbox for Grid/List Cards */
-.card-checkbox {
-    position: absolute;
-    top: 12px;
-    left: 12px;
-    z-index: 60;
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.card-checkbox.selected {
-    background: #3b82f6;
-    border-color: #3b82f6;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-}
-
-.card-checkbox i {
-    color: white;
-    font-size: 12px;
-    opacity: 0;
-    transform: scale(0.5);
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.card-checkbox.selected i {
-    opacity: 1;
-    transform: scale(1);
-}
-
-/* Pulse effect when Select Mode is active */
-.select-mode-pulse {
-    animation: selectPulse 2s infinite;
-}
-@keyframes selectPulse {
-    0%, 100% { box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.2); }
-    50% { box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.6); }
-}
-/* --- MULTI-SELECT MOBILE OPTIMIZATION --- */
-@media (max-width: 1024px) {
-    #multiSelectBar {
-        bottom: 85px !important; /* Clears the mobile bottom nav */
-        width: 90% !important;
-        padding: 12px 20px !important;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 12px !important;
-    }
-    #multiSelectBar .w-px {
-        display: none; /* Hides dividers on small screens for clean wrap */
-    }
-}
-
-/* Ensure Saga Cards can securely hold the checkmark */
-.saga-selectable-card {
-    position: relative;
-}
-/* --- SAGA MATRIX MOBILE OPTIMIZATION --- */
-@media (max-width: 768px) {
-    /* Stack the header title and tabs vertically to save width */
-    #view-sagamatrix > div:first-child {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
-    }
-
-    /* Make the tab container scrollable horizontally if buttons are too wide */
-    #view-sagamatrix .flex.bg-\[\#0a0c12\] {
-        width: 100%;
-        overflow-x: auto;
-        padding: 8px;
-        justify-content: flex-start;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    /* Shrink the posters in the "Memory Cluster" so they don't overlap awkwardly */
-    .memory-cluster {
-        height: 180px; /* Reduced height for mobile */
-    }
-
-    .cluster-top { width: 100px; height: 150px; left: 50%; transform: translateX(-50%); z-index: 30; }
-    .cluster-mid { width: 90px; height: 135px; left: 35%; top: 10px; z-index: 20; opacity: 0.8; }
-    .cluster-back { width: 80px; height: 120px; left: 20%; top: 20px; z-index: 10; opacity: 0.6; }
-
-    /* Adjust the grid for 2 columns on mobile instead of 1 or 4 */
-    #sagaGrid, #mySagaGrid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 12px !important;
-    }
-
-    /* Make Saga titles readable on small cards */
-    .saga-selectable-card .text-\[10px\] {
-        font-size: 8px !important;
-        padding: 8px !important;
-    }
-}
-#multiSelectBar {
-    z-index: 400; /* High, but lower than the 500+ used for main Modals and Top Nav */
-}
-
-/* Ensure the checkmark is highly visible on mobile cards */
-.card-checkbox {
-    width: 28px;
-    height: 28px;
-    background: rgba(10, 12, 18, 0.9);
-    border: 1px solid rgba(59, 130, 246, 0.5);
-}
-/* --- LAPTOP / SMALL SCREEN HEIGHT SCALING (DESKTOP) --- */
-@media (min-width: 1024px) and (max-height: 800px) {
-    /* Compact the sidebar header padding so the nav has more room */
-    #mainSidebar .p-8 {
-        padding: 1.5rem !important;
-    }
-    
-    /* Shrink the top padding on page views so content isn't pushed too far down */
-    .page-view {
-        padding-top: 6rem !important; 
-    }
-    
-    /* Scale down main headers slightly to save vertical space */
-    .page-view h2 {
-        font-size: 3.5rem !important;
-    }
-}
-
-/* Ensure invisible scrolling is smooth on PC trackpads */
-.hide-scroll {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-}
-#searchDrop, #modalSearchDrop {
-        display: none !important;
-        flex-direction: column !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        padding: 0 !important;
-    }
-    #searchDrop:not(.hidden), #modalSearchDrop:not(.hidden) {
-        display: block !important;
-    }
-    /* --- PREVENT NOTIFICATIONS FROM BLOCKING MOBILE SEARCH --- */
-@media (max-width: 1024px) {
-    body.search-active-mobile #neuralToast,
-    body.search-active-mobile button[onclick="toggleNotifHub()"] {
-        display: none !important;
-    }
-}
-#searchDrop button:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(255, 45, 85, 0.4);
-}
-
-/* Ensure the dropdown doesn't get too wide on mobile */
-#searchDrop {
-    max-height: 70vh;
-    overflow-y: auto;
-    scrollbar-width: none;
-}
-#searchDrop::-webkit-scrollbar { display: none; }
-
-
-
-/* --- FLOATING QUICK ADD BUTTON --- */
-.quick-add-btn {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    background: rgba(2, 4, 8, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    z-index: 40;
-    transition: all 0.3s ease;
-    opacity: 0;
-    transform: translateY(-5px);
-}
-
-.selectable-card:hover .quick-add-btn {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.quick-add-btn:hover {
-    background: #ff2d55;
-    border-color: #ff2d55;
-    box-shadow: 0 0 15px rgba(255, 45, 85, 0.5);
-}
-
-/* On mobile, keep it slightly visible so users know it's there */
-@media (max-width: 1024px) {
-    .quick-add-btn { opacity: 0.8; transform: none; }
-}
-/* --- MINIMALIST MOBILE NAV SCROLL --- */
-@media (max-width: 1024px) {
-    /*    /* 1. The Fade Effect on the right side - Improved Frost Mask */
-    .nav-edge-mask {
-        position: absolute;
-        top: 0;
-        right: 0;
-        height: 100%;
-        width: 60px;
-        /* Deep frosted gradient that signals more content */
-        background: linear-gradient(to right, transparent, rgba(10, 12, 18, 0.95));
-        z-index: 10;
-        transition: opacity 0.4s ease, width 0.4s ease;
-        pointer-events: none;
-        border-radius: 0 20px 20px 0;
-    }
-    
-    .nav-at-end .nav-edge-mask {
-        opacity: 0;
-        width: 0;
-    }
-    .nav-at-end .nav-edge-mask {
-        opacity: 0;
-    }
-
-    /* Small glowing accent at the very edge (Unique & Subtle) */
-    .nav-edge-mask::after {
-        content: '';
-        position: absolute;
-        right: 4px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 2px;
-        height: 15px;
-        background: #ff2d55;
-        border-radius: 99px;
-        box-shadow: 0 0 10px #ff2d55;
-        opacity: 0.6;
-    }
-}
-
-/* --- NEURAL LINK: P2P SYNC STYLES --- */
-
-/* Radar Pulse Background */
-.radar-circle {
-    animation: radar-expand 6s cubic-bezier(0.1, 0.5, 0.5, 1) infinite;
-    opacity: 0;
-}
-.animation-delay-1000 {
-    animation-delay: 3s;
-}
-
-@keyframes radar-expand {
-    0% { transform: scale(0.1); opacity: 0; }
-    50% { opacity: 0.15; }
-    100% { transform: scale(1.5); opacity: 0; }
-}
-
-/* Holographic Scanner Line */
-@keyframes scan-line {
-    0% { transform: translateY(0); opacity: 1; }
-    100% { transform: translateY(100vh); opacity: 0; }
-}
-.animate-scan-line {
-    animation: scan-line 3s linear infinite;
-    box-shadow: 0 5px 20px rgba(255,45,85,0.8);
-}
-
-/* --- RESPONSIVE DIFF CARDS --- */
-.diff-card-new {
-    display: flex;
-    flex-direction: column;
-    background: rgba(10, 12, 18, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 20px;
-    padding: 1rem;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    /* Base setup for the staggered entrance */
-    opacity: 0;
-    transform: translateY(20px) scale(0.98);
-    animation: diffCardEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    will-change: transform, opacity;
-}
-
-@keyframes diffCardEnter {
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-#diffCardsContainer {
-    /* Ensures the scrollbar respects the boundaries and adds momentum scrolling on iOS */
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-    /* Custom scrollbar for this specific panel to make it look sleek */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 45, 85, 0.5) transparent;
-}
-
-/* Desktop Layout */
-@media (min-width: 768px) {
-    .diff-card-new {
-        flex-direction: row;
-        align-items: center;
-        gap: 1.5rem;
-        padding: 1.5rem;
-    }
-}
-.diff-card-new:hover { border-color: rgba(255, 45, 85, 0.5); transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-.diff-card-new.deselected { opacity: 0.3; filter: grayscale(100%); transform: scale(0.98); border-color: rgba(255,255,255,0.05); }
-
-/* Ensure Html5QrcodeScanner internal elements don't look broken */
-#qr-reader { border: none !important; }
-#qr-reader__scan_region { background: black; }
-#qr-reader__dashboard_section_csr button {
-    background: #ff2d55 !important;
-    color: white !important;
-    border-radius: 8px !important;
-    padding: 8px 16px !important;
-    border: none !important;
-    font-weight: 900 !important;
-    text-transform: uppercase !important;
-    font-size: 10px !important;
-    letter-spacing: 1px !important;
-}
-
-/* --- HOLOGRAPHIC SYNC ANIMATION --- */
-@keyframes neuralSyncJump {
-    0% { transform: scale(0) translateX(-150px) translateY(50px) rotate(-15deg); opacity: 0; filter: blur(5px); }
-    20% { transform: scale(1.3) translateX(0px) translateY(-20px) rotate(0deg); opacity: 1; filter: blur(0px); box-shadow: 0 0 40px rgba(34,197,94,0.8); }
-    80% { transform: scale(1.3) translateX(0px) translateY(-20px) rotate(0deg); opacity: 1; filter: blur(0px); box-shadow: 0 0 40px rgba(34,197,94,0.8); }
-    100% { transform: scale(0) translateX(150px) translateY(50px) rotate(15deg); opacity: 0; filter: blur(5px); }
-}
-
-/* --- NETWORK TOPOLOGY TREE --- */
-.topology-node {
-    position: relative;
-    padding-left: 24px;
-    margin-bottom: 12px;
-}
-.topology-node::before {
-    content: '';
-    position: absolute;
-    left: -5px;
-    top: 20px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: #0a0c12;
-    border: 3px solid #a855f7;
-    z-index: 2;
-    transition: all 0.3s ease;
-}
-.topology-node.offline::before { border-color: #4b5563; }
-.topology-node.active::before { 
-    border-color: #22c55e; 
-    box-shadow: 0 0 15px rgba(34,197,94,0.8);
-    background: #22c55e;
-}
-
-/* --- OVERLAY SCROLL LOCK (OVERSCROLL FIX) --- */
-body.modal-open {
-    overflow: hidden;
-    position: fixed;
-    width: 100%;
-}
-/* style.css */
-.card-checkbox.hidden {
-    display: none !important;
-}
+      body {
+          background-color: #020408;
+          color: #f3f4f6;
+          overflow-x: hidden;
+          font-family: 'Outfit', sans-serif;
+      }
+
+      /* Preloader */
+      /* Premium Cinematic Preloader */
+      #preloader {
+          position: fixed;
+          inset: 0;
+          z-index: 9999;
+          background: #020408;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          transition: opacity 0.8s ease, visibility 0.8s ease;
+      }
+
+      .loader-ring {
+          width: 120px;
+          height: 120px;
+          border-radius: 50%;
+          border: 3px solid rgba(255, 255, 255, 0.05);
+          border-top-color: #ff2d55;
+          border-right-color: #ff2d55;
+          animation: spin-smooth 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+          position: relative;
+          box-shadow: 0 0 30px rgba(255, 45, 85, 0.2);
+      }
+
+      .loader-ring::before {
+          content: '';
+          position: absolute;
+          inset: 8px;
+          border-radius: 50%;
+          border: 2px solid rgba(255, 255, 255, 0.1);
+          border-bottom-color: #3b82f6;
+          animation: spin-smooth 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite reverse;
+      }
+
+      .loader-text {
+          margin-top: 30px;
+          font-size: 10px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.5em;
+          color: white;
+          animation: pulse-text 2s infinite;
+      }
+
+      @keyframes spin-smooth {
+          to {
+              transform: rotate(360deg);
+          }
+      }
+
+      @keyframes pulse-text {
+
+          0%,
+          100% {
+              opacity: 0.3;
+          }
+
+          50% {
+              opacity: 1;
+              text-shadow: 0 0 10px rgba(255, 45, 85, 0.5);
+          }
+      }
+
+      /* Liquid Glass Typography */
+      .liquid-glass {
+          background: none;
+          color: rgba(255, 255, 255, 0.85);
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.2),
+              0 0 20px rgba(255, 255, 255, 0.1),
+              0 0 40px rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(4px);
+          -webkit-backdrop-filter: blur(4px);
+          line-height: 1;
+          letter-spacing: -0.04em;
+          pointer-events: none;
+          mix-blend-mode: hard-light;
+      }
+
+      /* Responsive Title Scaling Logic */
+      .slider-title {
+          font-size: var(--title-size, 5rem);
+          font-weight: 800;
+          text-transform: uppercase;
+          transition: font-size 0.3s ease;
+      }
+
+      /* Components */
+      .sidebar-link.active {
+          color: #ff2d55;
+          background: rgba(255, 45, 85, 0.05);
+          border-right: 3px solid #ff2d55;
+      }
+
+      .hide-scroll::-webkit-scrollbar {
+          display: none;
+      }
+
+      .hide-scroll {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* Rating Stars Animation */
+      .star-box i {
+          transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          cursor: pointer;
+      }
+
+      .star-box i:hover {
+          transform: scale(1.3);
+          color: #fbbf24;
+      }
+
+      .star-box i.active {
+          color: #fbbf24;
+      }
+
+      /* Refined Transparent Frost */
+      /* Liquid Pill Search Bar */
+      .glass-search {
+          background: rgba(255, 255, 255, 0.02) !important;
+          backdrop-filter: blur(25px) saturate(210%) contrast(110%) !important;
+          -webkit-backdrop-filter: blur(25px) saturate(210%) contrast(110%) !important;
+          border: 1px solid rgba(255, 255, 255, 0.06) !important;
+          border-radius: 9999px !important;
+          /* Full Pill Shape */
+          box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.7);
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      #searchBar.active .glass-search {
+          background: rgba(255, 255, 255, 0.05) !important;
+          border-color: rgba(255, 45, 85, 0.5) !important;
+          transform: scale(1.02);
+      }
+
+      #searchBar.neural-diff-active {
+          max-width: 240px !important;
+      }
+
+      #searchBar.neural-diff-active .glass-search {
+          transform: scale(0.94) !important;
+          border-color: rgba(34, 197, 94, 0.7) !important;
+          background: rgba(255, 255, 255, 0.08) !important;
+      }
+
+      #searchBar.neural-diff-active .glass-search .fa-search,
+      #searchBar.neural-diff-active .glass-search #clearSearch {
+          opacity: 0.8;
+      }
+
+      /* Fix Search Icon & X Button Visibility */
+      .search-icon-fixed {
+          color: white !important;
+          opacity: 0.8;
+          filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.8));
+      }
+
+      #clearSearch {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 28px;
+          height: 28px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+          color: #666;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      #clearSearch:hover {
+          background: #ff2d55;
+          color: white;
+          border-color: #ff2d55;
+          box-shadow: 0 0 15px rgba(255, 45, 85, 0.4);
+          transform: translateY(-50%) rotate(90deg) scale(1.1);
+      }
+
+      /* Person Modal Scrolling */
+      #personModal {
+          scrollbar-width: thin;
+          scrollbar-color: #ff2d55 rgba(255, 255, 255, 0.05);
+      }
+
+      /* Global Loaders */
+      .page-loader {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(255, 45, 85, 0.1);
+          border-top-color: #ff2d55;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+          to {
+              transform: translate(-50%, -50%) rotate(360deg);
+          }
+      }
+
+      /* Hierarchy Status Colors */
+      .status-watching {
+          border-left: 4px solid #3b82f6;
+      }
+
+      .status-plan {
+          border-left: 4px solid #94a3b8;
+      }
+
+      .status-finished {
+          border-left: 4px solid #22c55e;
+      }
+
+      /* Android TV / Large Screen Support */
+      @media (min-width: 1920px) {
+          .slider-title {
+              --title-size: 8rem;
+          }
+      }
+
+      /* Ensure search icon stands out on frosted background */
+      .fa-search {
+          opacity: 0.8 !important;
+          color: white !important;
+          text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+          z-index: 10;
+      }
+
+      /* --- MOBILE OPTIMIZATION --- */
+      @media (max-width: 1024px) {
+          /* 1. NAVIGATION (STAYS THE SAME) */
+
+          aside {
+              width: calc(100% - 40px) !important;
+              max-width: 380px !important;
+              height: 65px !important;
+              top: 75px !important;
+              /* Positioned below header & notifications */
+              right: 20px !important;
+              left: auto !important;
+              flex-direction: row !important;
+              border: 1px solid rgba(255, 45, 85, 0.3) !important;
+              border-radius: 20px !important;
+              background: rgba(10, 12, 18, 0.95) !important;
+              backdrop-filter: blur(25px);
+              padding: 0 !important;
+              z-index: 100;
+              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+          }
+
+          aside .p-8,
+          #clock {
+              display: none !important;
+          }
+
+          /* --- BOTTOM NAVIGATION REVOLUTION (SWIPEABLE) --- */
+          nav {
+              flex-direction: row !important;
+              margin-top: 0 !important;
+              width: 100% !important;
+              height: 100% !important;
+              justify-content: flex-start !important;
+              align-items: center !important;
+              display: flex !important;
+              overflow-x: auto !important;
+
+              /* --- CRITICAL FIXES FOR PREMIUM FEEL --- */
+              overflow-y: hidden !important;
+              touch-action: pan-x !important;
+              /* Forces the browser to ONLY accept horizontal swipes */
+              overscroll-behavior-y: none !important;
+              /* Stops the elastic bounce on the Y axis */
+              /* --------------------------------------- */
+
+              scroll-snap-type: x mandatory !important;
+              scroll-behavior: smooth !important;
+              -webkit-overflow-scrolling: touch !important;
+              padding: 0 10px !important;
+              gap: 8px !important;
+          }
+
+          nav::-webkit-scrollbar {
+              display: none;
+          }
+
+          /* Hide scrollbar for sleekness */
+
+          .nav-btn {
+              padding: 0 !important;
+              width: 75px !important;
+              /* Fixed width to prevent squishing */
+              flex: 0 0 auto !important;
+              /* Prevent shrinking */
+              scroll-snap-align: center !important;
+              flex-direction: column !important;
+              gap: 6px !important;
+              color: #94a3b8 !important;
+              justify-content: center !important;
+              opacity: 0.6;
+              transition: all 0.3s ease;
+          }
+
+          .nav-btn i {
+              font-size: 1.2rem !important;
+          }
+
+          .nav-btn span {
+              display: block !important;
+              font-size: 8px !important;
+              font-weight: 800;
+          }
+
+          .sidebar-link.active {
+              background: none !important;
+              border-right: none !important;
+              border-top: none !important;
+              color: #ff2d55 !important;
+              opacity: 1;
+              transform: scale(1.05) translateY(-2px);
+              /* Pop active item up slightly */
+          }
+
+          .sidebar-link.active i {
+              text-shadow: 0 0 15px rgba(255, 45, 85, 0.6);
+          }
+
+          /* --- RESPONSIVE DIFF CARDS (MOBILE FIXES) --- */
+          @media (max-width: 768px) {
+              .diff-card-new {
+                  flex-direction: column !important;
+                  padding: 1rem !important;
+                  gap: 0.75rem !important;
+              }
+
+              .diff-card-new .min-w-0 {
+                  min-width: 0 !important;
+              }
+
+              .diff-card-new img {
+                  width: 3rem !important;
+                  height: 4.5rem !important;
+              }
+
+              .diff-card-new .gap-x-2 {
+                  column-gap: 0.5rem !important;
+                  row-gap: 0.25rem !important;
+              }
+          }
+
+          /* --- RHYTHM LAB (MOBILE CLEANUP) --- */
+          #labCounters {
+              display: none !important;
+              /* Hides counters on mobile only for a slicker UI */
+          }
+
+          /* Make Delta action controls always visible on mobile */
+          @media (max-width: 768px) {
+
+              #neuralDiffOverlay .sticky,
+              #neuralDiffOverlay .sticky .relative {
+                  position: sticky !important;
+                  bottom: 0 !important;
+                  left: 0 !important;
+                  right: 0 !important;
+                  z-index: 40 !important;
+              }
+
+              #neuralDiffOverlay .sticky button {
+                  min-width: 45% !important;
+                  font-size: 11px !important;
+                  display: inline-flex !important;
+              }
+
+              #neuralDiffOverlay .sticky .flex-col {
+                  flex-direction: column !important;
+              }
+          }
+
+          /* --- MASTERPIECES MOBILE OVERHAUL --- */
+          #view-masterpieces {
+              padding: 20px !important;
+              padding-top: 90px !important;
+          }
+
+          #view-masterpieces h2.liquid-glass {
+              font-size: 2.5rem !important;
+              line-height: 1.1;
+              margin-bottom: 20px !important;
+          }
+
+          /* Swipeable Tabs Container */
+          #view-masterpieces .flex.bg-\[\#0a0c12\] {
+              width: 100% !important;
+              padding: 8px !important;
+              justify-content: flex-start !important;
+          }
+
+          /* Force Grid adjustment for Crowned/Ranked */
+          #mpContainer .grid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 12px !important;
+          }
+
+          /* Ranking Limit Buttons Mobile */
+          #mpContainer .flex.gap-4.mb-12 {
+              gap: 8px !important;
+              margin-bottom: 20px !important;
+          }
+
+          #mpContainer .flex.gap-4.mb-12 button {
+              padding: 12px 16px !important;
+              font-size: 9px !important;
+          }
+
+          @media (max-width: 1024px) {
+
+              /* --- TOP-RIGHT FLOATING MENU --- */
+              @media (max-width: 1024px) {
+                  #sidebar-toggle {
+                      /* Move from bottom-left to top-right */
+                      bottom: auto !important;
+                      left: auto !important;
+                      top: 85px !important;
+                      /* Positioned below the notification icon */
+                      right: 20px !important;
+
+                      /* Slicker mobile look */
+                      width: 48px !important;
+                      height: 48px !important;
+                      background: rgba(10, 12, 18, 0.8) !important;
+                      border: 1px solid rgba(255, 45, 85, 0.3) !important;
+                      backdrop-filter: blur(10px);
+                      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                  }
+
+                  /* Horizontal Nav Logic */
+                  nav {
+                      flex-direction: row !important;
+                      margin-top: 0 !important;
+                      width: 100% !important;
+                      height: 100% !important;
+                      justify-content: flex-start !important;
+                      align-items: center !important;
+                      display: flex !important;
+                      overflow-x: auto !important;
+                      scroll-snap-type: x mandatory !important;
+                      scroll-behavior: smooth !important;
+                      -webkit-overflow-scrolling: touch !important;
+                      padding: 0 10px !important;
+                      gap: 12px !important;
+                  }
+
+                  nav::-webkit-scrollbar {
+                      display: none;
+                  }
+              }
+
+              .nav-btn {
+                  flex: 0 0 auto !important;
+                  /* Prevents squishing */
+                  scroll-snap-align: start;
+                  width: 70px;
+              }
+
+              /* The Scroll Hint Sign - Refined Animated Indicator */
+              .scroll-indicator-hint {
+                  position: absolute;
+                  bottom: 85px;
+                  /* Sits above the navigation bar */
+                  left: 50%;
+                  transform: translateX(-50%) translateY(10px);
+                  z-index: 200;
+                  display: none;
+                  align-items: center;
+                  gap: 12px;
+                  padding: 10px 22px;
+                  background: rgba(10, 12, 18, 0.95);
+                  backdrop-filter: blur(20px);
+                  -webkit-backdrop-filter: blur(20px);
+                  border: 1px solid rgba(255, 45, 85, 0.5);
+                  border-radius: 100px;
+                  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 45, 85, 0.2);
+                  pointer-events: none;
+                  transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                  opacity: 0;
+              }
+
+              .scroll-indicator-hint i {
+                  color: #ff2d55;
+                  font-size: 18px;
+                  filter: drop-shadow(0 0 8px rgba(255, 45, 85, 0.8));
+                  animation: hintSwipeMotion 1.5s infinite cubic-bezier(0.4, 0, 0.2, 1);
+              }
+
+              .scroll-indicator-hint span {
+                  font-size: 10px;
+                  font-weight: 900;
+                  text-transform: uppercase;
+                  letter-spacing: 3px;
+                  color: white;
+                  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+              }
+
+              @keyframes hintSwipeMotion {
+                  0% {
+                      transform: translateX(20px) scale(1);
+                      opacity: 0;
+                  }
+
+                  20% {
+                      opacity: 1;
+                  }
+
+                  80% {
+                      opacity: 1;
+                  }
+
+                  100% {
+                      transform: translateX(-30px) scale(0.8);
+                      opacity: 0;
+                  }
+              }
+
+              /* --- LAB COUNTER REMOVAL (MOBILE ONLY) --- */
+              .lab-stats-container,
+              #labCounters {
+                  display: none !important;
+              }
+          }
+
+          /* 2. HERO SLIDER (75% HEIGHT & TEXT FIX) */
+          #view-home>div:first-child {
+              height: 60vh !important;
+              /* Shorter vertical height */
+              min-height: 400px !important;
+              overflow: hidden;
+          }
+
+          #heroSlider {
+              width: 100% !important;
+              height: 100% !important;
+              position: absolute !important;
+              top: 0;
+              left: 0;
+          }
+
+          #heroSlider img {
+              object-fit: cover !important;
+              height: 100% !important;
+              width: 100% !important;
+              opacity: 0.7;
+              /* Dimmed slightly for text readability */
+          }
+
+          /* Slider Text Overlay */
+          #view-home .bottom-32 {
+              position: absolute !important;
+              bottom: 80px !important;
+              /* Sits above the hero bottom */
+              left: 0 !important;
+              padding: 0 20px !important;
+              background: none !important;
+              z-index: 20;
+          }
+
+          .slider-title {
+              font-size: 2rem !important;
+              text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.8);
+              margin-bottom: 10px !important;
+          }
+
+          /* 3. COLLAPSIBLE SEARCH BAR (CSS ONLY) */
+          header {
+              left: 0 !important;
+              padding: 10px 15px !important;
+              background: transparent !important;
+              z-index: 50;
+          }
+
+          /* 3. REFINED COLLAPSIBLE SEARCH BAR (NO OVERLAP) */
+          header {
+              left: 0 !important;
+              padding: 15px !important;
+              background: transparent !important;
+              z-index: 50;
+              display: flex !important;
+              justify-content: flex-start !important;
+              /* Forces search to the left */
+              align-items: center !important;
+          }
+
+          /* Glass Search Container */
+          header .max-w-xl {
+              width: 48px !important;
+              /* Perfect circle for icon */
+              height: 48px !important;
+              transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+              background: rgba(255, 255, 255, 0.08) !important;
+              /* Translucent Glass */
+              backdrop-filter: blur(12px);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              border-radius: 24px;
+              overflow: hidden;
+              margin-left: 0 !important;
+              position: relative;
+          }
+
+          /* Expand when clicked/focused */
+          header .max-w-xl:focus-within {
+              width: 90% !important;
+              background: rgba(30, 30, 30, 0.7) !important;
+              /* Semi-transparent dark glass */
+              border-color: rgba(255, 45, 85, 0.5);
+              overflow: visible !important;
+              /* <--- ADD THIS LINE */
+          }
+
+          /* Search Icon Positioning (Prevents Overlap) */
+          header .fa-search {
+              position: absolute;
+              left: 16px !important;
+              top: 50%;
+              transform: translateY(-50%);
+              z-index: 10;
+              pointer-events: none;
+          }
+
+          header input {
+              opacity: 0;
+              width: 100%;
+              height: 100%;
+              transition: opacity 0.3s;
+              padding-left: 50px !important;
+              /* Massive padding to clear the icon */
+              background: transparent !important;
+              color: white !important;
+              font-size: 14px !important;
+          }
+
+          header .max-w-xl:focus-within input {
+              opacity: 1;
+          }
+
+          /* Fix for the 'X' button inside the search */
+          header button[onclick*="searchInput.value = ''"] {
+              position: absolute;
+              right: 12px !important;
+              top: 50%;
+              transform: translateY(-50%);
+              padding: 5px !important;
+          }
+
+          /* 4. RECOMMENDATIONS (STAYS THE SAME - SMOOTH SLIDE) */
+          .hide-scroll {
+              display: flex !important;
+              overflow-x: auto !important;
+              scroll-behavior: smooth !important;
+              -webkit-overflow-scrolling: touch !important;
+              scroll-snap-type: x mandatory !important;
+              gap: 12px !important;
+              padding: 0 20px 20px 20px !important;
+          }
+
+          .hide-scroll>div {
+              flex: 0 0 42% !important;
+              scroll-snap-align: start !important;
+          }
+
+          /* 5. GLOBAL FIXES */
+          main {
+              padding-left: 0 !important;
+              padding-bottom: 90px !important;
+          }
+
+          .breadcrumb {
+              display: none !important;
+          }
+
+          #homeCounters {
+              grid-template-columns: repeat(2, 1fr) !important;
+              padding: 0 20px !important;
+          }
+      }
+
+      /* --- MOBILE OPTIMIZATION (MOBILE ONLY) --- */
+      @media (max-width: 1024px) {
+
+          /* 1. BOTTOM NAVIGATION BAR */
+          aside {
+              width: 100% !important;
+              height: 75px !important;
+              top: auto !important;
+              bottom: 0 !important;
+              flex-direction: row !important;
+              border-right: none !important;
+              border-top: 1px solid rgba(255, 255, 255, 0.1);
+              background: rgba(2, 4, 8, 0.95) !important;
+              backdrop-filter: blur(25px);
+              padding: 0 !important;
+              z-index: 100;
+          }
+
+          aside .p-8,
+          #clock {
+              display: none !important;
+          }
+
+          nav {
+              flex-direction: row !important;
+              margin-top: 0 !important;
+              width: 100% !important;
+              height: 100% !important;
+              justify-content: space-around !important;
+              align-items: center !important;
+              display: flex !important;
+          }
+
+          .nav-btn {
+              padding: 0 !important;
+              width: 20% !important;
+              flex-direction: column !important;
+              gap: 4px !important;
+              color: #94a3b8 !important;
+              justify-content: center !important;
+          }
+
+          .nav-btn i {
+              font-size: 1.2rem !important;
+          }
+
+          .nav-btn span {
+              display: block !important;
+              font-size: 8px !important;
+              font-weight: 800;
+          }
+
+          .sidebar-link.active {
+              background: none !important;
+              border-right: none !important;
+              border-top: 3px solid #ff2d55;
+              color: #ff2d55 !important;
+          }
+
+          /* 2. HERO SLIDER (70% HEIGHT & OVERLAY) */
+          #view-home>div:first-child {
+              height: 70vh !important;
+              /* Fixed proportional height */
+              min-height: 450px !important;
+              position: relative !important;
+              overflow: hidden;
+          }
+
+          #heroSlider {
+              width: 100% !important;
+              height: 100% !important;
+              position: absolute !important;
+              top: 0;
+              left: 0;
+          }
+
+          #heroSlider img {
+              object-fit: cover !important;
+              height: 100% !important;
+              width: 100% !important;
+          }
+
+          #view-home .bottom-32 {
+              position: absolute !important;
+              bottom: 40px !important;
+              left: 0 !important;
+              padding: 0 20px !important;
+              background: linear-gradient(to top, #020408 30%, transparent) !important;
+              width: 100%;
+              z-index: 20;
+          }
+
+          .slider-title {
+              font-size: 2rem !important;
+              margin-bottom: 10px !important;
+          }
+
+          #heroInfoBtn,
+          #heroTrailerBtn {
+              flex: 1 !important;
+              padding: 14px 0 !important;
+              font-size: 10px !important;
+          }
+
+          /* 3. STATIC BENTO GRID COUNTERS (NO SLIDING) */
+          #homeCounters {
+              display: grid !important;
+              grid-template-columns: repeat(3, 1fr) !important;
+              gap: 10px !important;
+              padding: 20px 15px !important;
+              margin-top: 0 !important;
+              overflow-x: hidden !important;
+          }
+
+          #homeCounters>div {
+              height: 80px !important;
+              background: rgba(255, 255, 255, 0.04) !important;
+              backdrop-filter: blur(10px);
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              border-radius: 18px !important;
+          }
+
+          /* 4. COLLAPSIBLE LEFT SEARCH BAR */
+          header {
+              left: 0 !important;
+              padding: 15px !important;
+              background: transparent !important;
+              z-index: 50;
+              justify-content: flex-start !important;
+          }
+
+          header .max-w-xl {
+              width: 48px !important;
+              height: 48px !important;
+              transition: all 0.4s ease;
+              background: rgba(255, 255, 255, 0.1) !important;
+              backdrop-filter: blur(15px);
+              border-radius: 24px;
+              margin-left: 0 !important;
+          }
+
+          header .max-w-xl:focus-within {
+              width: 90% !important;
+              background: rgba(10, 10, 10, 0.9) !important;
+          }
+
+          header input {
+              opacity: 0;
+              padding-left: 45px !important;
+          }
+
+          header .max-w-xl:focus-within input {
+              opacity: 1;
+          }
+
+          header .fa-search {
+              left: 16px !important;
+              position: absolute;
+          }
+
+          /* 5. SMOOTH SLIDING RECOMMENDATIONS */
+          .hide-scroll {
+              display: flex !important;
+              overflow-x: auto !important;
+              scroll-behavior: smooth !important;
+              -webkit-overflow-scrolling: touch !important;
+              scroll-snap-type: x mandatory !important;
+              gap: 12px !important;
+              padding: 0 20px 20px 20px !important;
+          }
+
+          .hide-scroll>div {
+              flex: 0 0 42% !important;
+              scroll-snap-align: start !important;
+          }
+
+          /* LAYOUT REPAIR */
+          main {
+              padding-left: 0 !important;
+              padding-bottom: 90px !important;
+          }
+
+          .breadcrumb {
+              display: none !important;
+          }
+      }
+
+      /* --- PHENOMENAL DISCOVER PAGE (MOBILE) --- */
+
+      #searchHeader {
+          font-size: 24px !important;
+          /* Smaller, cleaner header on mobile */
+          letter-spacing: -1px !important;
+          margin-bottom: 0 !important;
+          display: block !important;
+          width: 100%;
+      }
+
+      /* Horizontal Filter Strip */
+      #view-search .flex.flex-wrap.gap-4 {
+          display: flex !important;
+          flex-wrap: nowrap !important;
+          /* Force single row */
+          overflow-x: auto !important;
+          /* Allow side-scrolling filters */
+          padding-bottom: 5px;
+          width: 100%;
+          gap: 8px !important;
+          scrollbar-width: none;
+      }
+
+      #view-search .flex.flex-wrap.gap-4::-webkit-scrollbar {
+          display: none;
+      }
+
+      /* Pill-Style Select Boxes */
+      #view-search select {
+          flex: 0 0 auto !important;
+          background: rgba(255, 255, 255, 0.05) !important;
+          border-radius: 50px !important;
+          /* Rounder "Pill" look */
+          padding: 8px 15px !important;
+          font-size: 9px !important;
+          border-color: rgba(255, 255, 255, 0.1) !important;
+          min-width: 100px;
+      }
+
+      /* --- SEARCH LAYOUT UTILITIES (DESKTOP LIST VIEW) --- */
+      #searchGrid.list-view {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 16px !important;
+      }
+
+      #searchGrid.list-view .group {
+          display: flex !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 24px !important;
+          background: rgba(255, 255, 255, 0.03);
+          padding: 12px;
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      #searchGrid.list-view .group .aspect-\[2\/3\] {
+          width: 70px !important;
+          min-width: 70px !important;
+          height: 105px !important;
+          margin-bottom: 0 !important;
+          border-radius: 16px !important;
+      }
+
+      #searchGrid.list-view .group>div:nth-child(2) {
+          font-size: 16px !important;
+          flex: 1;
+      }
+
+      /* --- PHENOMENAL DISCOVER PAGE (MOBILE ONLY) --- */
+      @media (max-width: 1024px) {
+          #searchHeader {
+              font-size: 32px !important;
+              letter-spacing: -1px !important;
+              margin-bottom: 0 !important;
+              display: block !important;
+              width: 100%;
+          }
+
+          /* Hide the complex layout selector on mobile to save space */
+          #layoutSelector {
+              display: none !important;
+          }
+
+          /* Horizontal Filter Strip */
+          #view-search .flex.flex-wrap.gap-4 {
+              display: flex !important;
+              flex-wrap: nowrap !important;
+              overflow-x: auto !important;
+              padding-bottom: 5px;
+              width: 100%;
+              gap: 8px !important;
+              scrollbar-width: none;
+          }
+
+          #view-search .flex.flex-wrap.gap-4::-webkit-scrollbar {
+              display: none;
+          }
+
+          /* Pill-Style Select Boxes */
+          #view-search select {
+              flex: 0 0 auto !important;
+              background: rgba(255, 255, 255, 0.05) !important;
+              border-radius: 50px !important;
+              padding: 10px 18px !important;
+              font-size: 10px !important;
+              border-color: rgba(255, 255, 255, 0.1) !important;
+              min-width: 110px;
+          }
+
+          /* Optimized Grid for Mobile Discovery */
+          #searchGrid {
+              display: grid !important;
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 15px !important;
+              margin-top: 30px !important;
+          }
+
+          #searchGrid .group {
+              background: rgba(255, 255, 255, 0.02);
+              border-radius: 20px;
+              overflow: hidden;
+              transition: transform 0.2s;
+          }
+
+          #searchGrid .group:active {
+              transform: scale(0.95);
+          }
+
+          #searchGrid .aspect-\[2\/3\] {
+              border-radius: 18px !important;
+              margin-bottom: 8px !important;
+          }
+
+          /* Load More Button Mobile */
+          #btnDiscoverLoadMore {
+              width: 100% !important;
+              background: #ff2d55 !important;
+              color: white !important;
+              border: none !important;
+              border-radius: 18px !important;
+              padding: 18px !important;
+              font-size: 11px !important;
+              box-shadow: 0 10px 30px rgba(255, 45, 85, 0.2);
+          }
+      }
+
+      /* Load More Button - Center & App Style */
+      #btnDiscoverLoadMore {
+          width: 90% !important;
+          background: #ff2d55 !important;
+          color: white !important;
+          border: none !important;
+          border-radius: 15px !important;
+          padding: 18px !important;
+          font-size: 11px !important;
+          box-shadow: 0 10px 20px rgba(255, 45, 85, 0.2);
+      }
+
+      /* --- MY LIST ELITE REDESIGN --- */
+      .library-action-bar {
+          background: rgba(10, 12, 18, 0.7);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 20px;
+          padding: 8px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+
+      .lib-btn {
+          padding: 12px 20px;
+          border-radius: 14px;
+          font-size: 10px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: #9ca3af;
+          background: transparent;
+          transition: all 0.3s ease;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+      }
+
+      .lib-btn:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+      }
+
+      .lib-btn i {
+          font-size: 14px;
+      }
+
+      .lib-btn.danger:hover {
+          background: rgba(255, 45, 85, 0.1);
+          color: #ff2d55;
+      }
+
+      .lib-btn.primary {
+          background: #ff2d55;
+          color: white;
+          box-shadow: 0 4px 15px rgba(255, 45, 85, 0.3);
+      }
+
+      .lib-btn.primary:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 6px 20px rgba(255, 45, 85, 0.4);
+      }
+
+      .lib-section-title {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          font-size: 12px;
+          font-weight: 900;
+          text-transform: uppercase;
+          letter-spacing: 0.4em;
+          color: white;
+          margin-bottom: 24px;
+      }
+
+      .lib-section-title::before {
+          content: '';
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #ff2d55;
+          box-shadow: 0 0 10px #ff2d55;
+      }
+
+      .lib-section-title::after {
+          content: '';
+          flex: 1;
+          height: 1px;
+          background: linear-gradient(90deg, rgba(255, 255, 255, 0.1), transparent);
+      }
+
+      .lib-card-row {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          gap: 20px;
+          padding: 16px;
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: 24px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .lib-card-row:hover {
+          background: rgba(255, 255, 255, 0.04);
+          border-color: rgba(255, 45, 85, 0.3);
+          transform: translateX(8px);
+      }
+
+      @media (max-width: 768px) {
+          .library-action-bar {
+              flex-wrap: wrap;
+              justify-content: center;
+          }
+
+          .lib-btn span {
+              display: none;
+          }
+
+          /* Show only icons on mobile for secondary buttons */
+          .lib-btn.primary span {
+              display: inline;
+          }
+
+          /* Keep text for Random Picker */
+          .lib-card-row {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 12px;
+          }
+
+          .lib-card-row img {
+              width: 100%;
+              height: 180px;
+              object-fit: cover;
+          }
+
+          .lib-card-row .stats {
+              width: 100%;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-top: 10px;
+              padding-top: 10px;
+              border-top: 1px solid rgba(255, 255, 255, 0.05);
+          }
+
+          .lib-card-row .stats .text-right {
+              text-align: left !important;
+          }
+      }
+
+      /* --- LOCAL SMART SEARCH UI --- */
+      .local-search-wrapper {
+          position: relative;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .local-search-input {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: white;
+          transition: all 0.3s ease;
+      }
+
+      .local-search-input:focus {
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 45, 85, 0.5);
+          box-shadow: 0 0 20px rgba(255, 45, 85, 0.1);
+      }
+
+      @media (max-width: 768px) {
+
+          /* Mobile: Search bar takes full width on its own row */
+          .mobile-full-search {
+              width: 100% !important;
+              order: 99;
+              /* Pushes to bottom of the flex container */
+              margin-top: 10px;
+          }
+      }
+
+      @keyframes wave-slide {
+          0% {
+              transform: translateX(0);
+          }
+
+          100% {
+              transform: translateX(-50%);
+          }
+      }
+
+      .animate-wave-slide {
+          animation: wave-slide 4s linear infinite;
+      }
+
+      /* --- GLOBAL NETWORK LOADER --- */
+      #globalLoader {
+          position: fixed;
+          top: 0;
+          left: 0;
+          height: 3px;
+          background: #ff2d55;
+          z-index: 99999;
+          transition: width 0.3s ease, opacity 0.3s ease;
+          box-shadow: 0 0 15px #ff2d55, 0 0 5px #ff2d55;
+          pointer-events: none;
+          opacity: 0;
+          width: 0%;
+      }
+
+      /* From Uiverse.io by Pradeepsaranbishnoi */
+      /* The loader container */
+      .loader {
+          width: 200px;
+          height: 200px;
+          perspective: 200px;
+      }
+
+
+      /* The dot */
+      .dot {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 120px;
+          height: 120px;
+          margin-top: -60px;
+          margin-left: -60px;
+          border-radius: 100px;
+          border: 40px outset #ff2d55;
+          transform-origin: 50% 50%;
+          transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+          background-color: transparent;
+          animation: dot1 1000ms cubic-bezier(.49, .06, .43, .85) infinite;
+      }
+
+      .dot:nth-child(2) {
+          width: 140px;
+          height: 140px;
+          margin-top: -70px;
+          margin-left: -70px;
+          border-width: 30px;
+          border-color: #ffffff;
+          animation-name: dot2;
+          animation-delay: 75ms;
+          box-shadow: inset 0 0 15px 0 rgba(0, 0, 0, 0.1);
+          transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+      }
+
+      .dot:nth-child(3) {
+          width: 160px;
+          height: 160px;
+          margin-top: -80px;
+          margin-left: -80px;
+          border-width: 20px;
+          border-color: #eb012c;
+          animation-name: dot3;
+          animation-delay: 150ms;
+          box-shadow: inset 0 0 15px 0 rgba(0, 0, 0, 0.1);
+          transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+      }
+
+      @keyframes dot1 {
+          0% {
+              border-color: #80162a;
+              /* Deep Dark Red */
+              transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+          }
+
+          50% {
+              border-color: #ff2d55;
+              /* Signature Pulse Red */
+              transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px);
+          }
+
+          100% {
+              border-color: #ffffff;
+              /* Pure White */
+              transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+          }
+      }
+
+      @keyframes dot2 {
+          0% {
+              border-color: #ffffff;
+              box-shadow: inset 0 0 15px 0 rgba(255, 255, 255, 0.4);
+              transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+          }
+
+          50% {
+              border-color: #ff8a9f;
+              /* Soft Frosted Pink/Red */
+              box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.4);
+              transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px);
+          }
+
+          100% {
+              border-color: #ff2d55;
+              box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.8);
+              transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+          }
+      }
+
+      @keyframes dot3 {
+          0% {
+              border-color: #ff2d55;
+              box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.6);
+              transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+          }
+
+          50% {
+              border-color: #ffffff;
+              box-shadow: inset 0 0 15px 0 rgba(255, 255, 255, 0.8);
+              transform: rotateX(20deg) rotateY(20deg) rotateZ(50deg) translateZ(0px);
+          }
+
+          100% {
+              border-color: #80162a;
+              box-shadow: inset 0 0 15px 0 rgba(255, 45, 85, 0.2);
+              transform: rotateX(24deg) rotateY(20deg) rotateZ(0deg) translateZ(-25px);
+          }
+      }
+
+      /* New Constructing Text CSS */
+      .constructing-text {
+          margin-top: 40px;
+          perspective: 500px;
+      }
+
+      .constructing-text span {
+          display: inline-block;
+          opacity: 0;
+          transform: rotateX(-90deg) scale(0.5);
+          animation: constructText 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite alternate;
+      }
+
+      .constructing-text span:nth-child(1) {
+          animation-delay: 0.1s;
+      }
+
+      .constructing-text span:nth-child(2) {
+          animation-delay: 0.2s;
+      }
+
+      .constructing-text span:nth-child(3) {
+          animation-delay: 0.3s;
+      }
+
+      .constructing-text span:nth-child(4) {
+          animation-delay: 0.4s;
+      }
+
+      .constructing-text span:nth-child(5) {
+          animation-delay: 0.5s;
+          color: white;
+      }
+
+      .constructing-text span:nth-child(6) {
+          animation-delay: 0.6s;
+          color: white;
+      }
+
+      .constructing-text span:nth-child(7) {
+          animation-delay: 0.7s;
+          color: white;
+      }
+
+      .constructing-text span:nth-child(8) {
+          animation-delay: 0.8s;
+          color: white;
+      }
+
+      .constructing-text span:nth-child(9) {
+          animation-delay: 0.9s;
+          color: white;
+      }
+
+      @keyframes constructText {
+          0% {
+              opacity: 0;
+              transform: rotateX(-90deg) rotateY(180deg) scale(0.5) translateZ(-50px);
+              filter: blur(4px);
+          }
+
+          50% {
+              opacity: 1;
+              transform: rotateX(0deg) rotateY(0deg) scale(1.2) translateZ(20px);
+              filter: blur(0px);
+              text-shadow: 0 0 15px rgba(255, 45, 85, 0.8);
+          }
+
+          100% {
+              opacity: 1;
+              transform: rotateX(0deg) rotateY(0deg) scale(1) translateZ(0px);
+              filter: blur(0px);
+              text-shadow: 0 0 5px rgba(255, 45, 85, 0.4);
+          }
+      }
+
+      /* --- GLOBAL CUSTOM SCROLLBAR --- */
+      ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+          background: #020408;
+          border-radius: 10px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+          background: rgba(255, 45, 85, 0.3);
+          border-radius: 10px;
+          transition: background 0.3s ease;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 45, 85, 0.8);
+      }
+
+      * {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 45, 85, 0.5) #020408;
+      }
+
+      /* Hide scrollbar completely only where explicitly requested */
+      .hide-scroll::-webkit-scrollbar {
+          display: none;
+      }
+
+      .hide-scroll {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* --- AMAZING PAGE TRANSITIONS --- */
+      @keyframes pageEnter {
+          0% {
+              opacity: 0;
+              transform: translateY(40px) scale(0.98);
+              filter: blur(10px);
+          }
+
+          100% {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+              filter: blur(0px);
+          }
+      }
+
+      .page-transition-enter {
+          animation: pageEnter 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+      }
+
+      /* --- NAV BUTTON HOVER EFFECTS --- */
+      .nav-btn-effect {
+          position: relative;
+          overflow: hidden;
+      }
+
+      .nav-btn-effect::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 100%;
+          width: 4px;
+          background: #ff2d55;
+          transform: scaleY(0);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          transform-origin: bottom;
+      }
+
+      .nav-btn-effect:hover::before,
+      .nav-btn-effect.active::before {
+          transform: scaleY(1);
+          transform-origin: top;
+          box-shadow: 0 0 15px rgba(255, 45, 85, 0.8);
+      }
+
+      .nav-btn-effect:hover {
+          background: rgba(255, 45, 85, 0.05);
+          color: white !important;
+          transform: translateX(5px);
+      }
+
+      /* Glowing Hover for Section Titles */
+      .glow-title {
+          transition: all 0.3s ease;
+          cursor: pointer;
+      }
+
+      .glow-title:hover {
+          color: #ff2d55;
+          text-shadow: 0 0 15px rgba(255, 45, 85, 0.8);
+          transform: translateX(5px);
+      }
+
+      @media (max-width: 1024px) {
+
+          /* 1. Dynamic Text Reveal for Active Nav Item */
+          .nav-btn span {
+              display: none !important;
+              /* Hide all text by default */
+          }
+
+          .nav-btn.active span {
+              display: block !important;
+              animation: slideUpFade 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+          }
+
+          .nav-btn {
+              width: 60px !important;
+              /* Shrink inactive items */
+              transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          }
+
+          .nav-btn.active {
+              width: 80px !important;
+              /* Expand active item to fit text */
+          }
+
+          @keyframes slideUpFade {
+              from {
+                  opacity: 0;
+                  transform: translateY(5px);
+              }
+
+              to {
+                  opacity: 1;
+                  transform: translateY(0);
+              }
+          }
+
+          /* 2. Floating Swipe Hint Centered Above Nav */
+          .scroll-indicator-hint {
+              bottom: 85px !important;
+              left: 50% !important;
+              transform: translateX(-50%) !important;
+              display: flex !important;
+              animation: gentlePulse 2s infinite !important;
+          }
+
+          @keyframes gentlePulse {
+
+              0%,
+              100% {
+                  opacity: 0.8;
+                  transform: translateX(-50%) translateY(0);
+              }
+
+              50% {
+                  opacity: 1;
+                  transform: translateX(-50%) translateY(-3px);
+                  border-color: #ff2d55;
+                  box-shadow: 0 0 15px rgba(255, 45, 85, 0.3);
+              }
+          }
+      }
+
+      /* Mobile State: "Collapsed" */
+      @media (max-width: 768px) {
+          #modalSearchWrapper {
+              left: 50%;
+              transform: translateX(-50%);
+          }
+
+          #modalSearchWrapper.expanded {
+              width: 85%;
+          }
+
+          #modalSearchWrapper.expanded #modalSearchContainer {
+              width: 100%;
+          }
+
+          #modalSearchWrapper.expanded #modalSearch {
+              opacity: 1;
+          }
+      }
+
+      /* Hover expansion for PC */
+      @media (min-width: 1024px) {
+          #modalSearchContainer:hover {
+              background: rgba(255, 255, 255, 0.15);
+              border-color: rgba(255, 45, 85, 0.4);
+              width: 350px;
+          }
+      }
+
+      @media (max-width: 768px) {
+          #mobileInstallLink {
+              display: block !important;
+          }
+      }
+
+      /* --- SAGA MATRIX: MEMORY CLUSTERS --- */
+      .memory-cluster {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 2/3;
+          perspective: 1000px;
+      }
+
+      .memory-cluster img {
+          border-radius: 24px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+          transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .cluster-top {
+          position: relative;
+          z-index: 30;
+          width: 100%;
+          height: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .cluster-mid {
+          position: absolute;
+          top: -8px;
+          right: -8px;
+          width: 100%;
+          height: 100%;
+          z-index: 20;
+          opacity: 0.6;
+          transform: scale(0.95);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .cluster-back {
+          position: absolute;
+          top: -16px;
+          right: -16px;
+          width: 100%;
+          height: 100%;
+          z-index: 10;
+          opacity: 0.3;
+          transform: scale(0.9);
+          border: 1px solid rgba(255, 255, 255, 0.02);
+      }
+
+      /* Hover Expansion Animation */
+      .group:hover .cluster-mid {
+          transform: translate(12px, -12px) scale(0.95) rotate(2deg);
+          opacity: 0.8;
+          border-color: rgba(255, 45, 85, 0.3);
+      }
+
+      .group:hover .cluster-back {
+          transform: translate(24px, -24px) scale(0.9) rotate(4deg);
+          opacity: 0.5;
+          border-color: rgba(255, 45, 85, 0.1);
+      }
+
+
+      /* --- SAGA MODAL FIXES --- */
+
+      /* 1. The Photo Frame: Zero Stretch */
+      .saga-backdrop-img {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          /* Perfect crop, no stretch */
+          object-position: center 20%;
+      }
+
+      /* 2. Mobile Button Position Fix */
+      /* --- SAGA CLOSE BUTTON MOBILE FIX --- */
+      @media (max-width: 768px) {
+
+          /* Position the Close Button inside the top-right of the poster frame */
+          .saga-action-header .close-btn {
+              position: absolute !important;
+              top: 20px !important;
+              /* Safely inside the poster top-right */
+              right: 20px !important;
+              z-index: 100 !important;
+              background: rgba(0, 0, 0, 0.5) !important;
+              /* Darker for better contrast on images */
+              backdrop-filter: blur(10px) !important;
+              -webkit-backdrop-filter: blur(10px) !important;
+              width: 44px !important;
+              /* Slightly larger touch target for thumbs */
+              height: 44px !important;
+              border: 1px solid rgba(255, 255, 255, 0.2) !important;
+          }
+
+          /* Keep the other buttons (Toggle/Sync) at the bottom as discussed */
+          .action-buttons-wrap {
+              position: fixed;
+              bottom: 30px;
+              left: 50%;
+              transform: translateX(-50%);
+              z-index: 90;
+              display: flex;
+              gap: 8px;
+              background: rgba(10, 12, 18, 0.9);
+              padding: 12px 20px;
+              border-radius: 30px;
+              border: 1px solid rgba(255, 255, 255, 0.1);
+              width: fit-content;
+              max-width: 90%;
+              box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+          }
+      }
+
+      /* Ensure the Poster Frame never stretches */
+      .saga-backdrop-img {
+          width: 100% !important;
+          height: 100% !important;
+          object-fit: cover !important;
+          /* Perfect photo-frame crop */
+          object-position: center 20%;
+      }
+
+      /* Desktop spacing for close button */
+      @media (min-width: 769px) {
+          .saga-action-header .close-btn {
+              position: absolute;
+              top: 30px;
+              right: 30px;
+          }
+      }
+
+      /* --- SAGA MODAL CLOSE BUTTON REFINEMENT --- */
+
+      /* Desktop / PC Version */
+      @media (min-width: 769px) {
+          .saga-close-btn {
+              position: fixed !important;
+              top: 60px !important;
+              /* Lowered slightly for better visual balance */
+              right: 40px !important;
+              z-index: 999 !important;
+              background: rgba(255, 255, 255, 0.05) !important;
+              backdrop-filter: blur(12px) !important;
+              -webkit-backdrop-filter: blur(12px) !important;
+              width: 54px !important;
+              height: 54px !important;
+              cursor: pointer !important;
+              border: 1px solid rgba(255, 255, 255, 0.1) !important;
+              transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+          }
+
+          /* Cinematic Hover Effect */
+          .saga-close-btn:hover {
+              background: #ff2d55 !important;
+              transform: scale(1.1) rotate(90deg);
+              /* Scales up and spins slightly */
+              border-color: #ff2d55 !important;
+              box-shadow: 0 0 25px rgba(255, 45, 85, 0.6);
+              color: white !important;
+          }
+      }
+
+      /* Mobile Version */
+      @media (max-width: 768px) {
+          .saga-close-btn {
+              position: absolute !important;
+              top: 35px !important;
+              /* Lowered slightly to avoid status bar overlap */
+              right: 20px !important;
+              z-index: 999 !important;
+              background: rgba(0, 0, 0, 0.7) !important;
+              backdrop-filter: blur(15px) !important;
+              -webkit-backdrop-filter: blur(15px) !important;
+              width: 48px !important;
+              height: 48px !important;
+              border: 1px solid rgba(255, 255, 255, 0.2) !important;
+              color: white !important;
+              /* Massive touch area for easy closing */
+              box-shadow: 0 0 0 15px transparent;
+          }
+      }
+
+      /* Fix for Actor Banner Biography/Description */
+      #pBio {
+          display: -webkit-box;
+          -webkit-line-clamp: 4;
+          /* Limits description to 4 lines */
+          line-clamp: 4;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-height: 100px;
+          /* Safety cap */
+          line-height: 1.6;
+          transition: all 0.3s ease;
+      }
+
+      /* Optional: Expand on hover if you want users to read more */
+      #pBio:hover {
+          -webkit-line-clamp: 12;
+          line-clamp: 12;
+          max-height: 300px;
+          overflow-y: auto;
+      }
+
+      /* Saga Forge Drag & Drop Utilities */
+      .forge-item {
+          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease;
+      }
+
+      .forge-item.dragging {
+          opacity: 0.5;
+          transform: scale(1.02);
+          box-shadow: 0 15px 30px rgba(255, 45, 85, 0.3);
+          border-color: #ff2d55 !important;
+          z-index: 100;
+      }
+
+      .forge-item.drag-over {
+          border-top: 4px solid #ff2d55;
+          margin-top: 15px;
+      }
+
+      /* Sizing scales */
+      .forge-size-main {
+          border-left: 4px solid #ff2d55;
+      }
+
+      .forge-size-spinoff {
+          border-left: 4px solid #3b82f6;
+          opacity: 0.8;
+          transform: scale(0.95);
+          transform-origin: left center;
+      }
+
+      /* Mobile Optimized Saga Cards */
+      @media (max-width: 768px) {
+          #sagaModal .max-w-4xl {
+              padding-bottom: 100px;
+              /* Space for the fixed buttons */
+          }
+
+          #inlineSagaList .flex-col {
+              background: rgba(255, 255, 255, 0.02);
+              padding: 12px;
+              border-radius: 16px;
+          }
+
+          /* Prevent text overflow on small screens */
+          .truncate-saga-title {
+              max-width: 150px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+          }
+      }
+
+      /* Dynamic Shadow for the 'Commit' Button */
+      #saveSagaBtn {
+          box-shadow: 0 10px 30px -10px rgba(34, 197, 94, 0.5);
+      }
+
+      /* Multi-Select Bar Animation Classes */
+      #multiSelectBar.active {
+          transform: translate(-50%, 0);
+          opacity: 1;
+          pointer-events: auto;
+      }
+
+      /* Custom Checkbox for Grid/List Cards */
+      .card-checkbox {
+          position: absolute;
+          top: 12px;
+          left: 12px;
+          z-index: 60;
+          width: 24px;
+          height: 24px;
+          border-radius: 6px;
+          border: 2px solid rgba(255, 255, 255, 0.4);
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .card-checkbox.selected {
+          background: #3b82f6;
+          border-color: #3b82f6;
+          box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+      }
+
+      .card-checkbox i {
+          color: white;
+          font-size: 12px;
+          opacity: 0;
+          transform: scale(0.5);
+          transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .card-checkbox.selected i {
+          opacity: 1;
+          transform: scale(1);
+      }
+
+      /* Pulse effect when Select Mode is active */
+      .select-mode-pulse {
+          animation: selectPulse 2s infinite;
+      }
+
+      @keyframes selectPulse {
+
+          0%,
+          100% {
+              box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.2);
+          }
+
+          50% {
+              box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.6);
+          }
+      }
+
+      /* --- MULTI-SELECT MOBILE OPTIMIZATION --- */
+      @media (max-width: 1024px) {
+          #multiSelectBar {
+              bottom: 85px !important;
+              /* Clears the mobile bottom nav */
+              width: 90% !important;
+              padding: 12px 20px !important;
+              flex-wrap: wrap;
+              justify-content: center;
+              gap: 12px !important;
+          }
+
+          #multiSelectBar .w-px {
+              display: none;
+              /* Hides dividers on small screens for clean wrap */
+          }
+      }
+
+      /* Ensure Saga Cards can securely hold the checkmark */
+      .saga-selectable-card {
+          position: relative;
+      }
+
+      /* --- SAGA MATRIX MOBILE OPTIMIZATION --- */
+      @media (max-width: 768px) {
+
+          /* Stack the header title and tabs vertically to save width */
+          #view-sagamatrix>div:first-child {
+              flex-direction: column;
+              align-items: flex-start;
+              gap: 20px;
+          }
+
+          /* Make the tab container scrollable horizontally if buttons are too wide */
+          #view-sagamatrix .flex.bg-\[\#0a0c12\] {
+              width: 100%;
+              overflow-x: auto;
+              padding: 8px;
+              justify-content: flex-start;
+              -webkit-overflow-scrolling: touch;
+          }
+
+          /* Shrink the posters in the "Memory Cluster" so they don't overlap awkwardly */
+          .memory-cluster {
+              height: 180px;
+              /* Reduced height for mobile */
+          }
+
+          .cluster-top {
+              width: 100px;
+              height: 150px;
+              left: 50%;
+              transform: translateX(-50%);
+              z-index: 30;
+          }
+
+          .cluster-mid {
+              width: 90px;
+              height: 135px;
+              left: 35%;
+              top: 10px;
+              z-index: 20;
+              opacity: 0.8;
+          }
+
+          .cluster-back {
+              width: 80px;
+              height: 120px;
+              left: 20%;
+              top: 20px;
+              z-index: 10;
+              opacity: 0.6;
+          }
+
+          /* Adjust the grid for 2 columns on mobile instead of 1 or 4 */
+          #sagaGrid,
+          #mySagaGrid {
+              grid-template-columns: repeat(2, 1fr) !important;
+              gap: 12px !important;
+          }
+
+          /* Make Saga titles readable on small cards */
+          .saga-selectable-card .text-\[10px\] {
+              font-size: 8px !important;
+              padding: 8px !important;
+          }
+      }
+
+      #multiSelectBar {
+          z-index: 400;
+          /* High, but lower than the 500+ used for main Modals and Top Nav */
+      }
+
+      /* Ensure the checkmark is highly visible on mobile cards */
+      .card-checkbox {
+          width: 28px;
+          height: 28px;
+          background: rgba(10, 12, 18, 0.9);
+          border: 1px solid rgba(59, 130, 246, 0.5);
+      }
+
+      /* --- LAPTOP / SMALL SCREEN HEIGHT SCALING (DESKTOP) --- */
+      @media (min-width: 1024px) and (max-height: 800px) {
+
+          /* Compact the sidebar header padding so the nav has more room */
+          #mainSidebar .p-8 {
+              padding: 1.5rem !important;
+          }
+
+          /* Shrink the top padding on page views so content isn't pushed too far down */
+          .page-view {
+              padding-top: 6rem !important;
+          }
+
+          /* Scale down main headers slightly to save vertical space */
+          .page-view h2 {
+              font-size: 3.5rem !important;
+          }
+      }
+
+      /* Ensure invisible scrolling is smooth on PC trackpads */
+      .hide-scroll {
+          scroll-behavior: smooth;
+          -webkit-overflow-scrolling: touch;
+      }
+
+      #searchDrop,
+      #modalSearchDrop {
+          display: none !important;
+          flex-direction: column !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          padding: 0 !important;
+      }
+
+      #searchDrop:not(.hidden),
+      #modalSearchDrop:not(.hidden) {
+          display: block !important;
+      }
+
+      /* --- PREVENT NOTIFICATIONS FROM BLOCKING MOBILE SEARCH --- */
+      @media (max-width: 1024px) {
+
+          body.search-active-mobile #neuralToast,
+          body.search-active-mobile button[onclick="toggleNotifHub()"] {
+              display: none !important;
+          }
+      }
+
+      #searchDrop button:hover {
+          transform: scale(1.1);
+          box-shadow: 0 0 15px rgba(255, 45, 85, 0.4);
+      }
+
+      /* Ensure the dropdown doesn't get too wide on mobile */
+      #searchDrop {
+          max-height: 70vh;
+          overflow-y: auto;
+          scrollbar-width: none;
+      }
+
+      #searchDrop::-webkit-scrollbar {
+          display: none;
+      }
+
+
+
+      /* --- FLOATING QUICK ADD BUTTON --- */
+      .quick-add-btn {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          background: rgba(2, 4, 8, 0.8);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 12px;
+          z-index: 40;
+          transition: all 0.3s ease;
+          opacity: 0;
+          transform: translateY(-5px);
+      }
+
+      .selectable-card:hover .quick-add-btn {
+          opacity: 1;
+          transform: translateY(0);
+      }
+
+      .quick-add-btn:hover {
+          background: #ff2d55;
+          border-color: #ff2d55;
+          box-shadow: 0 0 15px rgba(255, 45, 85, 0.5);
+      }
+
+      /* On mobile, keep it slightly visible so users know it's there */
+      @media (max-width: 1024px) {
+          .quick-add-btn {
+              opacity: 0.8;
+              transform: none;
+          }
+      }
+
+      /* --- MINIMALIST MOBILE NAV SCROLL --- */
+      @media (max-width: 1024px) {
+
+          /*    /* 1. The Fade Effect on the right side - Improved Frost Mask */
+          .nav-edge-mask {
+              position: absolute;
+              top: 0;
+              right: 0;
+              height: 100%;
+              width: 60px;
+              /* Deep frosted gradient that signals more content */
+              background: linear-gradient(to right, transparent, rgba(10, 12, 18, 0.95));
+              z-index: 10;
+              transition: opacity 0.4s ease, width 0.4s ease;
+              pointer-events: none;
+              border-radius: 0 20px 20px 0;
+          }
+
+          .nav-at-end .nav-edge-mask {
+              opacity: 0;
+              width: 0;
+          }
+
+          .nav-at-end .nav-edge-mask {
+              opacity: 0;
+          }
+
+          /* Small glowing accent at the very edge (Unique & Subtle) */
+          .nav-edge-mask::after {
+              content: '';
+              position: absolute;
+              right: 4px;
+              top: 50%;
+              transform: translateY(-50%);
+              width: 2px;
+              height: 15px;
+              background: #ff2d55;
+              border-radius: 99px;
+              box-shadow: 0 0 10px #ff2d55;
+              opacity: 0.6;
+          }
+      }
+
+      /* --- NEURAL LINK: P2P SYNC STYLES --- */
+
+      /* Radar Pulse Background */
+      .radar-circle {
+          animation: radar-expand 6s cubic-bezier(0.1, 0.5, 0.5, 1) infinite;
+          opacity: 0;
+      }
+
+      .animation-delay-1000 {
+          animation-delay: 3s;
+      }
+
+      @keyframes radar-expand {
+          0% {
+              transform: scale(0.1);
+              opacity: 0;
+          }
+
+          50% {
+              opacity: 0.15;
+          }
+
+          100% {
+              transform: scale(1.5);
+              opacity: 0;
+          }
+      }
+
+      /* Holographic Scanner Line */
+      @keyframes scan-line {
+          0% {
+              transform: translateY(0);
+              opacity: 1;
+          }
+
+          100% {
+              transform: translateY(100vh);
+              opacity: 0;
+          }
+      }
+
+      .animate-scan-line {
+          animation: scan-line 3s linear infinite;
+          box-shadow: 0 5px 20px rgba(255, 45, 85, 0.8);
+      }
+
+      /* --- RESPONSIVE DIFF CARDS --- */
+      .diff-card-new {
+          display: flex;
+          flex-direction: column;
+          background: rgba(10, 12, 18, 0.8);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 20px;
+          padding: 1rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+          /* Base setup for the staggered entrance */
+          opacity: 0;
+          transform: translateY(20px) scale(0.98);
+          animation: diffCardEnter 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          will-change: transform, opacity;
+      }
+
+      @keyframes diffCardEnter {
+          to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+          }
+      }
+
+      #diffCardsContainer {
+          /* Ensures the scrollbar respects the boundaries and adds momentum scrolling on iOS */
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
+          scroll-behavior: smooth;
+          /* Custom scrollbar for this specific panel to make it look sleek */
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255, 45, 85, 0.5) transparent;
+      }
+
+      /* Desktop Layout */
+      @media (min-width: 768px) {
+          .diff-card-new {
+              flex-direction: row;
+              align-items: center;
+              gap: 1.5rem;
+              padding: 1.5rem;
+          }
+      }
+
+      .diff-card-new:hover {
+          border-color: rgba(255, 45, 85, 0.5);
+          transform: translateY(-2px);
+          box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+      }
+
+      .diff-card-new.deselected {
+          opacity: 0.3;
+          filter: grayscale(100%);
+          transform: scale(0.98);
+          border-color: rgba(255, 255, 255, 0.05);
+      }
+
+      /* Ensure Html5QrcodeScanner internal elements don't look broken */
+      #qr-reader {
+          border: none !important;
+      }
+
+      #qr-reader__scan_region {
+          background: black;
+      }
+
+      #qr-reader__dashboard_section_csr button {
+          background: #ff2d55 !important;
+          color: white !important;
+          border-radius: 8px !important;
+          padding: 8px 16px !important;
+          border: none !important;
+          font-weight: 900 !important;
+          text-transform: uppercase !important;
+          font-size: 10px !important;
+          letter-spacing: 1px !important;
+      }
+
+      /* --- HOLOGRAPHIC SYNC ANIMATION --- */
+      @keyframes neuralSyncJump {
+          0% {
+              transform: scale(0) translateX(-150px) translateY(50px) rotate(-15deg);
+              opacity: 0;
+              filter: blur(5px);
+          }
+
+          20% {
+              transform: scale(1.3) translateX(0px) translateY(-20px) rotate(0deg);
+              opacity: 1;
+              filter: blur(0px);
+              box-shadow: 0 0 40px rgba(34, 197, 94, 0.8);
+          }
+
+          80% {
+              transform: scale(1.3) translateX(0px) translateY(-20px) rotate(0deg);
+              opacity: 1;
+              filter: blur(0px);
+              box-shadow: 0 0 40px rgba(34, 197, 94, 0.8);
+          }
+
+          100% {
+              transform: scale(0) translateX(150px) translateY(50px) rotate(15deg);
+              opacity: 0;
+              filter: blur(5px);
+          }
+      }
+
+      /* --- NETWORK TOPOLOGY TREE --- */
+      .topology-node {
+          position: relative;
+          padding-left: 24px;
+          margin-bottom: 12px;
+      }
+
+      .topology-node::before {
+          content: '';
+          position: absolute;
+          left: -5px;
+          top: 20px;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          background: #0a0c12;
+          border: 3px solid #a855f7;
+          z-index: 2;
+          transition: all 0.3s ease;
+      }
+
+      .topology-node.offline::before {
+          border-color: #4b5563;
+      }
+
+      .topology-node.active::before {
+          border-color: #22c55e;
+          box-shadow: 0 0 15px rgba(34, 197, 94, 0.8);
+          background: #22c55e;
+      }
+
+      /* --- OVERLAY SCROLL LOCK (OVERSCROLL FIX) --- */
+      body.modal-open {
+          overflow: hidden;
+          position: fixed;
+          width: 100%;
+      }
+
+      /* style.css */
+      .card-checkbox.hidden {
+          display: none !important;
+      }
+
+      /* Smart Scroll Buttons */
+      .scroll-btn-smart {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          z-index: 40;
+          width: 44px;
+          height: 44px;
+          background: rgba(10, 12, 18, 0.85);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          cursor: pointer;
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+      }
+
+      section:hover .scroll-btn-smart.is-active {
+          opacity: 1;
+          pointer-events: auto;
+      }
+
+      .scroll-btn-smart:hover {
+          background: #ff2d55;
+          border-color: #ff2d55;
+          transform: translateY(-50%) scale(1.1);
+          box-shadow: 0 0 20px rgba(255, 45, 85, 0.4);
+      }
+
+      .scroll-btn-smart.left {
+          left: 10px;
+      }
+
+      .scroll-btn-smart.right {
+          right: 10px;
+      }
+
+      /* Hide on mobile where swiping is natural */
+      @media (max-width: 1024px) {
+          .scroll-btn-smart {
+              display: none !important;
+          }
+      }

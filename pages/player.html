@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,21 +18,64 @@
         }
     </script>
     <style>
-        body { background-color: #020408; color: #f3f4f6; overflow-x: hidden; }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .glass-nav { background: rgba(10, 12, 18, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        
+        body {
+            background-color: #020408;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
+
+        .hide-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .glass-nav {
+            background: rgba(10, 12, 18, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
         /* Preloader */
-        #preloader { transition: opacity 0.5s ease; }
-        .spinner { border: 4px solid rgba(255,45,85,0.2); border-top-color: #ff2d55; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
+        #preloader {
+            transition: opacity 0.5s ease;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 45, 85, 0.2);
+            border-top-color: #ff2d55;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         /* Iframe Protection & Loading */
-        #iframeContainer { position: relative; background: #000; }
-        .iframe-loader { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1; }
-        #neuralIframe { position: relative; z-index: 10; background: transparent; }
+        #iframeContainer {
+            position: relative;
+            background: #000;
+        }
+
+        .iframe-loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+        }
+
+        #neuralIframe {
+            position: relative;
+            z-index: 10;
+            background: transparent;
+        }
     </style>
 </head>
+
 <body class="antialiased selection:bg-pulse selection:text-white pb-20">
 
     <div id="preloader" class="fixed inset-0 z-[9999] bg-[#020408] flex flex-col items-center justify-center">
@@ -39,48 +83,81 @@
         <div class="text-[10px] font-black tracking-[0.3em] uppercase text-gray-500">Loading Player</div>
     </div>
 
-    <header class="fixed top-0 w-full z-[100] glass-nav px-4 md:px-8 py-4 flex items-center justify-between gap-4 shadow-xl">
+    <header
+        class="fixed top-0 w-full z-[100] glass-nav px-4 md:px-8 py-4 flex items-center justify-between gap-4 shadow-xl">
         <div class="flex items-center gap-3 md:gap-6">
-            <button onclick="goBackToModal()" class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10" title="Back to Details">
+            <button onclick="goBackToModal()"
+                class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10"
+                title="Back to Details">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <button onclick="window.location.href='../index.html'" class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10 hidden sm:flex" title="Go Home">
+            <button onclick="window.location.href='../index.html'"
+                class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10 hidden sm:flex"
+                title="Go Home">
                 <i class="fas fa-home"></i>
             </button>
             <div class="font-black italic text-xl hidden md:block">CINE<span class="text-pulse">PULSE</span></div>
         </div>
-        
+
         <div class="relative flex-1 max-w-md z-[101]">
             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
-            <input type="text" id="playerSearch" autocomplete="off" placeholder="Search movies or shows..." class="w-full bg-dark/50 border border-white/10 py-3 pl-12 pr-4 rounded-full text-[12px] font-bold text-white outline-none focus:border-pulse transition-all">
-            <div id="playerSearchDropdown" class="absolute top-full left-0 right-0 mt-2 bg-[#0a0c12]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden hidden flex-col max-h-[400px] overflow-y-auto hide-scroll"></div>
+            <input type="text" id="playerSearch" autocomplete="off" placeholder="Search movies or shows..."
+                class="w-full bg-dark/50 border border-white/10 py-3 pl-12 pr-4 rounded-full text-[12px] font-bold text-white outline-none focus:border-pulse transition-all">
+            <div id="playerSearchDropdown"
+                class="absolute top-full left-0 right-0 mt-2 bg-[#0a0c12]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden hidden flex-col max-h-[400px] overflow-y-auto hide-scroll">
+            </div>
         </div>
     </header>
 
-    <div id="backdropSection" class="relative w-full pt-20 flex flex-col items-center bg-cover bg-center min-h-screen" style="background-image: url('https://via.placeholder.com/1920x1080/020408/020408');">
+    <div id="backdropSection" class="relative w-full pt-20 flex flex-col items-center bg-cover bg-center min-h-screen"
+        style="background-image: url('https://via.placeholder.com/1920x1080/020408/020408');">
         <div class="absolute inset-0 bg-gradient-to-b from-dark/95 via-dark/80 to-dark backdrop-blur-sm"></div>
 
         <div class="relative z-20 w-full max-w-[1400px] px-4 md:px-8 mt-4 md:mt-8 flex flex-col gap-6">
-            
+
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-2">
                 <div class="max-w-full">
-                    <h1 id="headerTitle" class="text-2xl md:text-4xl lg:text-5xl font-black italic uppercase tracking-tight text-white drop-shadow-lg whitespace-normal break-words leading-tight max-w-full">Loading...</h1>
-                    <p id="headerSubtitle" class="text-[10px] md:text-xs text-pulse uppercase tracking-[0.3em] font-bold mt-2"></p>
+                    <h1 id="headerTitle"
+                        class="text-2xl md:text-4xl lg:text-5xl font-black italic uppercase tracking-tight text-white drop-shadow-lg whitespace-normal break-words leading-tight max-w-full">
+                        Loading...</h1>
+                    <p id="headerSubtitle"
+                        class="text-[10px] md:text-xs text-pulse uppercase tracking-[0.3em] font-bold mt-2"></p>
                 </div>
             </div>
 
-            <div id="iframeContainer" class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-black">
+            <div id="iframeContainer"
+                class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-black">
                 <div class="iframe-loader spinner"></div>
-                <iframe id="neuralIframe" class="w-full h-full border-none absolute inset-0" allowfullscreen="true" sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox" referrerpolicy="origin"></iframe>
-                <!-- Sandbox Permission Indicator -->
-                <div id="sandboxIndicator" class="hidden absolute top-3 right-3 z-20 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1.5">
+                <iframe id="neuralIframe" class="w-full h-full border-none absolute inset-0" allowfullscreen="true"
+                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox"
+                    referrerpolicy="origin"></iframe>
+
+                <div id="sandboxIndicator"
+                    class="hidden absolute top-3 right-3 z-20 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1.5">
                     <i class="fas fa-unlock text-[9px]"></i> Sandbox Open
                 </div>
+
+                <div id="playerOverlayControls"
+                    class="absolute bottom-20 right-6 md:bottom-24 md:right-8 z-50 flex gap-3 opacity-0 pointer-events-none transform translate-y-4 transition-all duration-500">
+
+                    <button onclick="toggleNeuralFullscreen()"
+                        class="bg-black/60 backdrop-blur-xl border border-white/20 text-white w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center hover:bg-[#3b82f6] hover:border-[#3b82f6] transition-all shadow-[0_10px_30px_rgba(0,0,0,0.8)]"
+                        title="Fullscreen Player">
+                        <i class="fas fa-expand text-xs md:text-sm"></i>
+                    </button>
+
+                    <button id="smartNextBtn" onclick="triggerNextEpisode()"
+                        class="hidden bg-black/60 backdrop-blur-xl border border-white/20 text-white px-5 py-2 md:py-3 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-widest items-center gap-3 hover:bg-pulse hover:border-pulse transition-all shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                        <span>Next Ep</span> <i class="fas fa-step-forward"></i>
+                    </button>
+                </div>
             </div>
 
-            <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 backdrop-blur-md">
+            <div
+                class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 backdrop-blur-md">
                 <div class="flex items-center gap-3">
-                    <div id="playerStatusIcon" class="w-10 h-10 rounded-full bg-dark border border-white/10 flex items-center justify-center text-gray-500">
+                    <div id="playerStatusIcon"
+                        class="w-10 h-10 rounded-full bg-dark border border-white/10 flex items-center justify-center text-gray-500">
                         <i class="fas fa-bookmark"></i>
                     </div>
                     <div>
@@ -88,25 +165,33 @@
                         <div id="playerStatusText" class="text-xs font-bold text-white uppercase">Uncharted</div>
                     </div>
                 </div>
-                <button onclick="togglePlayerLibraryStatus()" class="px-6 py-3 bg-pulse/10 text-pulse border border-pulse/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pulse hover:text-white transition-all shadow-lg">
+                <button onclick="togglePlayerLibraryStatus()"
+                    class="px-6 py-3 bg-pulse/10 text-pulse border border-pulse/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pulse hover:text-white transition-all shadow-lg">
                     <i class="fas fa-plus mr-2"></i> Track Record
                 </button>
             </div>
 
-            <div id="playerMiniModal" class="fixed inset-0 z-[200] hidden bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 transition-all">
-                <div class="w-full max-w-sm bg-[#0a0c12] border border-white/10 rounded-3xl p-6 text-center shadow-2xl relative">
-                    <button onclick="document.getElementById('playerMiniModal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-500 hover:text-white">
+            <div id="playerMiniModal"
+                class="fixed inset-0 z-[200] hidden bg-black/80 backdrop-blur-xl flex flex-col items-center justify-center p-4 transition-all">
+                <div
+                    class="w-full max-w-sm bg-[#0a0c12] border border-white/10 rounded-3xl p-6 text-center shadow-2xl relative">
+                    <button onclick="document.getElementById('playerMiniModal').classList.add('hidden')"
+                        class="absolute top-4 right-4 text-gray-500 hover:text-white">
                         <i class="fas fa-times"></i>
                     </button>
-                    <img id="miniModalImg" class="w-24 h-36 object-cover rounded-xl shadow-lg mx-auto mb-4 border border-white/10">
-                    <h3 id="miniModalTitle" class="text-xl font-black italic uppercase text-white line-clamp-1 mb-2"></h3>
+                    <img id="miniModalImg"
+                        class="w-24 h-36 object-cover rounded-xl shadow-lg mx-auto mb-4 border border-white/10">
+                    <h3 id="miniModalTitle" class="text-xl font-black italic uppercase text-white line-clamp-1 mb-2">
+                    </h3>
                     <p class="text-[10px] text-pulse font-bold uppercase tracking-widest mb-6">Neural Match Detected</p>
-                    
+
                     <div class="flex flex-col gap-3">
-                        <button id="btnMiniWatch" class="w-full py-4 bg-[#22c55e] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#22c55e]/20 hover:scale-105 transition-all">
+                        <button id="btnMiniWatch"
+                            class="w-full py-4 bg-[#22c55e] text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-[#22c55e]/20 hover:scale-105 transition-all">
                             <i class="fas fa-play mr-2"></i> Play Now
                         </button>
-                        <button id="btnMiniDetails" class="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
+                        <button id="btnMiniDetails"
+                            class="w-full py-4 bg-white/5 border border-white/10 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all">
                             <i class="fas fa-info-circle mr-2"></i> View Full Archive
                         </button>
                     </div>
@@ -114,35 +199,62 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white/5 border border-white/10 rounded-[30px] p-6 md:p-8 backdrop-blur-xl shadow-xl flex flex-col gap-6">
+                <div
+                    class="lg:col-span-2 bg-white/5 border border-white/10 rounded-[30px] p-6 md:p-8 backdrop-blur-xl shadow-xl flex flex-col gap-6">
                     <div class="flex justify-between items-center border-b border-white/10 pb-4">
-                        <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-widest"><i class="fas fa-server mr-2 text-pulse"></i> Source Engine</h4>
+                        <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-widest"><i
+                                class="fas fa-server mr-2 text-pulse"></i> Source Engine</h4>
                         <div class="flex items-center gap-3">
                             <div id="animeControls" class="hidden flex bg-dark border border-white/10 rounded-lg p-1">
-                                <button id="btnSub" onclick="setAudioMode('sub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white">Sub</button>
-                                <button id="btnDub" onclick="setAudioMode('dub')" class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white">Dub</button>
+                                <button id="btnSub" onclick="setAudioMode('sub')"
+                                    class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white">Sub</button>
+                                <button id="btnDub" onclick="setAudioMode('dub')"
+                                    class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white">Dub</button>
                             </div>
                             <!-- Sandbox Toggle Button -->
-                            <button id="sandboxToggleBtn" onclick="toggleIframeSandbox()" class="px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10" title="Toggle iframe sandbox permissions">
+                            <button id="sandboxToggleBtn" onclick="toggleIframeSandbox()"
+                                class="px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
+                                title="Toggle iframe sandbox permissions">
                                 <i class="fas fa-lock mr-2"></i> Sandbox: Locked
                             </button>
                         </div>
                     </div>
-                    
+
                     <div id="serverList" class="flex flex-wrap items-center gap-3"></div>
 
                     <div class="mt-4 border-t border-white/5 pt-4">
                         <style>
                             @keyframes tipGlow {
-                                0% { box-shadow: 0 0 5px rgba(255, 45, 85, 0.2); border-color: rgba(255, 255, 255, 0.1); }
-                                50% { box-shadow: 0 0 15px rgba(255, 45, 85, 0.4); border-color: rgba(255, 45, 85, 0.3); }
-                                100% { box-shadow: 0 0 5px rgba(255, 45, 85, 0.2); border-color: rgba(255, 255, 255, 0.1); }
+                                0% {
+                                    box-shadow: 0 0 5px rgba(255, 45, 85, 0.2);
+                                    border-color: rgba(255, 255, 255, 0.1);
+                                }
+
+                                50% {
+                                    box-shadow: 0 0 15px rgba(255, 45, 85, 0.4);
+                                    border-color: rgba(255, 45, 85, 0.3);
+                                }
+
+                                100% {
+                                    box-shadow: 0 0 5px rgba(255, 45, 85, 0.2);
+                                    border-color: rgba(255, 255, 255, 0.1);
+                                }
                             }
-                            .tip-glow-card { animation: tipGlow 3s infinite ease-in-out; cursor: pointer; transition: all 0.3s ease; }
-                            .tip-glow-card:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.05); }
+
+                            .tip-glow-card {
+                                animation: tipGlow 3s infinite ease-in-out;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            }
+
+                            .tip-glow-card:hover {
+                                transform: translateY(-2px);
+                                background: rgba(255, 255, 255, 0.05);
+                            }
                         </style>
 
-                        <button onclick="document.getElementById('playerTips').classList.toggle('hidden')" class="tip-glow-card bg-white/5 border border-white/10 p-4 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-between transition-all w-full text-left mb-4">
+                        <button onclick="document.getElementById('playerTips').classList.toggle('hidden')"
+                            class="tip-glow-card bg-white/5 border border-white/10 p-4 rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-between transition-all w-full text-left mb-4">
                             <span class="flex items-center gap-3">
                                 <i class="fas fa-lightbulb text-yellow-500 animate-pulse"></i>
                                 <span>Neural Player Intelligence & Tips</span>
@@ -150,73 +262,111 @@
                             <i class="fas fa-chevron-down text-gray-600"></i>
                         </button>
 
-                        <div id="playerTips" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-4 duration-300">
-                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
-                                <h5 class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
+                        <div id="playerTips"
+                            class="hidden grid grid-cols-1 md:grid-cols-2 gap-4 animate-in slide-in-from-top-4 duration-300">
+                            <div
+                                class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5
+                                    class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
                                     <i class="fas fa-server"></i> Server Selection
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    For Multi-Server sources, click the internal server menu and select <strong>Server 2</strong> for optimal Neural Link stability.
+                                    For Multi-Server sources, click the internal server menu and select <strong>Server
+                                        2</strong> for optimal Neural Link stability.
                                 </p>
                             </div>
-
-                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
-                                <h5 class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
+                            <div
+                                class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5
+                                    class="text-[9px] font-black text-blue-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="fas fa-shield-alt"></i> Ad Blocker Recommended
+                                </h5>
+                                <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
+                                    For the cleanest stream without pop-ups, we highly recommend using the <strong>Brave
+                                        Browser</strong> or installing <strong>uBlock Origin</strong>.
+                                </p>
+                            </div>
+                            <div
+                                class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5
+                                    class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
                                     <i class="fas fa-language"></i> Audio / Subs
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    If manual buttons fail, use the <strong>Gear Icon ⚙️</strong> inside the video frame to toggle native sub/dub tracks.
+                                    If manual buttons fail, use the <strong>Gear Icon ⚙️</strong> inside the video frame
+                                    to toggle native sub/dub tracks.
                                 </p>
                             </div>
 
-                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
-                                <h5 class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
+                            <div
+                                class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5
+                                    class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
                                     <i class="fas fa-bolt"></i> Buffering
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    Pause for 30 seconds to allow the stream buffer to initialize, or switch <strong>Source Engines</strong> if issues persist.
+                                    Pause for 30 seconds to allow the stream buffer to initialize, or switch
+                                    <strong>Source Engines</strong> if issues persist.
                                 </p>
                             </div>
 
-                            <div class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
-                                <h5 class="text-[9px] font-black text-yellow-500 mb-2 uppercase tracking-widest flex items-center gap-2">
+                            <div
+                                class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                <h5
+                                    class="text-[9px] font-black text-yellow-500 mb-2 uppercase tracking-widest flex items-center gap-2">
                                     <i class="fas fa-unlock"></i> Full Access Mode
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    If the player is blank, toggle <strong>Access: Full</strong> above to bypass relay-server sandboxing restrictions.
+                                    If the player is blank, toggle <strong>Access: Full</strong> above to bypass
+                                    relay-server sandboxing restrictions.
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="episodeSection" class="hidden bg-white/5 border border-white/10 rounded-[30px] p-6 md:p-8 backdrop-blur-xl shadow-xl flex-col">
+                <div id="episodeSection"
+                    class="hidden bg-white/5 border border-white/10 rounded-[30px] p-6 md:p-8 backdrop-blur-xl shadow-xl flex-col">
                     <div class="flex items-center justify-between gap-4 mb-6 border-b border-white/10 pb-4">
-                        <h4 class="text-[10px] font-black uppercase text-[#3b82f6] tracking-widest"><i class="fas fa-list mr-2"></i> Episodes</h4>
-                        <select id="seasonSelect" onchange="renderEpisodes(this.value)" class="bg-dark border border-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase outline-none focus:border-[#3b82f6] text-white cursor-pointer"></select>
+                        <h4 class="text-[10px] font-black uppercase text-[#3b82f6] tracking-widest"><i
+                                class="fas fa-list mr-2"></i> Episodes</h4>
+                        <select id="seasonSelect" onchange="renderEpisodes(this.value)"
+                            class="bg-dark border border-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase outline-none focus:border-[#3b82f6] text-white cursor-pointer"></select>
                     </div>
-                    <div id="episodeGrid" class="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-5 gap-2 max-h-[250px] overflow-y-auto hide-scroll pr-2"></div>
+                    <div id="episodeGrid"
+                        class="grid grid-cols-5 sm:grid-cols-6 lg:grid-cols-4 xl:grid-cols-5 gap-2 max-h-[250px] overflow-y-auto hide-scroll pr-2 mb-4">
+                    </div>
+
+
                 </div>
             </div>
-            
+
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-12 mt-8 border-t border-white/10 pt-12 pb-12">
                 <div class="lg:col-span-2 space-y-10">
                     <div class="flex flex-col sm:flex-row gap-6 md:gap-8">
-                        <img id="detailPoster" class="w-32 sm:w-48 rounded-2xl shadow-xl border border-white/10 object-cover hidden sm:block">
+                        <img id="detailPoster"
+                            class="w-32 sm:w-48 rounded-2xl shadow-xl border border-white/10 object-cover hidden sm:block">
                         <div>
                             <div id="detailGenres" class="flex flex-wrap gap-2 mb-4"></div>
-                            <p id="detailOverview" class="text-sm md:text-base text-gray-400 leading-relaxed font-light mb-6"></p>
-                            <div id="detailProduction" class="text-[10px] uppercase font-bold tracking-widest text-gray-600 space-y-2 border-l-2 border-white/10 pl-4"></div>
+                            <p id="detailOverview"
+                                class="text-sm md:text-base text-gray-400 leading-relaxed font-light mb-6"></p>
+                            <div id="detailProduction"
+                                class="text-[10px] uppercase font-bold tracking-widest text-gray-600 space-y-2 border-l-2 border-white/10 pl-4">
+                            </div>
                         </div>
                     </div>
                     <div>
-                        <h4 class="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-6 border-b border-white/5 pb-2">Cast & Crew</h4>
+                        <h4
+                            class="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-6 border-b border-white/5 pb-2">
+                            Cast & Crew</h4>
                         <div id="detailCast" class="flex gap-4 overflow-x-auto hide-scroll pb-4"></div>
                     </div>
                 </div>
 
                 <div class="space-y-6">
-                    <h4 class="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-6 border-b border-white/5 pb-2">You May Also Like</h4>
+                    <h4
+                        class="text-[10px] font-black uppercase text-gray-500 tracking-[0.3em] mb-6 border-b border-white/5 pb-2">
+                        You May Also Like</h4>
                     <div id="detailRecs" class="grid grid-cols-2 gap-4"></div>
                 </div>
             </div>

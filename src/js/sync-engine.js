@@ -20,13 +20,22 @@ function getDevicePlatform() {
     return `${os}-${type}`;
 }
 
+// --- 1. SMART DEVICE DETECTION & CONFIG ---
+// ... getDevicePlatform() remains untouched above this ...
+
 const P2P_CONFIG = {
     debug: 2,
     config: {
         iceServers: [
+            // Expanded Google STUN servers (Handles standard Wi-Fi traversal)
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
-            { urls: 'stun:stun.relay.metered.ca:80' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun.services.mozilla.com' },
+
+            // Public TURN server (Relays data across strict Mobile Networks)
+            // Note: Public TURNs get throttled. If connection still fails on 5G, 
+            // you must replace these credentials with your own free Metered.ca account.
             {
                 urls: 'turn:openrelay.metered.ca:80',
                 username: 'openrelayproject',
@@ -46,6 +55,7 @@ const P2P_CONFIG = {
         iceCandidatePoolSize: 10
     }
 };
+
 
 const SIGNALING_SERVER = {
     host: '0.peerjs.com',
@@ -178,15 +188,8 @@ window.initNeuralHost = function (optionalPeerId = null) {
 
         if (NeuralSync.peer) NeuralSync.peer.destroy();
 
-        const peerConfig = {
-            ...P2P_CONFIG,
-            host: SIGNALING_SERVER.host,
-            port: SIGNALING_SERVER.port,
-            secure: SIGNALING_SERVER.secure,
-            key: SIGNALING_SERVER.key
-        };
-
-        NeuralSync.peer = new Peer(peerId, peerConfig);
+        // Relying on native PeerJS cloud signaling for maximum stability
+        NeuralSync.peer = new Peer(peerId, P2P_CONFIG);
 
         NeuralSync.peer.on('open', (id) => {
             NeuralSync.role = 'host';
@@ -246,22 +249,19 @@ window.joinNeuralNetwork = function (targetId = null, isSilent = false) {
         localStorage.setItem('cp_neural_client_id', clientId);
     }
 
-    const peerConfig = {
-        ...P2P_CONFIG,
-        host: SIGNALING_SERVER.host,
-        port: SIGNALING_SERVER.port,
-        secure: SIGNALING_SERVER.secure,
-        key: SIGNALING_SERVER.key
-    };
-
-    NeuralSync.peer = new Peer(clientId, peerConfig);
+    // Relying on native PeerJS cloud signaling
+    NeuralSync.peer = new Peer(clientId, P2P_CONFIG);
 
     NeuralSync.peer.on('open', (id) => {
         NeuralSync.role = 'node';
         localStorage.setItem('cp_neural_role', 'node');
         localStorage.setItem('cp_neural_host_id', hostId);
         renderQuickConnect();
-        const conn = NeuralSync.peer.connect(hostId);
+
+        // CRITICAL FIX: Force reliable data delivery across mobile networks
+        const conn = NeuralSync.peer.connect(hostId, {
+            reliable: true
+        });
         setupConnection(conn);
         startAutoReconnectLoop();
     });
