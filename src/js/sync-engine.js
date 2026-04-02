@@ -2,6 +2,52 @@
  * CINEPULSE NEURAL LINK - P2P SYNC ENGINE (ELITE V4.2)
  * Smart Topology, Quick Connect, Cast Fixes, & UI Boosts
  */
+const NeuralSync = {
+    peer: null,
+    activeConns: {},
+    role: 'standalone',
+    deviceId: localStorage.getItem('cp_device_id') || `${getDevicePlatform()}-${Math.floor(Math.random() * 10000)}`,
+    deviceName: localStorage.getItem('cp_device_name') || 'Local Node',
+    deviceType: getDevicePlatform(),
+    pendingDiffs: [],
+    history: JSON.parse(localStorage.getItem('cp_network_history')) || []
+};
+
+NeuralSync.isEngineActive = localStorage.getItem('cp_neural_master_switch') === 'ON';
+window.toggleNeuralEngine = function () {
+    const toggle = document.getElementById('neuralMasterToggle');
+    const label = document.getElementById('neuralStateLabel');
+    NeuralSync.isEngineActive = toggle.checked;
+
+    if (NeuralSync.isEngineActive) {
+        localStorage.setItem('cp_neural_master_switch', 'ON');
+        label.innerText = 'Engine Online';
+        label.className = "text-[10px] font-black uppercase text-[#3b82f6] tracking-widest drop-shadow-[0_0_10px_rgba(59,130,246,0.8)]";
+
+        // Boot up saved connections
+        const savedRole = localStorage.getItem('cp_neural_role');
+        const savedHostId = localStorage.getItem('cp_neural_host_id');
+        if (savedRole === 'host' && savedHostId) initNeuralHost(savedHostId);
+        else if (savedRole === 'node' && savedHostId) joinNeuralNetwork(savedHostId, true);
+
+        startAutoReconnectLoop();
+    } else {
+        localStorage.setItem('cp_neural_master_switch', 'OFF');
+        label.innerText = 'Engine Offline';
+        label.className = "text-[10px] font-black uppercase text-gray-500 tracking-widest";
+
+        // Sever all connections immediately to save CPU/Battery
+        if (NeuralSync.peer) {
+            NeuralSync.peer.destroy();
+            NeuralSync.peer = null;
+        }
+        clearInterval(reconnectInterval);
+        clearInterval(heartbeatInterval);
+        NeuralSync.activeConns = {};
+        renderTopology();
+        showNotification("Neural Engine Suspended. Network idle.");
+    }
+}
 
 // --- 1. SMART DEVICE DETECTION ---
 function getDevicePlatform() {
@@ -57,16 +103,6 @@ const SIGNALING_SERVER = {
     key: 'peerjs' // Default public key is usually 'peerjs'
 };
 
-const NeuralSync = {
-    peer: null,
-    activeConns: {},
-    role: 'standalone',
-    deviceId: localStorage.getItem('cp_device_id') || `${getDevicePlatform()}-${Math.floor(Math.random() * 10000)}`,
-    deviceName: localStorage.getItem('cp_device_name') || 'Local Node',
-    deviceType: getDevicePlatform(),
-    pendingDiffs: [],
-    history: JSON.parse(localStorage.getItem('cp_network_history')) || []
-};
 
 // Migrate old history to new schema
 NeuralSync.history = NeuralSync.history.map(h => {
@@ -143,7 +179,31 @@ localStorage.setItem('cp_device_id', NeuralSync.deviceId);
 
 document.addEventListener('DOMContentLoaded', () => {
     renderTopology();
-    renderQuickConnect();
+
+    const toggle = document.getElementById('neuralMasterToggle');
+    const label = document.getElementById('neuralStateLabel');
+
+    if (toggle && label) {
+        toggle.checked = NeuralSync.isEngineActive;
+        if (NeuralSync.isEngineActive) {
+            label.innerText = 'Engine Online';
+            label.className = "text-[10px] font-black uppercase text-[#3b82f6] tracking-widest";
+        }
+    }
+
+    // Only auto-boot if the Master Switch is ON
+    setTimeout(() => {
+        if (!NeuralSync.isEngineActive) return;
+
+        const savedRole = localStorage.getItem('cp_neural_role');
+        const savedHostId = localStorage.getItem('cp_neural_host_id');
+        if (savedRole === 'host' && savedHostId) {
+            initNeuralHost(savedHostId);
+        } else if (savedRole === 'node' && savedHostId) {
+            joinNeuralNetwork(savedHostId, true);
+        }
+        startAutoReconnectLoop();
+    }, 1000);
 });
 
 // --- 2. QUICK CONNECT ENGINE ---

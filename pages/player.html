@@ -88,8 +88,8 @@
         <div class="flex items-center gap-3 md:gap-6">
             <button onclick="goBackToModal()"
                 class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10"
-                title="Back to Details">
-                <i class="fas fa-arrow-left"></i>
+                title="Close Player & Return">
+                <i class="fas fa-times"></i>
             </button>
             <button onclick="window.location.href='../index.html'"
                 class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10 hidden sm:flex"
@@ -157,22 +157,70 @@
                 </div>
             </div>
 
-            <div
-                class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 backdrop-blur-md">
-                <div class="flex items-center gap-3">
-                    <div id="playerStatusIcon"
-                        class="w-10 h-10 rounded-full bg-dark border border-white/10 flex items-center justify-center text-gray-500">
-                        <i class="fas fa-bookmark"></i>
+            <div id="playerLibraryCard"
+                class="bg-[#0a0c12]/80 border border-white/10 rounded-[24px] p-5 mb-6 backdrop-blur-xl shadow-xl relative overflow-hidden transition-all duration-500">
+                <div class="relative z-10 flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div id="playerStatusIcon"
+                            class="w-12 h-12 rounded-full bg-dark border border-white/10 flex items-center justify-center text-gray-500 shadow-inner">
+                            <i class="fas fa-bookmark"></i>
+                        </div>
+                        <div>
+                            <div class="text-[9px] font-black uppercase text-gray-500 tracking-[0.2em] mb-1">Library
+                                Status</div>
+                            <div id="playerStatusText" class="text-sm font-black text-white uppercase tracking-widest">
+                                Uncharted</div>
+                        </div>
                     </div>
-                    <div>
-                        <div class="text-[9px] font-black uppercase text-gray-500 tracking-widest">Library Status</div>
-                        <div id="playerStatusText" class="text-xs font-bold text-white uppercase">Uncharted</div>
+                    <div id="playerActionContainer">
+                        <button onclick="togglePlayerLibraryStatus()"
+                            class="px-6 py-3 bg-pulse/10 text-pulse border border-pulse/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pulse hover:text-white transition-all shadow-lg">
+                            <i class="fas fa-plus mr-2"></i> Track
+                        </button>
                     </div>
                 </div>
-                <button onclick="togglePlayerLibraryStatus()"
-                    class="px-6 py-3 bg-pulse/10 text-pulse border border-pulse/30 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-pulse hover:text-white transition-all shadow-lg">
-                    <i class="fas fa-plus mr-2"></i> Track Record
-                </button>
+                <div id="playerLiquidBg" class="absolute bottom-0 left-0 w-full z-0 pointer-events-none opacity-30">
+                </div>
+            </div>
+
+            <div id="playerRatingCard"
+                class="hidden bg-dark/90 border border-pulse/30 rounded-[24px] p-6 mb-6 shadow-[0_10px_30px_rgba(255,45,85,0.15)] animate-in fade-in zoom-in duration-300">
+                <div class="flex justify-between items-center mb-4">
+                    <h5 class="text-[10px] font-black uppercase text-pulse tracking-[0.2em]">Record Complete. Rate
+                        Entity:</h5>
+                    <select id="ratingScaleToggle" onchange="resetStarHover()"
+                        class="bg-dark border border-white/10 rounded-lg text-[9px] text-gray-400 font-bold uppercase outline-none px-2 py-1">
+                        <option value="5">5-Star Scale</option>
+                        <option value="10">10-Point Scale</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col items-center">
+                    <div class="relative inline-block cursor-pointer px-4 py-2" id="playerPrecisionStarContainer"
+                        onmousemove="handleStarHover(event)" onmouseleave="resetStarHover()"
+                        onclick="commitPrecisionRating(event)" ontouchmove="handleStarHover(event)"
+                        ontouchend="commitPrecisionRating(event)">
+
+                        <div class="flex items-center gap-2 md:gap-4 text-3xl text-gray-700 pointer-events-none">
+                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                                class="fas fa-star"></i><i class="fas fa-star"></i>
+                        </div>
+
+                        <div id="precisionStarFill"
+                            class="absolute top-2 left-4 bottom-2 overflow-hidden pointer-events-none transition-all duration-75 whitespace-nowrap"
+                            style="width: 0%;">
+                            <div class="flex items-center gap-2 md:gap-4 text-3xl text-yellow-400">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                                    class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-center w-full">
+                        <div class="text-3xl font-black italic text-white w-16 text-center" id="ratingValueDisplay">0.0
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="playerMiniModal"

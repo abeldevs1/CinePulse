@@ -1468,12 +1468,42 @@ function updateRatingCard(local) {
     const card = document.getElementById('mRatingCard');
     if (local && local.status === 'Finished') {
         card.classList.remove('hidden');
-        setStars(local.score || 0);
-        document.getElementById('mCrownSelect').value = local.crown || 0;
+        // BUG FIX: Removed the dead slider reference and replaced it with the precision visualizer
+        updateStarVisuals(local.score || 0);
+        const crownSelect = document.getElementById('mCrownSelect');
+        if (crownSelect) crownSelect.value = local.crown || 0;
     } else {
         card.classList.add('hidden');
     }
 }
+
+window.updateMainRatingVisuals = function () {
+    const slider = document.getElementById('mainDecimalSlider');
+    const mask = document.getElementById('mainStarMask');
+    const display = document.getElementById('mainRatingDisplay');
+    const scale = parseInt(document.getElementById('mainRatingScaleToggle').value);
+
+    let rawValue = parseFloat(slider.value);
+    mask.style.width = `${(rawValue / 5) * 100}%`;
+    display.innerText = scale === 10 ? (rawValue * 2).toFixed(1) : rawValue.toFixed(1);
+};
+
+window.commitMainDecimalRating = function () {
+    const val = parseFloat(document.getElementById('mainDecimalSlider').value);
+    const idx = state.db.findIndex(i => String(i.id) === String(state.active.id));
+    if (idx !== -1) {
+        state.db[idx].score = val;
+        state.db[idx].updatedAt = Date.now();
+        save();
+
+        const sagaModal = document.getElementById('sagaModal');
+        if (sagaModal && !sagaModal.classList.contains('hidden') && currentSagaViewContext) {
+            openSaga(currentSagaViewContext.id);
+        }
+        showNotification("Score Updated!");
+    }
+};
+
 
 function setupStarLogic() {
     const stars = document.querySelectorAll('#starRating i');
@@ -1496,6 +1526,101 @@ function setupStarLogic() {
         };
     });
 }
+// =========================================================================
+// --- UNIFIED PRECISION RATING ENGINE ---
+// =========================================================================
+window.getRatingFromEvent = function (e) {
+    const targetContainer = e.currentTarget;
+    const rect = targetContainer.getBoundingClientRect();
+    let clientX = (e.type === 'touchend' || e.type === 'touchmove')
+        ? (e.changedTouches ? e.changedTouches[0].clientX : e.touches[0].clientX)
+        : e.clientX;
+
+    // Ensure calculation stays strictly within the container bounds
+    let x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    let rawVal = (x / rect.width) * 5;
+    let snappedVal = Math.ceil(rawVal * 2) / 2;
+
+    return parseFloat(Math.max(0.5, Math.min(5.0, snappedVal)).toFixed(1));
+};
+
+window.handleStarHover = function (e) {
+    window.updateStarVisuals(window.getRatingFromEvent(e));
+};
+
+window.resetStarHover = function () {
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+
+    // Safely determines context across both script.js and player.js without crashing
+    let itemId = null;
+    if (typeof state !== 'undefined' && state.active) {
+        itemId = state.active.id;
+    } else if (typeof playerState !== 'undefined' && playerState.tmdbId) {
+        itemId = playerState.tmdbId;
+    } else if (typeof state !== 'undefined' && state.id) {
+        itemId = state.id;
+    }
+
+    const item = db.find(i => String(i.id) === String(itemId));
+    window.updateStarVisuals(item && item.score ? item.score : 0);
+};
+
+window.commitPrecisionRating = function (e) {
+    const val = window.getRatingFromEvent(e);
+    let db = JSON.parse(localStorage.getItem('cp_elite_db_v3')) || [];
+
+    let itemId = null;
+    if (typeof state !== 'undefined' && state.active) {
+        itemId = state.active.id;
+    } else if (typeof playerState !== 'undefined' && playerState.tmdbId) {
+        itemId = playerState.tmdbId;
+    } else if (typeof state !== 'undefined' && state.id) {
+        itemId = state.id;
+    }
+
+    const idx = db.findIndex(i => String(i.id) === String(itemId));
+    if (idx !== -1) {
+        db[idx].score = val;
+        db[idx].updatedAt = Date.now();
+        localStorage.setItem('cp_elite_db_v3', JSON.stringify(db));
+
+        if (typeof state !== 'undefined' && state.db) {
+            state.db = db;
+            if (typeof save === 'function') save(true);
+        }
+
+        window.updateStarVisuals(val);
+        const notifyFunc = typeof showNotification === 'function' ? showNotification : (typeof playerShowNotification === 'function' ? playerShowNotification : alert);
+        notifyFunc("Score Saved: ★ " + val);
+
+        const playerCard = document.getElementById('playerRatingCard');
+        if (playerCard && !playerCard.classList.contains('hidden')) {
+            setTimeout(() => playerCard.classList.add('hidden'), 1500);
+        }
+    } else {
+        const notifyFunc = typeof showNotification === 'function' ? showNotification : (typeof playerShowNotification === 'function' ? playerShowNotification : alert);
+        notifyFunc("Please track this entity before rating.", true);
+    }
+};
+
+window.updateStarVisuals = function (val) {
+    const pct = (val / 5) * 100;
+    const fill = document.getElementById('precisionStarFill');
+    const display = document.getElementById('ratingValueDisplay');
+
+    if (fill) fill.style.width = `${pct}%`;
+
+    const scaleToggle = document.getElementById('mainRatingScaleToggle') || document.getElementById('ratingScaleToggle');
+    const scale = scaleToggle ? parseInt(scaleToggle.value) : 5;
+
+    if (display) {
+        display.innerText = scale === 10 ? (val * 2).toFixed(1) : val.toFixed(1);
+    }
+};
+// =========================================================================
+
+
+
 
 function setStars(n) {
     document.querySelectorAll('#starRating i').forEach((s, i) => {
@@ -3515,17 +3640,6 @@ function addSource() {
     renderSources();
 }
 
-function clearAllSources() {
-    if (confirm("Are you sure you want to delete all configured sources?")) {
-        sourcesDb = { movie: [], tv: [], anime: [], kdrama: [], turkish: [], asian: [] };
-        localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
-        renderSources();
-        showNotification("All sources purged.");
-    }
-}
-
-
-
 function removeSource(cat, idx) {
     sourcesDb[cat].splice(idx, 1);
     localStorage.setItem('cp_elite_sources', JSON.stringify(sourcesDb));
@@ -3539,8 +3653,9 @@ function getPlayHoverHTML(item) {
     const local = state.db.find(i => String(i.id) === String(item.id));
     const cat = local ? local.type : determineCategory(item);
 
-    // CRITICAL FIX: Determine actual TMDB type natively, ignoring custom categories
-    const actualTmdbType = item.media_type || (item.title ? 'movie' : 'tv');
+    // CRITICAL FIX: If it's a tracked item, strictly use its saved tmdb_type. 
+    // Otherwise, infer it from the TMDB API payload.
+    const actualTmdbType = local ? local.tmdb_type : (item.media_type || (item.name ? 'tv' : 'movie'));
 
     // 2. Escape strings safely for inline HTML
     const title = (item.title || item.name || '').replace(/'/g, "\\'");
@@ -3571,7 +3686,6 @@ function getPlayHoverHTML(item) {
         </button>
     </div>`;
 }
-
 function openWatchMenu() {
     if (!state.active) return;
 
@@ -4379,7 +4493,7 @@ function renderMasterpieces() {
                     </div>
                 </div>
             `;
-        }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">Achieve a 5★ rating to see perfect records.</div>';
+        }).join('') || '<div class="text-center py-20 text-gray-600 font-black uppercase italic tracking-[0.3em] w-full">Achieve a perfect score to see records here.</div>';
         container.innerHTML = html;
     }
     else if (state.mpTab === 'ranked') {
@@ -4404,67 +4518,26 @@ function renderMasterpieces() {
     }
 }
 
-function getRankedCard(i, rank, isCrownCard = false) {
+function getRankedCard(i, rank, isCrownCard = false, realmName = '') {
     let badgeHtml = '';
     let borderShadow = 'border-white/5 shadow-xl';
 
-    if (rank) {
-        const color = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-pulse';
-        if (isCrownCard && rank <= 3) {
-            borderShadow = `border-yellow-500/30 shadow-[0_10px_40px_rgba(255,215,0,0.15)]`;
-        }
+    // DYNAMIC SCALE FIX: Check the active scale setting and adjust the math/text
+    const scaleToggle = document.getElementById('mainRatingScaleToggle') || document.getElementById('ratingScaleToggle');
+    const scale = scaleToggle ? parseInt(scaleToggle.value) : 5;
+    const displayScore = scale === 10 ? `${(i.score * 2).toFixed(1)}/10` : `${i.score}/5`;
+    const actualTmdbType = i.tmdb_type || (i.type === 'movie' ? 'movie' : 'tv');
 
-        badgeHtml = `
-            <div class="absolute bottom-3 md:bottom-4 left-3 md:left-4 right-3 md:right-4 flex items-end justify-between z-30 pointer-events-none">
-                <div class="text-4xl md:text-6xl font-black italic tracking-tighter ${color} drop-shadow-[0_5px_10px_rgba(0,0,0,0.9)] opacity-90 group-hover:scale-110 transition-transform origin-bottom-left">
-                    #${rank}
-                </div>
-                <div class="text-[8px] md:text-[10px] font-black uppercase text-white text-right drop-shadow-md bg-dark/60 backdrop-blur-md px-2 md:px-3 py-1 rounded-xl border border-white/10">
-                    ★ ${i.score}/5<br><span class="text-[7px] md:text-[8px] text-gray-400">${i.type}</span>
-                </div>
-            </div>
-        `;
-    } else {
-        badgeHtml = `
-            <div class="absolute top-3 right-3 z-30 pointer-events-none">
-                 <div class="text-[8px] md:text-[10px] font-black uppercase text-pulse bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                    ★ ${i.score}/5
-                </div>
-            </div>
-        `;
-    }
-
-    return `
-    <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
-        <div class="aspect-[2/3] rounded-2xl md:rounded-[30px] overflow-hidden mb-3 md:mb-4 border ${borderShadow} group-hover:border-pulse transition-all relative">
-            <img src="${IMG + i.poster}" class="w-full h-full object-cover bg-dark">
-            <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-            ${badgeHtml}
-            ${getPlayHoverHTML(i)}
-        </div>
-        <div class="text-[9px] md:text-[10px] font-black uppercase line-clamp-1 group-hover:text-pulse transition-colors">${i.title}</div>
-        <div class="text-[7px] md:text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
-    </div>
-    `;
-}
-
-function getRankedCard(i, rank, isCrownCard = false) {
-    let badgeHtml = '';
-    let borderShadow = 'border-white/5 shadow-xl';
-    const originalGetRankedCard = getRankedCard;
-    getRankedCard = function (i, rank, isCrownCard = false, realmName = '') {
-        // If it's a Sovereign (4), override the badge UI to show the Realm
-        if (rank === 4) {
-            return `
-        <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+    if (rank === 4) {
+        return `
+        <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${actualTmdbType}')">
             <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-pulse/30 shadow-[0_10px_40px_rgba(255,45,85,0.15)] group-hover:border-pulse transition-all relative">
                 <img src="${IMG + i.poster}" class="w-full h-full object-cover bg-dark">
                 <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
-                
                 <div class="absolute bottom-4 left-4 right-4 z-30 pointer-events-none">
                     <div class="text-[10px] font-black uppercase text-pulse bg-dark/80 backdrop-blur-md px-3 py-2 rounded-xl border border-pulse/50 text-center shadow-lg">
                         💎 ${realmName || i.realm || 'Sovereign'}<br>
-                        <span class="text-[8px] text-white mt-1 block">★ ${i.score}/5</span>
+                        <span class="text-[8px] text-white mt-1 block">★ ${displayScore}</span>
                     </div>
                 </div>
                 ${getPlayHoverHTML(i)}
@@ -4473,9 +4546,8 @@ function getRankedCard(i, rank, isCrownCard = false) {
             <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
         </div>
         `;
-        }
-        return originalGetRankedCard(i, rank, isCrownCard);
-    };
+    }
+
     if (rank) {
         const color = rank === 1 ? 'text-yellow-400' : rank === 2 ? 'text-gray-300' : rank === 3 ? 'text-amber-600' : 'text-pulse';
         if (isCrownCard && rank <= 3) {
@@ -4488,23 +4560,22 @@ function getRankedCard(i, rank, isCrownCard = false) {
                     #${rank}
                 </div>
                 <div class="text-[10px] font-black uppercase text-white text-right drop-shadow-md bg-dark/60 backdrop-blur-md px-3 py-1 rounded-xl border border-white/10">
-                    ★ ${i.score}/5<br><span class="text-[8px] text-gray-400">${i.type}</span>
+                    ★ ${displayScore}<br><span class="text-[8px] text-gray-400">${i.type}</span>
                 </div>
             </div>
         `;
     } else {
-        // Just the normal score for Perfect 5s
         badgeHtml = `
             <div class="absolute top-3 right-3 z-30 pointer-events-none">
                  <div class="text-[10px] font-black uppercase text-pulse bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
-                    ★ ${i.score}/5
+                    ★ ${displayScore}
                 </div>
             </div>
         `;
     }
 
     return `
-    <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${i.type === 'movie' ? 'movie' : 'tv'}')">
+    <div class="group cursor-pointer relative" onclick="openModal(${i.id}, '${actualTmdbType}')">
         <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border ${borderShadow} group-hover:border-pulse transition-all relative">
             <img src="${IMG + i.poster}" class="w-full h-full object-cover bg-dark">
             <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent z-10 opacity-80 group-hover:opacity-100 transition-opacity"></div>
@@ -4515,9 +4586,6 @@ function getRankedCard(i, rank, isCrownCard = false) {
         <div class="text-[8px] font-bold text-gray-600 mt-1 uppercase tracking-widest">${i.year || 'N/A'} • IMDB: ${i.imdb?.toFixed(1) || '0.0'}</div>
     </div>
     `;
-
-
-
 }
 
 // --- TITLE COPY ENGINE ---
@@ -6246,15 +6314,13 @@ document.getElementById('watchOptionsModal').addEventListener('click', function 
 
 function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     document.getElementById('watchModal').classList.add('hidden');
-    const safeTitle = encodeURIComponent(title || '');
-
-    // Default episodes to prevent undefined errors
-    let cSeason = 1;
-    let cEp = 1;
 
     const isContextActive = state.active && String(state.active.id) === String(id);
     const epSlider = document.getElementById('mEpRange');
     const dbItem = state.db.find(i => String(i.id) === String(id));
+
+    let explicitSeason = null;
+    let explicitEp = null;
 
     if (tmdbType === 'tv') {
         if (isContextActive && epSlider && dbItem && parseInt(epSlider.value) !== (dbItem.ep || 0)) {
@@ -6266,8 +6332,8 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
             let acc = 0;
             for (let s of seasons) {
                 if (targetAbsolute <= acc + s.episode_count) {
-                    cSeason = s.season_number;
-                    cEp = targetAbsolute - acc;
+                    explicitSeason = s.season_number;
+                    explicitEp = targetAbsolute - acc;
                     break;
                 }
                 acc += s.episode_count;
@@ -6275,7 +6341,7 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
 
             // Sync database immediately
             dbItem.ep = targetAbsolute;
-            dbItem.season = cSeason;
+            dbItem.season = explicitSeason;
             dbItem.status = 'Watching';
             save();
         } else if (dbItem) {
@@ -6297,8 +6363,10 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     const typeChar = tmdbType === 'movie' ? 'm' : 't';
     let cleanSlug = `${cleanTitle}-${typeChar}${id}`;
 
-    if (tmdbType === 'tv') {
-        cleanSlug += `-s${cSeason}e${cEp}`;
+    // ONLY append specific season/episode if the user manually adjusted the slider right now.
+    // Otherwise, player.js will intelligently fetch the exact saved episode from localStorage!
+    if (tmdbType === 'tv' && explicitSeason !== null && explicitEp !== null) {
+        cleanSlug += `-s${explicitSeason}e${explicitEp}`;
     }
 
     const playerUrl = `pages/player.html?v=${cleanSlug}`;
@@ -6309,6 +6377,7 @@ function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
 
     setTimeout(() => { window.location.href = playerUrl; }, 800);
 }
+
 function renderPlayerEpisodes(seasonNum) {
     playerState.season = parseInt(seasonNum);
     const validSeasons = playerState.activeItemData.seasons.filter(s => s.season_number > 0);
