@@ -100,6 +100,285 @@
           border-right: 3px solid #ff2d55;
       }
 
+      #pageInfoSidebar {
+          transition: width 0.3s ease, background-color 0.3s ease, transform 0.25s ease;
+          width: 0;
+          overflow: hidden;
+          background: rgba(10, 12, 18, 0.95);
+          transform: translateX(-100%);
+          pointer-events: none;
+      }
+
+      #pageInfoSidebar.open, #pageInfoSidebar.expanded {
+          width: 220px;
+          transform: translateX(0);
+          pointer-events: auto;
+      }
+
+      #pageInfoSidebarInner {
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.3s ease;
+      }
+
+      #pageInfoSidebarInner.visible {
+          opacity: 1;
+          pointer-events: auto;
+      }
+
+      #pageInfoSidebar nav button span,
+      #modalSidebar nav button span {
+          opacity: 0;
+          transform: translateX(-8px);
+          transition: opacity 0.2s ease, transform 0.2s ease;
+          display: inline-block;
+      }
+
+      #pageInfoSidebar nav button:hover span,
+      #modalSidebar nav button:hover span {
+          opacity: 1;
+          transform: translateX(0);
+      }
+
+      #pageInfoFloatingSidebarToggle,
+      #pageInfoOverlaySidebarButton,
+      #pageInfoSidebarToggle,
+      #modalSidebarToggle {
+          background: linear-gradient(135deg, #ff2d55, #ec4899);
+          border-color: rgba(255, 45, 85, 0.35);
+          color: #ffffff;
+          box-shadow: 0 10px 30px rgba(255, 45, 85, 0.45);
+          transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+          z-index: 1001;
+      }
+
+      #pageInfoFloatingSidebarToggle:hover,
+      #pageInfoOverlaySidebarButton:hover,
+      #modalSidebarToggle:hover {
+          transform: translateY(-4px) scale(1.03);
+          box-shadow: 0 16px 36px rgba(255, 45, 85, 0.55);
+      }
+
+      #pageInfoFloatingSidebarToggle {
+          animation: float 2.5s ease-in-out infinite;
+          opacity: 0.95;
+      }
+
+      #pageInfoOverlaySidebarButton {
+          opacity: 0.95;
+      }
+
+      @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-8px); }
+      }
+
+      @keyframes desktoppop {
+          0%, 100% { transform: translateY(0); }
+          25% { transform: translateY(-4px) scale(1.02); }
+          75% { transform: translateY(0) scale(1); }
+      }
+
+      #pageInfoSidebarToggle,
+      #modalSidebarToggle {
+          animation: desktoppop 3.2s ease-in-out infinite;
+          z-index: 1002;
+      }
+
+      #pageInfoSidebarWrapper {
+          z-index: 410;
+      }
+
+      #pageInfoCard {
+          position: relative;
+          z-index: 430; /* keep item card above sliding sidebar */
+          transition: transform 0.25s ease;
+      }
+
+      #pageInfoCard .search-bar,
+      #pageInfoCard input[type="search"],
+      #pageInfoCard #pageInfoSearch {
+          position: relative;
+          z-index: 440;
+      }
+
+      #modalSidebar {
+          z-index: 405;
+      }
+
+      #modal .search-bar,
+      #modal input[type="search"],
+      #modal .modal-search {
+          position: relative;
+          z-index: 420;
+      }
+
+      @media (max-width: 1024px) {
+          #pageInfoSidebarWrapper {
+              display: none;
+          }
+
+          #pageInfoSidebar {
+              position: fixed;
+              left: 0;
+              top: 0;
+              bottom: 0;
+              width: 0;
+              max-width: 80vw;
+              transform: translateX(-100%);
+              border-radius: 0 0 0 0;
+          }
+
+          #pageInfoSidebar.open {
+              width: 75vw;
+              transform: translateX(0);
+              box-shadow: 4px 0 30px rgba(0, 0, 0, 0.55);
+          }
+
+          #pageInfoSidebarInner {
+              position: relative;
+              width: 100%;
+              overflow-y: auto;
+              max-height: 100vh;
+          }
+
+          #pageInfoOverlaySidebarButton,
+          #pageInfoFloatingSidebarToggle {
+              bottom: 6rem;
+              top: auto;
+              right: 1rem;
+              left: auto;
+              position: fixed;
+          }
+      }
+
+
+      #pageInfoOverlaySidebarButton:hover {
+          opacity: 1;
+      }
+
+      #pageInfoSidebar.expanded, #pageInfoSidebar.open {
+          width: 220px;
+      }
+
+      #modalSidebar {
+          width: 0;
+          transition: width 0.3s ease, transform 0.3s ease;
+          transform: translateX(-100%);
+          opacity: 0;
+          pointer-events: none;
+      }
+
+      #modal.with-sidebar {
+          padding-left: 220px;
+          transition: padding-left 0.25s ease;
+      }
+
+      #modal.with-sidebar > .relative {
+          transform: translateX(0);
+      }
+
+      #modalSidebar.open {
+          width: 220px;
+          transform: translateX(0);
+          opacity: 1;
+          pointer-events: auto;
+      }
+
+      #modalSidebarInner {
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.25s ease;
+      }
+
+      #modalSidebar.open #modalSidebarInner {
+          opacity: 1;
+          pointer-events: auto;
+      }
+
+      #modalSidebarBackdrop {
+          pointer-events: none;
+      }
+
+      #modalSidebarBackdrop.active {
+          opacity: 1;
+          pointer-events: auto;
+      }
+
+      @media (max-width: 1024px) {
+          #pageInfoSidebarWrapper {
+              display: none;
+          }
+
+          #pageInfoSidebar {
+              position: fixed;
+              left: 0;
+              top: 0;
+              bottom: 0;
+              width: 0;
+              max-width: 80vw;
+              transform: translateX(-100%);
+              border-radius: 0 0 0 0;
+          }
+
+          #pageInfoSidebar.open {
+              width: 75vw;
+              transform: translateX(0);
+              box-shadow: 4px 0 30px rgba(0, 0, 0, 0.55);
+          }
+
+          #pageInfoSidebarInner {
+              position: relative;
+              width: 100%;
+              max-height: 100vh;
+              overflow-y: auto;
+              padding: 1rem;
+          }
+
+          #pageInfoOverlaySidebarButton,
+          #pageInfoFloatingSidebarToggle {
+              bottom: 6rem;
+              top: auto;
+              right: 1rem;
+              left: auto;
+              position: fixed;
+          }
+
+          #modalSidebar {
+              width: 0;
+              transform: translateX(-100%);
+              opacity: 0;
+              max-height: 100vh;
+          }
+
+          #modalSidebar.open {
+              width: 80vw;
+              transform: translateX(0);
+              opacity: 1;
+              box-shadow: 4px 0 40px rgba(0, 0, 0, 0.6);
+              max-height: 90vh;
+          }
+
+          #modalSidebarInner {
+              max-height: calc(100vh - 4rem);
+              overflow-y: auto;
+              padding: 1rem;
+          }
+
+          #modalSidebarToggle {
+              bottom: 6rem;
+              right: 1.25rem;
+              left: auto;
+              animation: float 2s ease-in-out infinite;
+          }
+
+          #mBackBtn {
+              top: 1rem;
+              left: 1rem;
+              z-index: 280;
+          }
+      }
+
       .hide-scroll::-webkit-scrollbar {
           display: none;
       }

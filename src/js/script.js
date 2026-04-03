@@ -70,7 +70,109 @@ function checkPWADisplay() {
         if (crd) crd.classList.remove('hidden');
     }
 }
-window.addEventListener('DOMContentLoaded', checkPWADisplay);
+window.addEventListener('DOMContentLoaded', () => {
+    checkPWADisplay();
+    const sidebarBackdrop = document.getElementById('modalSidebarBackdrop');
+    const pageSidebarBackdrop = document.getElementById('pageInfoSidebarBackdrop');
+    const modalHoverArea = document.getElementById('modalSidebarHoverArea');
+    const pageInfoHoverArea = document.getElementById('pageInfoSidebarHoverArea');
+    const modalSidebar = document.getElementById('modalSidebar');
+    const pageInfoSidebar = document.getElementById('pageInfoSidebar');
+    const inlineModalHomeBtn = document.querySelector('button[onclick="closeModal(); navigate(\'home\')"]');
+    
+    if (inlineModalHomeBtn) {
+        inlineModalHomeBtn.setAttribute('onclick', "navigateFromModal('home')");
+    }
+
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener('click', () => hideModalSidebar(true));
+    }
+    if (pageSidebarBackdrop) {
+        pageSidebarBackdrop.addEventListener('click', () => hidePageInfoSidebar(true));
+    }
+
+    if (modalHoverArea && modalSidebar) {
+        modalHoverArea.addEventListener('mouseenter', () => {
+            showModalSidebar();
+            modalSidebar.dataset.hoverActive = 'true';
+        });
+        modalHoverArea.addEventListener('mouseleave', () => {
+            if (modalSidebar.dataset.userOpen !== 'true') hideModalSidebar();
+        });
+        modalSidebar.addEventListener('mouseenter', () => {
+            modalSidebar.dataset.hoverActive = 'true';
+        });
+        modalSidebar.addEventListener('mouseleave', () => {
+            if (modalSidebar.dataset.userOpen !== 'true') hideModalSidebar();
+        });
+    }
+
+    if (pageInfoHoverArea && pageInfoSidebar) {
+        pageInfoHoverArea.addEventListener('mouseenter', () => {
+            showPageInfoSidebar();
+            pageInfoSidebar.dataset.hoverActive = 'true';
+        });
+        pageInfoHoverArea.addEventListener('mouseleave', () => {
+            if (pageInfoSidebar.dataset.userOpen !== 'true') hidePageInfoSidebar();
+        });
+        pageInfoSidebar.addEventListener('mouseenter', () => {
+            pageInfoSidebar.dataset.hoverActive = 'true';
+        });
+        pageInfoSidebar.addEventListener('mouseleave', () => {
+            if (pageInfoSidebar.dataset.userOpen !== 'true') hidePageInfoSidebar();
+        });
+    }
+
+    function _safeContains(el, target) {
+        return el && typeof el.contains === 'function' ? el.contains(target) : false;
+    }
+
+    // Auto-close sidebar when user hovers outside it.
+    document.addEventListener('mousemove', function (event) {
+        var pageInfoSidebar = document.getElementById('pageInfoSidebar');
+        var modalSidebar = document.getElementById('modalSidebar');
+        var target = event.target;
+
+        if (pageInfoSidebar && pageInfoSidebar.classList.contains('open')) {
+            var keepOpen = _safeContains(pageInfoSidebar, target) ||
+                _safeContains(document.getElementById('pageInfoSidebarHoverArea'), target) ||
+                _safeContains(document.getElementById('pageInfoSidebarToggle'), target) ||
+                _safeContains(document.getElementById('pageInfoOverlaySidebarButton'), target);
+            if (!keepOpen) hidePageInfoSidebar(true);
+        }
+
+        if (modalSidebar && modalSidebar.classList.contains('open')) {
+            var keepModalOpen = _safeContains(modalSidebar, target) ||
+                _safeContains(document.getElementById('modalSidebarHoverArea'), target) ||
+                _safeContains(document.getElementById('modalSidebarToggle'), target);
+            if (!keepModalOpen) hideModalSidebar(true);
+        }
+    });
+
+    document.addEventListener('click', function (event) {
+        var pageInfoSidebar = document.getElementById('pageInfoSidebar');
+        var modalSidebar = document.getElementById('modalSidebar');
+
+        if (pageInfoSidebar && pageInfoSidebar.classList.contains('open')) {
+            var keepOpen = _safeContains(pageInfoSidebar, event.target) ||
+                _safeContains(document.getElementById('pageInfoSidebarToggle'), event.target) ||
+                _safeContains(document.getElementById('pageInfoOverlaySidebarButton'), event.target);
+            if (!keepOpen) hidePageInfoSidebar(true);
+        }
+
+        if (modalSidebar && modalSidebar.classList.contains('open')) {
+            var keepModalOpen = _safeContains(modalSidebar, event.target) ||
+                _safeContains(document.getElementById('modalSidebarToggle'), event.target);
+            if (!keepModalOpen) hideModalSidebar(true);
+        }
+    });
+
+    // Ensure nav icons route correctly by explicit route data binding.
+    if (typeof window.initNavRouting === 'function') {
+        window.initNavRouting();
+    }
+});
+
 window.matchMedia('(display-mode: standalone)').addEventListener('change', checkPWADisplay);
 
 // Permanent hide on successful PWA install
@@ -675,9 +777,37 @@ window.checkScrollLock = function () {
     const modalIds = [
         'modal', 'personModal', 'sagaModal', 'pickerModal', 'advancedIOModal',
         'networkPurgeModal', 'factoryResetModal', 'watchModal', 'watchOptionsModal',
-        'qrScannerModal', 'neuralDiffOverlay', 'purgeModal', 'temporalArchiveModal' // <--- Added here
+        'qrScannerModal', 'neuralDiffOverlay', 'purgeModal', 'temporalArchiveModal'
     ];
 
+    // Mirror sidebar nav into modal sidebar for item info modal
+    var sidebarNav = document.getElementById('sidebarNav');
+    var modalSidebarNav = document.getElementById('modalSidebarNav');
+    
+    if (sidebarNav && modalSidebarNav) {
+        modalSidebarNav.innerHTML = sidebarNav.innerHTML;
+        modalSidebarNav.querySelectorAll('button').forEach(function (btn) {
+            // Extract the target route from the original onclick
+            var baseOnclick = btn.getAttribute('onclick') || '';
+            btn.removeAttribute('onclick'); // Prevent double firing
+            
+            var routeMatch = baseOnclick.match(/navigate\('([^']+)'\)/);
+
+            btn.onclick = function (e) {
+                e.stopPropagation();
+                e.preventDefault();
+                
+                // If it's a navigation button, use our safe router
+                if (routeMatch && routeMatch[1]) {
+                    navigateFromModal(routeMatch[1]);
+                } else {
+                    // Fallback for non-navigation buttons
+                    if (baseOnclick) eval(baseOnclick);
+                    closeModal();
+                }
+            };
+        });
+    }
 
     const isAnyModalOpen = modalIds.some(id => {
         const el = document.getElementById(id);
@@ -2630,12 +2760,54 @@ function closeActorMode(e) {
     // Fetch raw discovery data again
     fetchDiscoverData(false);
 }
+// --- ENHANCED CLOCK ENGINE ---
+let is24Hour = localStorage.getItem('cp_clock_format') !== '12';
+
+window.toggleClockFormat = function() {
+    is24Hour = !is24Hour;
+    localStorage.setItem('cp_clock_format', is24Hour ? '24' : '12');
+    updateClockDisplay(); // Force instant visual update
+};
+
+function updateClockDisplay() {
+    const timeEl = document.getElementById('clockTime');
+    const secEl = document.getElementById('clockSeconds');
+    const dateEl = document.getElementById('clockDate');
+    const ampmEl = document.getElementById('clockAmPm');
+    
+    if (!timeEl) return; // Failsafe if DOM isn't ready
+
+    const d = new Date();
+    let hours = d.getHours();
+    let ampm = '';
+    
+    // Format 12h/24h Logic
+    if (!is24Hour) {
+        ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // Convert '0' to '12'
+    }
+    
+    // Add leading zeros
+    hours = String(hours).padStart(2, '0');
+    const minutes = String(d.getMinutes()).padStart(2, '0');
+    const seconds = String(d.getSeconds()).padStart(2, '0');
+    
+    // Format Date (e.g., "FRI, APR 03")
+    const options = { weekday: 'short', month: 'short', day: '2-digit' };
+    const dateStr = d.toLocaleDateString('en-US', options).toUpperCase();
+    
+    // Render to DOM (Using animate-pulse for a subtle ticking colon)
+    timeEl.innerHTML = `${hours}<span class="animate-pulse opacity-80 text-pulse mx-[1px]">:</span>${minutes}`;
+    
+    if (secEl) secEl.innerText = seconds;
+    if (ampmEl) ampmEl.innerText = ampm;
+    if (dateEl) dateEl.innerText = dateStr;
+}
 
 function startClock() {
-    setInterval(() => {
-        const d = new Date();
-        document.getElementById('clock').innerText = d.toLocaleTimeString('en-US', { hour12: false });
-    }, 1000);
+    updateClockDisplay(); // Initialize immediately to prevent "00:00" flash
+    setInterval(updateClockDisplay, 1000);
 }
 function save(skipBroadcast = false) {
     localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db));
@@ -2671,7 +2843,7 @@ async function saveWithSagaContext(item, type) {
     state.myList.push(item);
     saveToLocalStorage();
 }
-function closeModal(fromPopState = false) {
+function closeModal(fromPopState = false, skipHistory = false) {
     state.modalHistory = []; // Wipe history on full close
     document.getElementById('mBackBtn').classList.add('hidden');
     document.getElementById('modal').classList.add('hidden');
@@ -2684,8 +2856,15 @@ function closeModal(fromPopState = false) {
     }
 
     // If closed manually via X button, reverse the history to clean the stack
-    if (!fromPopState) window.history.back();
+    if (!fromPopState && !skipHistory) window.history.back();
 }
+window.navigateFromModal = function(route) {
+    closeModal(false, true); // Close the modal but SKIP the history.back()
+    
+    // Cleanly replace the modal's state in the browser history with the new target page
+    window.history.replaceState(null, null, `#/${secureEncode(route)}`);
+    navigate(route, true); // Navigate, but tell it to skip pushing state since we just replaced it
+};
 
 function closePersonModal(fromPopState = false) {
     document.getElementById('personModal').classList.add('hidden');
@@ -2999,6 +3178,7 @@ function openAdvancedIO(mode) {
     }
 
     modal.classList.remove('hidden');
+
 }
 
 function executeAdvancedExport() {
@@ -5048,7 +5228,11 @@ let inlineSearchTimer = null;
 
 async function openSaga(id, isEditing = false) {
     const modal = document.getElementById('sagaModal');
-    if (modal) modal.scrollTop = 0;
+    if (modal) {
+        modal.scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (typeof checkScrollLock === 'function') checkScrollLock();
 
     const isCustomId = String(id).startsWith('custom_');
 
@@ -6610,11 +6794,62 @@ window.openPageInfo = function (pageId) {
     document.getElementById('pageInfoList').innerHTML = data.features.map(function (f) {
         return '<li class="flex items-start gap-3 text-[11px] text-gray-300 leading-relaxed"><i class="fas fa-chevron-right text-[8px] mt-1 shrink-0" style="color:' + data.color + '"></i><span>' + f + '</span></li>';
     }).join('');
+
+    // Sync sidebar links into the info modal sidebar
+    var sourceNav = document.getElementById('sidebarNav');
+    var targetNav = document.getElementById('pageInfoSidebarNav');
+    if (sourceNav && targetNav) {
+        targetNav.innerHTML = sourceNav.innerHTML;
+
+        // Build deterministic nav behavior so icon clicks route correctly
+        targetNav.querySelectorAll('button').forEach(function (btn) {
+            var oldOnclick = btn.getAttribute('onclick') || '';
+            var routeMatch = oldOnclick.match(/navigate\('([^']+)'\)/);
+            if (routeMatch && routeMatch[1]) {
+                btn.dataset.route = routeMatch[1];
+            }
+            btn.removeAttribute('onclick');
+        });
+
+            // bind nav buttons from the cloned list to correct behavior
+        bindSidebarNavButtons(targetNav, closePageInfo);
+
+    }
+
     overlay.classList.remove('hidden');
     overlay.classList.add('flex');
     var card = document.getElementById('pageInfoCard');
     if (card) card.scrollTop = 0;
     document.body.style.overflow = 'hidden';
+
+    hidePageInfoSidebar(true);
+};
+
+function bindSidebarNavButtons(navEl, closeCallback) {
+    if (!navEl) return;
+    navEl.querySelectorAll('button').forEach(function (btn) {
+        var route = btn.dataset.route;
+        if (!route) {
+            var onclick = btn.getAttribute('onclick') || '';
+            var m = onclick.match(/navigate\('([^']+)'\)/);
+            if (m && m[1]) route = m[1];
+        }
+        if (route) {
+            btn.dataset.route = route;
+            btn.onclick = function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                navigate(route);
+                if (typeof closeCallback === 'function') closeCallback();
+            };
+        }
+    });
+}
+
+window.initNavRouting = function () {
+    bindSidebarNavButtons(document.getElementById('sidebarNav'));
+    bindSidebarNavButtons(document.getElementById('pageInfoSidebarNav'), closePageInfo);
+    bindSidebarNavButtons(document.getElementById('modalSidebarNav'), closeModal);
 };
 
 window.closePageInfo = function () {
@@ -6622,7 +6857,163 @@ window.closePageInfo = function () {
     overlay.classList.add('hidden');
     overlay.classList.remove('flex');
     document.body.style.overflow = 'auto';
+    hidePageInfoSidebar(true);
 };
+
+window.togglePageInfoSidebar = function () {
+    var sidebar = document.getElementById('pageInfoSidebar');
+    if (!sidebar) return;
+
+    var isOpen = sidebar.classList.contains('open');
+    if (isOpen) {
+        sidebar.dataset.userOpen = 'false';
+        hidePageInfoSidebar(true);
+    } else {
+        sidebar.dataset.userOpen = 'true';
+        showPageInfoSidebar({ userTriggered: true });
+    }
+};
+
+window.onPageInfoSidebarHover = function (isHover) {
+    var sidebar = document.getElementById('pageInfoSidebar');
+    if (!sidebar) return;
+    if (isHover) {
+        showPageInfoSidebar();
+    } else {
+        hidePageInfoSidebar(true);
+    }
+};
+
+window.showPageInfoSidebar = function (options) {
+    var sidebar = document.getElementById('pageInfoSidebar');
+    var inner = document.getElementById('pageInfoSidebarInner');
+    var backdrop = document.getElementById('pageInfoSidebarBackdrop');
+    var toggleIcon = document.querySelector('#pageInfoSidebarToggle i');
+    var card = document.getElementById('pageInfoCard');
+    if (!sidebar || !inner) return;
+
+    sidebar.classList.add('open');
+    if (options && options.userTriggered) {
+        sidebar.dataset.userOpen = 'true';
+    }
+
+    if (window.innerWidth <= 1024) {
+        if (backdrop) backdrop.classList.add('active');
+    }
+
+    if (card) {
+        card.style.transition = 'transform 0.25s ease';
+        card.style.transform = 'translateX(230px)';
+    }
+
+    inner.classList.add('visible');
+    inner.style.opacity = '1';
+    inner.style.pointerEvents = 'auto';
+
+    if (toggleIcon) toggleIcon.className = 'fas fa-chevron-left';
+};
+
+window.hidePageInfoSidebar = function (force) {
+    var sidebar = document.getElementById('pageInfoSidebar');
+    var inner = document.getElementById('pageInfoSidebarInner');
+    var backdrop = document.getElementById('pageInfoSidebarBackdrop');
+    var toggleIcon = document.querySelector('#pageInfoSidebarToggle i');
+    var card = document.getElementById('pageInfoCard');
+    if (!sidebar || !inner) return;
+
+    sidebar.classList.remove('open');
+    sidebar.dataset.userOpen = 'false';
+
+    if (window.innerWidth <= 1024) {
+        if (backdrop) backdrop.classList.remove('active');
+    }
+
+    if (card) {
+        card.style.transform = 'translateX(0)';
+    }
+
+    delete sidebar.dataset.hoverActive;
+    inner.classList.remove('visible');
+    inner.style.opacity = '0';
+    inner.style.pointerEvents = 'none';
+    if (toggleIcon) toggleIcon.className = 'fas fa-chevron-right';
+};
+
+window.toggleModalSidebar = function () {
+    var sidebar = document.getElementById('modalSidebar');
+    var inner = document.getElementById('modalSidebarInner');
+    if (!sidebar || !inner) return;
+
+    var isOpen = sidebar.classList.contains('open');
+    if (isOpen) {
+        sidebar.dataset.userOpen = 'false';
+        hideModalSidebar(true);
+    } else {
+        sidebar.dataset.userOpen = 'true';
+        showModalSidebar({ userTriggered: true });
+    }
+};
+
+window.showModalSidebar = function (options) {
+    var sidebar = document.getElementById('modalSidebar');
+    var inner = document.getElementById('modalSidebarInner');
+    var backdrop = document.getElementById('modalSidebarBackdrop');
+    var modal = document.getElementById('modal');
+    if (!sidebar || !inner) return;
+
+    sidebar.classList.add('open');
+    if (options && options.userTriggered) {
+        sidebar.dataset.userOpen = 'true';
+    }
+
+    if (window.innerWidth <= 1024) {
+        sidebar.style.width = '80vw';
+        sidebar.style.transform = 'translateX(0)';
+        if (backdrop) backdrop.classList.add('active');
+    } else {
+        sidebar.style.width = '220px';
+        sidebar.style.transform = 'translateX(0)';
+        if (modal) {
+            modal.style.transition = 'padding-left 0.25s ease';
+            modal.style.paddingLeft = '220px';
+            modal.classList.add('with-sidebar');
+        }
+    }
+    inner.style.opacity = '1';
+    inner.style.pointerEvents = 'auto';
+};
+
+window.hideModalSidebar = function (force) {
+    var sidebar = document.getElementById('modalSidebar');
+    var inner = document.getElementById('modalSidebarInner');
+    var backdrop = document.getElementById('modalSidebarBackdrop');
+    var modal = document.getElementById('modal');
+    if (!sidebar || !inner) return;
+
+    if (!force && sidebar.dataset.userOpen === 'true') {
+        return; // keep open when user chose it explicitly
+    }
+
+    sidebar.classList.remove('open');
+    sidebar.dataset.userOpen = 'false';
+
+    if (window.innerWidth <= 1024) {
+        sidebar.style.width = '0';
+        sidebar.style.transform = 'translateX(-100%)';
+        if (backdrop) backdrop.classList.remove('active');
+    } else {
+        sidebar.style.width = '0';
+        sidebar.style.transform = 'translateX(-100%)';
+        if (modal) {
+            modal.style.paddingLeft = '0';
+            modal.classList.remove('with-sidebar');
+        }
+    }
+
+    inner.style.opacity = '0';
+    inner.style.pointerEvents = 'none';
+};
+
 
 window.scrollToTop = function () { window.scrollTo({ top: 0, behavior: 'smooth' }); };
 window.scrollToBottom = function () { window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); };
