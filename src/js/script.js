@@ -1319,6 +1319,30 @@ function nextHero() {
     updateHeroContent();
 }
 
+// Modal Layout Controller
+window.updateModalTopLeftButtons = function() {
+    const hasHistory = state.modalHistory && state.modalHistory.length > 0;
+    const backBtn = document.getElementById('mBackBtn');
+    const sidebarToggle = document.getElementById('modalSidebarToggle');
+    const isSidebarOpen = document.getElementById('modalSidebar') && document.getElementById('modalSidebar').classList.contains('open');
+
+    if (backBtn) backBtn.classList.toggle('hidden', !hasHistory);
+
+    if (sidebarToggle) {
+        if (!hasHistory) {
+            // Default position: Top Left
+            sidebarToggle.className = "fixed top-6 left-6 lg:top-10 lg:left-10 z-[290] w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-br from-[#7f1d8c] via-[#d946ef] to-[#ec4899] text-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(236,72,153,0.45)] hover:scale-110 transition-all duration-300";
+        } else {
+            // Shifted position when Back Button is present: Bottom Left
+            sidebarToggle.className = "fixed bottom-6 left-6 z-[290] w-12 h-12 bg-gradient-to-br from-[#7f1d8c] via-[#d946ef] to-[#ec4899] text-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(236,72,153,0.45)] hover:scale-110 transition-all duration-300";
+        }
+        
+        sidebarToggle.innerHTML = isSidebarOpen 
+            ? '<i class="fas fa-times rotate-90 transition-transform duration-300"></i>' 
+            : '<i class="fas fa-stream rotate-0 transition-transform duration-300"></i>';
+    }
+};
+
 // Modal Logic
 async function openModal(id, type, isBack = false) {
     let modalCountdownInterval;
@@ -1341,7 +1365,7 @@ async function openModal(id, type, isBack = false) {
     }
 
 
-    document.getElementById('mBackBtn').classList.toggle('hidden', state.modalHistory.length === 0);
+    updateModalTopLeftButtons();
 
     let details, credits, vids;
 
@@ -2845,7 +2869,7 @@ async function saveWithSagaContext(item, type) {
 }
 function closeModal(fromPopState = false, skipHistory = false) {
     state.modalHistory = []; // Wipe history on full close
-    document.getElementById('mBackBtn').classList.add('hidden');
+    updateModalTopLeftButtons();
     document.getElementById('modal').classList.add('hidden');
 
     checkScrollLock(); // Replaces document.body.style.overflow = 'auto'
@@ -6981,6 +7005,10 @@ window.showModalSidebar = function (options) {
     }
     inner.style.opacity = '1';
     inner.style.pointerEvents = 'auto';
+    
+    // Add this to animate to an 'X'
+    var toggleIcon = document.querySelector('#modalSidebarToggle i');
+    if (toggleIcon) toggleIcon.className = 'fas fa-times rotate-90 transition-transform duration-300';
 };
 
 window.hideModalSidebar = function (force) {
@@ -7012,6 +7040,10 @@ window.hideModalSidebar = function (force) {
 
     inner.style.opacity = '0';
     inner.style.pointerEvents = 'none';
+    
+    // Add this to animate back to the 'Stream' icon
+    var toggleIcon = document.querySelector('#modalSidebarToggle i');
+    if (toggleIcon) toggleIcon.className = 'fas fa-stream rotate-0 transition-transform duration-300';
 };
 
 

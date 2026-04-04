@@ -1666,14 +1666,14 @@
     <div id="modal" class="fixed inset-0 z-[260] hidden bg-dark overflow-y-auto">
 
         <button id="modalSidebarToggle" onclick="toggleModalSidebar()"
-            class="fixed bottom-6 left-6 z-[270] w-12 h-12 bg-gradient-to-br from-[#7f1d8c] via-[#d946ef] to-[#ec4899] text-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(236,72,153,0.45)] hover:scale-110 transition-transform duration-300">
-            <i class="fas fa-stream"></i>
+            class="fixed top-6 left-6 lg:top-10 lg:left-10 z-[290] w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-br from-[#7f1d8c] via-[#d946ef] to-[#ec4899] text-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(236,72,153,0.45)] hover:scale-110 transition-all duration-300">
+            <i class="fas fa-stream rotate-0 transition-transform duration-300"></i>
         </button>
 
         <div id="modalSidebarHoverArea" class="fixed left-0 top-0 h-full w-4 z-[269] cursor-pointer"></div>
 
         <aside id="modalSidebar" class="fixed left-0 top-0 h-full w-0 bg-[#0a0c12]/95 border-r border-white/10 z-[260] overflow-hidden transition-all duration-300">
-            <div id="modalSidebarInner" class="opacity-0 pointer-events-none transition-opacity duration-300 p-4">
+            <div id="modalSidebarInner" class="opacity-0 pointer-events-none transition-opacity duration-300 p-4 pt-24 lg:pt-32">
                 <nav id="modalSidebarNav" class="space-y-2"></nav>
             </div>
         </aside>
@@ -1691,7 +1691,7 @@
             </button>
 
             <button id="mBackBtn" onclick="modalGoBack()"
-                class="fixed top-6 left-20 lg:top-10 lg:left-20 z-[270] w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-[#22c55e] to-[#14b8a6] text-white rounded-2xl flex items-center justify-center border border-white/20 shadow-xl hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(34,197,94,0.35)] transition-all duration-300 hidden"
+                class="fixed top-6 left-6 lg:top-10 lg:left-10 z-[270] w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-r from-[#22c55e] to-[#14b8a6] text-white rounded-full lg:rounded-2xl flex items-center justify-center border border-white/20 shadow-xl hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(34,197,94,0.35)] transition-all duration-300 hidden"
                 aria-label="Go back">
                 <i class="fas fa-arrow-left-long"></i>
             </button>
@@ -1703,7 +1703,7 @@
             </button>
 
             <div id="modalSearchWrapper"
-                class="fixed top-6 left-6 lg:top-10 lg:left-28 z-[270] transition-all duration-500 ease-in-out">
+                class="fixed top-6 left-[72px] lg:top-10 lg:left-28 z-[270] transition-all duration-500 ease-in-out">
 
                 <div class="relative group flex items-center">
 

@@ -366,15 +366,10 @@
           }
 
           #modalSidebarToggle {
-              bottom: 6rem;
-              right: 1.25rem;
-              left: auto;
               animation: float 2s ease-in-out infinite;
           }
 
           #mBackBtn {
-              top: 1rem;
-              left: 1rem;
               z-index: 280;
           }
       }
