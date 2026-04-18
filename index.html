@@ -269,7 +269,7 @@
                 <i class="fas fa-hand-pointer mr-2"></i>
                 <span>Swipe</span>
             </div>
-            <nav id="sidebarNav" class="flex-1 space-y-1 mt-4 w-64 overflow-y-auto overflow-x-hidden hide-scroll pb-6">
+            <nav id="sidebarNav" class="flex-1 space-y-2 mt-4 w-64 overflow-y-auto overflow-x-hidden hide-scroll pb-6">
                 <button onclick="navigate('home')"
                     class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all active">
                     <i class="fas fa-home text-xl w-6 text-center shrink-0"></i>
@@ -280,11 +280,11 @@
                     class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
                     <i class="fas fa-search text-xl w-6 text-center shrink-0"></i>
                     <span
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Search</span>
+                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Discover</span>
                 </button>
                 <button onclick="navigate('mylist')"
                     class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
-                    <i class="fas fa-layer-group text-xl w-6 text-center shrink-0"></i>
+                    <i class="fas fa-bookmark text-xl w-6 text-center shrink-0"></i>
                     <span
                         class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">My
                         List</span>
@@ -296,72 +296,53 @@
                         class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Coming
                         Soon</span>
                 </button>
-
-                <button onclick="navigate('rhythmlab')"
-                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
-                    <i class="fas fa-layer-group text-xl w-6 text-center shrink-0"></i>
-                    <span
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Collection</span>
-                </button>
-
                 <button onclick="navigate('sync')"
-                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
+                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-[#22c55e] transition-all">
                     <i class="fas fa-magic text-xl w-6 text-center shrink-0"></i>
                     <span
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">For
+                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-black uppercase tracking-widest whitespace-nowrap">For
                         You</span>
                 </button>
-                <button onclick="navigate('sources')"
-                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
-                    <i class="fas fa-satellite-dish text-xl w-6 text-center shrink-0"></i>
+
+                <button onclick="toggleAppHub()"
+                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-white transition-all mt-4 border-t border-white/10 pt-6">
+                    <i class="fas fa-th-large text-xl w-6 text-center shrink-0"></i>
                     <span
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Sources</span>
-                </button>
-                <button onclick="navigate('masterpieces')"
-                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
-                    <i class="fas fa-crown text-xl w-6 text-center shrink-0 text-yellow-500"></i>
-                    <span
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Masterpieces</span>
-                </button>
-                <button onclick="navigate('sagamatrix')"
-                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
-                    <i class="fas fa-cubes text-xl w-6 text-center shrink-0"></i>
-                    <span
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Saga
-                        Matrix</span>
-                </button>
-                <button onclick="navigate('neurallink')"
-                    class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all">
-                    <i class="fas fa-microchip text-xl w-6 text-center shrink-0"></i>
-                    <span
-                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">Neural
-                        Link</span>
+                        class="opacity-0 group-hover:opacity-100 transition-all duration-300 ml-6 text-[11px] font-black uppercase tracking-widest whitespace-nowrap">More
+                        Tools</span>
                 </button>
             </nav>
             <div class="nav-edge-mask pointer-events-none lg:hidden"></div>
         </div>
-        <div id="clockContainer" onclick="toggleClockFormat()" title="Click to toggle 12h/24h format" class="p-8 mt-auto opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden lg:block whitespace-nowrap overflow-hidden border-t border-white/5 relative bg-gradient-to-t from-black/50 to-transparent cursor-pointer group/clock">
-    
-    <div class="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-pulse to-transparent opacity-20 group-hover/clock:opacity-100 transition-opacity duration-500"></div>
-    
-    <div class="flex items-center justify-between mb-3">
-        <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 rounded-full bg-[#22c55e] shadow-[0_0_8px_#22c55e]"></div>
-            <span class="text-[8px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover/clock:text-white transition-colors">Clock</span>
+        <div id="clockContainer" onclick="toggleClockFormat()" title="Click to toggle 12h/24h format"
+            class="p-8 mt-auto opacity-0 group-hover:opacity-100 transition-opacity duration-500 hidden lg:block whitespace-nowrap overflow-hidden border-t border-white/5 relative bg-gradient-to-t from-black/50 to-transparent cursor-pointer group/clock">
+
+            <div
+                class="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-pulse to-transparent opacity-20 group-hover/clock:opacity-100 transition-opacity duration-500">
+            </div>
+
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-1.5 h-1.5 rounded-full bg-[#22c55e] shadow-[0_0_8px_#22c55e]"></div>
+                    <span
+                        class="text-[8px] font-black uppercase text-gray-500 tracking-[0.3em] group-hover/clock:text-white transition-colors">Clock</span>
+                </div>
+                <i
+                    class="fas fa-exchange-alt text-[9px] text-gray-600 opacity-0 group-hover/clock:opacity-100 transition-opacity"></i>
+            </div>
+
+            <div class="flex items-baseline gap-1">
+                <div id="clockTime"
+                    class="text-3xl font-black italic tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">
+                    00:00</div>
+                <div id="clockSeconds" class="text-sm font-black text-pulse tracking-widest ml-1">00</div>
+                <div id="clockAmPm" class="text-[10px] font-black text-gray-500 ml-1 mb-1 tracking-wider"></div>
+            </div>
+
+            <div id="clockDate" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                MON, JAN 01
+            </div>
         </div>
-        <i class="fas fa-exchange-alt text-[9px] text-gray-600 opacity-0 group-hover/clock:opacity-100 transition-opacity"></i>
-    </div>
-    
-    <div class="flex items-baseline gap-1">
-        <div id="clockTime" class="text-3xl font-black italic tracking-tighter text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">00:00</div>
-        <div id="clockSeconds" class="text-sm font-black text-pulse tracking-widest ml-1">00</div>
-        <div id="clockAmPm" class="text-[10px] font-black text-gray-500 ml-1 mb-1 tracking-wider"></div>
-    </div>
-    
-    <div id="clockDate" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-        MON, JAN 01
-    </div>
-</div>
     </aside>
 
     <header
@@ -1672,13 +1653,16 @@
 
         <div id="modalSidebarHoverArea" class="fixed left-0 top-0 h-full w-4 z-[269] cursor-pointer"></div>
 
-        <aside id="modalSidebar" class="fixed left-0 top-0 h-full w-0 bg-[#0a0c12]/95 border-r border-white/10 z-[260] overflow-hidden transition-all duration-300">
-            <div id="modalSidebarInner" class="opacity-0 pointer-events-none transition-opacity duration-300 p-4 pt-24 lg:pt-32">
+        <aside id="modalSidebar"
+            class="fixed left-0 top-0 h-full w-0 bg-[#0a0c12]/95 border-r border-white/10 z-[260] overflow-hidden transition-all duration-300">
+            <div id="modalSidebarInner"
+                class="opacity-0 pointer-events-none transition-opacity duration-300 p-4 pt-24 lg:pt-32">
                 <nav id="modalSidebarNav" class="space-y-2"></nav>
             </div>
         </aside>
 
-        <div id="modalSidebarBackdrop" class="fixed inset-0 bg-black/50 z-[255] opacity-0 pointer-events-none transition-all duration-300"></div>
+        <div id="modalSidebarBackdrop"
+            class="fixed inset-0 bg-black/50 z-[255] opacity-0 pointer-events-none transition-all duration-300"></div>
 
         <div class="relative h-[40vh] md:h-[50vh] lg:h-[60vh]">
 
@@ -2348,10 +2332,14 @@
         <div id="pageInfoSidebarHoverArea" class="fixed left-0 top-0 h-full w-6 z-[419] cursor-pointer"></div>
 
         <div id="pageInfoSidebarWrapper" class="fixed left-8 top-20 bottom-20 z-[410] flex items-start">
-            <div id="pageInfoSidebarBackdrop" class="fixed inset-0 bg-black/60 z-[415] opacity-0 pointer-events-none transition-all duration-300"></div>
-            <div id="pageInfoSidebar" class="relative w-14 h-full rounded-3xl bg-[#0a0c12]/95 border border-white/10 backdrop-blur-2xl overflow-hidden transition-all duration-300"
+            <div id="pageInfoSidebarBackdrop"
+                class="fixed inset-0 bg-black/60 z-[415] opacity-0 pointer-events-none transition-all duration-300">
+            </div>
+            <div id="pageInfoSidebar"
+                class="relative w-14 h-full rounded-3xl bg-[#0a0c12]/95 border border-white/10 backdrop-blur-2xl overflow-hidden transition-all duration-300"
                 onmouseenter="onPageInfoSidebarHover(true)" onmouseleave="onPageInfoSidebarHover(false)">
-                <div id="pageInfoSidebarInner" class="absolute inset-0 p-4 overflow-y-auto text-white opacity-0 pointer-events-none transition-all duration-300">
+                <div id="pageInfoSidebarInner"
+                    class="absolute inset-0 p-4 overflow-y-auto text-white opacity-0 pointer-events-none transition-all duration-300">
                     <nav id="pageInfoSidebarNav" class="space-y-1"></nav>
                 </div>
                 <button id="pageInfoSidebarToggle" onclick="togglePageInfoSidebar()"
@@ -2474,7 +2462,57 @@
             <i class="fas fa-download"></i> Install Now
         </button>
     </div>
+    <div id="appHubModal" onclick="toggleAppHub()"
+        class="fixed inset-0 z-[600] hidden flex items-center justify-center bg-black/80 backdrop-blur-2xl p-4 transition-all opacity-0">
+        <div onclick="event.stopPropagation()"
+            class="relative w-full max-w-4xl bg-dark/50 border border-white/10 rounded-[40px] shadow-2xl p-8 md:p-12 transform scale-95 transition-all duration-300">
+            <button onclick="toggleAppHub()"
+                class="absolute top-6 right-6 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-pulse transition-all">
+                <i class="fas fa-times"></i>
+            </button>
 
+            <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white mb-2">App <span
+                    class="text-pulse">Tools</span></h2>
+            <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-10">System Settings & Collections
+            </p>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                <button onclick="toggleAppHub(); navigate('rhythmlab')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-pulse hover:bg-pulse/10 transition-all group text-left">
+                    <i
+                        class="fas fa-layer-group text-2xl text-pulse mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Full Library</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Advanced Grid View</div>
+                </button>
+                <button onclick="toggleAppHub(); navigate('sagamatrix')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-[#a855f7] hover:bg-[#a855f7]/10 transition-all group text-left">
+                    <i class="fas fa-cubes text-2xl text-[#a855f7] mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Franchises</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Movie Collections</div>
+                </button>
+                <button onclick="toggleAppHub(); navigate('masterpieces')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-yellow-500 hover:bg-yellow-500/10 transition-all group text-left">
+                    <i
+                        class="fas fa-crown text-2xl text-yellow-500 mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Top Rated</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Highest Scores</div>
+                </button>
+                <button onclick="toggleAppHub(); navigate('neurallink')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-[#3b82f6] hover:bg-[#3b82f6]/10 transition-all group text-left">
+                    <i
+                        class="fas fa-network-wired text-2xl text-[#3b82f6] mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Device Sync</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Connect Phones & PCs</div>
+                </button>
+                <button onclick="toggleAppHub(); navigate('sources')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-gray-300 hover:bg-white/10 transition-all group text-left">
+                    <i class="fas fa-server text-2xl text-gray-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Video Sources</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Manage Link Providers</div>
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

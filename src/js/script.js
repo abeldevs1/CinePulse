@@ -79,7 +79,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const modalSidebar = document.getElementById('modalSidebar');
     const pageInfoSidebar = document.getElementById('pageInfoSidebar');
     const inlineModalHomeBtn = document.querySelector('button[onclick="closeModal(); navigate(\'home\')"]');
-    
+
     if (inlineModalHomeBtn) {
         inlineModalHomeBtn.setAttribute('onclick', "navigateFromModal('home')");
     }
@@ -783,20 +783,20 @@ window.checkScrollLock = function () {
     // Mirror sidebar nav into modal sidebar for item info modal
     var sidebarNav = document.getElementById('sidebarNav');
     var modalSidebarNav = document.getElementById('modalSidebarNav');
-    
+
     if (sidebarNav && modalSidebarNav) {
         modalSidebarNav.innerHTML = sidebarNav.innerHTML;
         modalSidebarNav.querySelectorAll('button').forEach(function (btn) {
             // Extract the target route from the original onclick
             var baseOnclick = btn.getAttribute('onclick') || '';
             btn.removeAttribute('onclick'); // Prevent double firing
-            
+
             var routeMatch = baseOnclick.match(/navigate\('([^']+)'\)/);
 
             btn.onclick = function (e) {
                 e.stopPropagation();
                 e.preventDefault();
-                
+
                 // If it's a navigation button, use our safe router
                 if (routeMatch && routeMatch[1]) {
                     navigateFromModal(routeMatch[1]);
@@ -1320,7 +1320,7 @@ function nextHero() {
 }
 
 // Modal Layout Controller
-window.updateModalTopLeftButtons = function() {
+window.updateModalTopLeftButtons = function () {
     const hasHistory = state.modalHistory && state.modalHistory.length > 0;
     const backBtn = document.getElementById('mBackBtn');
     const sidebarToggle = document.getElementById('modalSidebarToggle');
@@ -1336,9 +1336,9 @@ window.updateModalTopLeftButtons = function() {
             // Shifted position when Back Button is present: Bottom Left
             sidebarToggle.className = "fixed bottom-6 left-6 z-[290] w-12 h-12 bg-gradient-to-br from-[#7f1d8c] via-[#d946ef] to-[#ec4899] text-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(236,72,153,0.45)] hover:scale-110 transition-all duration-300";
         }
-        
-        sidebarToggle.innerHTML = isSidebarOpen 
-            ? '<i class="fas fa-times rotate-90 transition-transform duration-300"></i>' 
+
+        sidebarToggle.innerHTML = isSidebarOpen
+            ? '<i class="fas fa-times rotate-90 transition-transform duration-300"></i>'
             : '<i class="fas fa-stream rotate-0 transition-transform duration-300"></i>';
     }
 };
@@ -2122,7 +2122,41 @@ function checkReminders() {
         }
     });
 }
+async function refreshEpisodicReminders() {
+    let changed = false;
+    const now = Date.now();
 
+    for (let r of state.reminders) {
+        if (r.isEpisodic) {
+            const diff = new Date(r.date).getTime() - now;
+            const daysPassed = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+            // If the episode aired more than 24 hours ago, we need to fetch the next one
+            if (daysPassed < 0) {
+                try {
+                    const data = await fetchAPI(`/tv/${r.id}`);
+                    if (data.next_episode_to_air) {
+                        r.date = data.next_episode_to_air.air_date;
+                        r.nextSeason = data.next_episode_to_air.season_number;
+                        r.nextEp = data.next_episode_to_air.episode_number;
+                        r.statusText = null;
+                        changed = true;
+                    } else {
+                        // No future episodes listed
+                        r.statusText = (data.status === 'Ended' || data.status === 'Canceled')
+                            ? 'SERIES FINISHED'
+                            : 'SEASON FINISHED';
+                        changed = true;
+                    }
+                } catch (e) { console.warn("Failed to update reminder for", r.title); }
+            }
+        }
+    }
+
+    if (changed) {
+        localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
+    }
+}
 
 // Lab Engine
 function runLab() {
@@ -2787,7 +2821,7 @@ function closeActorMode(e) {
 // --- ENHANCED CLOCK ENGINE ---
 let is24Hour = localStorage.getItem('cp_clock_format') !== '12';
 
-window.toggleClockFormat = function() {
+window.toggleClockFormat = function () {
     is24Hour = !is24Hour;
     localStorage.setItem('cp_clock_format', is24Hour ? '24' : '12');
     updateClockDisplay(); // Force instant visual update
@@ -2798,32 +2832,32 @@ function updateClockDisplay() {
     const secEl = document.getElementById('clockSeconds');
     const dateEl = document.getElementById('clockDate');
     const ampmEl = document.getElementById('clockAmPm');
-    
+
     if (!timeEl) return; // Failsafe if DOM isn't ready
 
     const d = new Date();
     let hours = d.getHours();
     let ampm = '';
-    
+
     // Format 12h/24h Logic
     if (!is24Hour) {
         ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
         hours = hours ? hours : 12; // Convert '0' to '12'
     }
-    
+
     // Add leading zeros
     hours = String(hours).padStart(2, '0');
     const minutes = String(d.getMinutes()).padStart(2, '0');
     const seconds = String(d.getSeconds()).padStart(2, '0');
-    
+
     // Format Date (e.g., "FRI, APR 03")
     const options = { weekday: 'short', month: 'short', day: '2-digit' };
     const dateStr = d.toLocaleDateString('en-US', options).toUpperCase();
-    
+
     // Render to DOM (Using animate-pulse for a subtle ticking colon)
     timeEl.innerHTML = `${hours}<span class="animate-pulse opacity-80 text-pulse mx-[1px]">:</span>${minutes}`;
-    
+
     if (secEl) secEl.innerText = seconds;
     if (ampmEl) ampmEl.innerText = ampm;
     if (dateEl) dateEl.innerText = dateStr;
@@ -2882,9 +2916,9 @@ function closeModal(fromPopState = false, skipHistory = false) {
     // If closed manually via X button, reverse the history to clean the stack
     if (!fromPopState && !skipHistory) window.history.back();
 }
-window.navigateFromModal = function(route) {
+window.navigateFromModal = function (route) {
     closeModal(false, true); // Close the modal but SKIP the history.back()
-    
+
     // Cleanly replace the modal's state in the browser history with the new target page
     window.history.replaceState(null, null, `#/${secureEncode(route)}`);
     navigate(route, true); // Navigate, but tell it to skip pushing state since we just replaced it
@@ -2966,6 +3000,7 @@ function exportData() {
 let upcomingSearchTimer;
 
 async function loadUpcomingPage() {
+    await refreshEpisodicReminders();
     // 1. Render Tracked Radar immediately
     renderUpcomingRadar();
 
@@ -3047,8 +3082,19 @@ function renderUpcomingRadar() {
         epGrid.innerHTML = episodicReminders.map(r => {
             const diff = new Date(r.date).getTime() - new Date().getTime();
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-            const dayText = days <= 0 ? 'AVAILABLE NOW' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`);
 
+            let dayText = '';
+            if (r.statusText) {
+                dayText = r.statusText; // 'SEASON FINISHED'
+            } else if (days < 0) {
+                dayText = 'AVAILABLE NOW';
+            } else if (days === 0) {
+                dayText = 'AIRING TODAY';
+            } else if (days === 1) {
+                dayText = 'TOMORROW';
+            } else {
+                dayText = `${days} DAYS LEFT`;
+            }
             // FIX: Advanced Dynamic Progress Bar Integration
             const localData = state.db.find(i => String(i.id) === String(r.id));
             let progressHtml = '';
@@ -6835,7 +6881,7 @@ window.openPageInfo = function (pageId) {
             btn.removeAttribute('onclick');
         });
 
-            // bind nav buttons from the cloned list to correct behavior
+        // bind nav buttons from the cloned list to correct behavior
         bindSidebarNavButtons(targetNav, closePageInfo);
 
     }
@@ -7005,7 +7051,7 @@ window.showModalSidebar = function (options) {
     }
     inner.style.opacity = '1';
     inner.style.pointerEvents = 'auto';
-    
+
     // Add this to animate to an 'X'
     var toggleIcon = document.querySelector('#modalSidebarToggle i');
     if (toggleIcon) toggleIcon.className = 'fas fa-times rotate-90 transition-transform duration-300';
@@ -7040,7 +7086,7 @@ window.hideModalSidebar = function (force) {
 
     inner.style.opacity = '0';
     inner.style.pointerEvents = 'none';
-    
+
     // Add this to animate back to the 'Stream' icon
     var toggleIcon = document.querySelector('#modalSidebarToggle i');
     if (toggleIcon) toggleIcon.className = 'fas fa-stream rotate-0 transition-transform duration-300';
@@ -7372,3 +7418,17 @@ window.shareWatchlist = async function () {
         openCustomShare("Share Library", `Total Records: ${state.db.length}`, shareUrl, richText);
     }
 };
+window.toggleAppHub = function () {
+    const modal = document.getElementById('appHubModal');
+    if (modal.classList.contains('hidden')) {
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modal.classList.remove('opacity-0');
+            modal.firstElementChild.classList.remove('scale-95');
+        }, 10);
+    } else {
+        modal.classList.add('opacity-0');
+        modal.firstElementChild.classList.add('scale-95');
+        setTimeout(() => modal.classList.add('hidden'), 300);
+    }
+}
