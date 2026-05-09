@@ -5,16 +5,12 @@ const IMG_HD = 'https://image.tmdb.org/t/p/original';
 
 const SERVERS = {
    default: [
-        { name: 'VidSrc Net', build: (t, id, s, e) => `https://vidsrc.net/embed/${t}?tmdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`, type: 'embed' },
-        { name: 'VidSrc XYZ', build: (t, id, s, e) => `https://vidsrc.xyz/embed/${t}?tmdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`, type: 'embed' },
+        
         { name: 'VidSrc CC', build: (t, id, s, e) => `https://vidsrc.cc/embed/${t}/${id}${t === 'tv' ? `/${s}/${e}` : ''}`, type: 'embed' },
-        { name: 'VidSrc ME', build: (t, id, s, e) => `https://vidsrc.me/embed/${t}?tmdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`, type: 'embed' },
         { name: 'MultiEmbed', build: (t, id, s, e) => `https://multiembed.mov/?video_id=${id}&tmdb=1${t === 'tv' ? `&s=${s}&e=${e}` : ''}`, type: 'embed' },
-        { name: 'StreamSB', build: (t, id, s, e) => `https://streamsb.net/embed/${t}?id=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`, type: 'embed' },
-        { name: 'VikingEmbed', build: (t, id, s, e) => `https://vembed.stream/embed?imdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`, type: 'embed' },
+        { name: 'VidSrc ME', build: (t, id, s, e) => `https://vidsrc.me/embed/${t}?tmdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`, type: 'embed' },
         { name: 'AutoEmbed', build: (t, id, s, e) => `https://autoembed.co/${t}/tmdb/${id}${t === 'tv' ? `-${s}-${e}` : ''}`, type: 'embed' },
-        // Note: vidsrc.to is permanently dead, but left here if you are using it for historical/routing purposes
-        { name: 'VidSrc TO', build: (t, id, s, e) => `https://vidsrc.to/embed/${t}/${id}${t === 'tv' ? `/${s}/${e}` : ''}`, type: 'embed' }
+
     ],
     kdrama: [
         { name: 'VidSrc Net', build: (t, id, s, e) => `https://vidsrc.net/embed/${t}?tmdb=${id}${t === 'tv' ? `&season=${s}&episode=${e}` : ''}`, type: 'embed' },
