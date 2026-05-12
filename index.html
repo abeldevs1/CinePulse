@@ -431,31 +431,145 @@
                 </button>
             </div>
         </div>
-        <div id="view-home" class="page-view">
-            <div class="relative h-screen w-full overflow-hidden ">
+     <div id="view-home" class="page-view pt-20 lg:pt-28">
+            <div class="relative w-full max-w-[96%] lg:max-w-[98%] mx-auto h-[65vh] min-h-[500px] lg:h-[75vh] rounded-[30px] lg:rounded-[40px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] group/slider border border-white/10">
                 <div id="heroSlider" class="w-full h-full relative"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-[#020408] via-[#020408]/40 to-transparent pointer-events-none z-10 opacity-90"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-[#020408]/95 via-[#020408]/30 to-transparent pointer-events-none z-10"></div>
 
-                <div class="absolute inset-x-0 bottom-32 px-12 lg:px-24 flex flex-col items-start max-w-6xl">
-                    <h1 id="heroTitle" class="liquid-glass slider-title mb-10"></h1>
-                    <div class="flex items-center gap-4 lg:gap-6 flex-wrap">
-                        <button id="heroWatchBtn"
-                            class="bg-[#22c55e] text-white px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-[#22c55e]/20 flex items-center gap-2">
-                            <i class="fas fa-play"></i> Watch Now
+                <div class="absolute inset-x-0 bottom-10 lg:bottom-16 px-6 lg:px-16 flex flex-col items-start max-w-4xl z-20">
+                    <h1 id="heroTitle" class="liquid-glass slider-title mb-3 line-clamp-2 drop-shadow-[0_0_20px_rgba(0,0,0,0.9)] transition-all duration-300"></h1>
+                    
+                    <p id="heroDesc" class="text-xs md:text-sm lg:text-base text-gray-300 mb-6 line-clamp-3 font-medium leading-relaxed drop-shadow-lg transition-all duration-300"></p>
+                    
+                    <div class="flex items-center gap-4 lg:gap-5">
+                        <button id="heroWatchBtn" title="Watch Now" class="hero-icon-btn bg-[#22c55e] text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)]">
+                            <i class="fas fa-play ml-1"></i>
                         </button>
-                        <button id="heroInfoBtn"
-                            class="bg-pulse text-white px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-pulse/20">More
-                            Info</button>
-                        <button id="heroTrailerBtn"
-                            class="bg-white/10 backdrop-blur-md border border-white/10 text-white px-8 lg:px-10 py-3 lg:py-4 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-white/20 transition-all">Watch
-                            Trailer</button>
+                        <button id="heroInfoBtn" title="More Info" class="hero-icon-btn bg-white/10 backdrop-blur-md text-white border border-white/20 hover:bg-white/20 hover:border-white/40 shadow-xl">
+                            <i class="fas fa-info"></i>
+                        </button>
+                        <button id="heroTrailerBtn" title="Watch Trailer" class="hero-icon-btn bg-pulse text-white shadow-[0_0_20px_rgba(255,45,85,0.4)] hover:shadow-[0_0_30px_rgba(255,45,85,0.6)]">
+                            <i class="fab fa-youtube"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="heroNavDots" class="absolute right-8 bottom-12 flex gap-2 z-20 hidden md:flex"></div>
+            </div>
+
+            <div class="max-w-[98%] mx-auto px-4 md:px-10 mt-8 mb-10 flex flex-col items-center">
+                <button onclick="toggleHomeCounters()" class="group flex items-center justify-center gap-3 px-8 py-3 rounded-full bg-white/5 border border-white/10 hover:bg-pulse/10 hover:border-pulse/30 transition-all shadow-lg text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-white">
+                    <i class="fas fa-chart-line text-pulse group-hover:scale-110 transition-transform"></i> User Status
+                    <i id="counterToggleIcon" class="fas fa-chevron-down ml-2 transition-transform duration-300"></i>
+                </button>
+                <div id="homeCountersWrapper" class="w-full grid-rows-0 grid transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] opacity-0 pointer-events-none mt-0">
+                    <div class="overflow-hidden">
+                        <div id="homeCounters" class="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6 pt-8 pb-4 px-2"></div>
                     </div>
                 </div>
             </div>
 
-            <div id="homeCounters"
-                class="grid grid-cols-2 md:grid-cols-5 gap-6 px-10 lg:px-20 -mt-16 relative z-20 mb-32"></div>
-            <div id="homeContinueWatchingWrapper" class="px-10 lg:px-20 relative z-20"></div>
+            <div id="homeContinueWatchingWrapper" class="max-w-[98%] mx-auto px-4 md:px-10 relative z-20"></div>
+
+            <div class="px-6 lg:px-12 mt-10 mb-24 relative z-20">
+                <h2 class="text-xl md:text-2xl lg:text-3xl font-black uppercase text-white mb-10 tracking-[0.1em] flex items-center gap-4 italic drop-shadow-md">
+                    <i class="fas fa-fire-alt text-pulse drop-shadow-[0_0_15px_rgba(255,45,85,0.8)]"></i> Top 10 Highest Rated
+                    <div class="h-px flex-1 bg-gradient-to-r from-pulse/50 to-transparent"></div>
+                </h2>
+                <div id="row-top10" class="flex gap-6 md:gap-10 overflow-x-auto hide-scroll pb-16 pt-6 px-4"></div>
+            </div>
+
+            <div class="px-6 lg:px-12 space-y-20 pb-32">
+                <section>
+                    <h2 onclick="openCategoryPage('trending', 'movie')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic cursor-pointer">
+                        Trending Movies <i class="fas fa-chevron-right text-[10px] text-pulse"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-movies" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('trending', 'tv')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic cursor-pointer">
+                        Series & TV Shows <i class="fas fa-chevron-right text-[10px] text-pulse"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-tv" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('trending', 'anime')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic cursor-pointer">
+                        Popular Anime <i class="fas fa-chevron-right text-[10px] text-pulse"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-anime" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('trending', 'kdrama')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic cursor-pointer">
+                        K-Drama <i class="fas fa-chevron-right text-[10px] text-pulse"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-kdrama" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('trending', 'turkish')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic cursor-pointer">
+                        Turkish <i class="fas fa-chevron-right text-[10px] text-pulse"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-turkish" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('trending', 'asian')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic cursor-pointer">
+                        Asian Drama <i class="fas fa-chevron-right text-[10px] text-pulse"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-asian" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+
+                <section>
+                    <h2 onclick="openCategoryPage('upcoming', 'movie')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic text-pulse/80 cursor-pointer">
+                        Anticipated Movies <i class="fas fa-chevron-right text-[10px]"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-up-movies" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('upcoming', 'tv')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic text-pulse/80 cursor-pointer">
+                        Upcoming Series <i class="fas fa-chevron-right text-[10px]"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-up-tv" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('upcoming', 'anime')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic text-pulse/80 cursor-pointer">
+                        Upcoming Anime <i class="fas fa-chevron-right text-[10px]"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-up-anime" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('upcoming', 'kdrama')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic text-pulse/80 cursor-pointer">
+                        Upcoming K-Drama <i class="fas fa-chevron-right text-[10px]"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-up-kdrama" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('upcoming', 'turkish')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic text-pulse/80 cursor-pointer">
+                        Upcoming Turkish <i class="fas fa-chevron-right text-[10px]"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-up-turkish" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+                <section>
+                    <h2 onclick="openCategoryPage('upcoming', 'asian')" class="glow-title text-base md:text-lg font-black uppercase text-gray-300 mb-6 tracking-[0.2em] flex items-center gap-4 italic text-pulse/80 cursor-pointer">
+                        Upcoming Asian <i class="fas fa-chevron-right text-[10px]"></i>
+                        <div class="h-px flex-1 bg-white/5"></div>
+                    </h2>
+                    <div id="row-up-asian" class="flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2"></div>
+                </section>
+
+                <div id="homeGenres" class="flex flex-wrap gap-4 pt-10 border-t border-white/5 opacity-40"></div>
+            </div>
+        </div>
 
             <div class="px-10 lg:px-20 space-y-32 pb-32">
                 <section>
