@@ -401,7 +401,12 @@ async function init() {
 
         renderHero();
         renderContinueWatching(); // NEW: Render Continue Watching on load
-
+// NEW: Extract & Render Top 10 Highest Rated from Trending
+        const top10 = [...trending.results]
+            .filter(i => i.vote_average > 0 && i.poster_path) // ensure valid items
+            .sort((a, b) => b.vote_average - a.vote_average)
+            .slice(0, 10);
+        renderTop10(top10);
         // --- NEW: Intercept URL on Load ---
         const hash = window.location.hash.substring(2);
         if (hash) {
@@ -1269,15 +1274,24 @@ async function applySearchFilters(append = false) {
 }
 
 // Hero Slider
+// --- NEW SLIDER ENGINE ---
 function renderHero() {
     const slider = document.getElementById('heroSlider');
+    const dotsContainer = document.getElementById('heroNavDots');
+    
     slider.innerHTML = state.hero.map((item, i) => `
-                <div class="hero-item absolute inset-0 transition-opacity duration-1000 ${i === 0 ? 'opacity-100' : 'opacity-0'}">
-                    <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover ">
-                    
-                </div>
-                
-            `).join('');
+        <div class="hero-item absolute inset-0 transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] ${i === 0 ? 'active' : 'inactive'}" data-index="${i}">
+            <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover transform transition-transform duration-[10s] ease-out ${i === 0 ? 'scale-105' : 'scale-100'}">
+            <div class="hero-overlay absolute inset-0 bg-[#020408] transition-opacity duration-1000 ${i === 0 ? 'opacity-0' : 'opacity-60'} z-10"></div>
+        </div>
+    `).join('');
+    
+    if (dotsContainer) {
+        dotsContainer.innerHTML = state.hero.map((_, i) => `
+            <div class="hero-dot w-2 h-2 rounded-full transition-all duration-500 cursor-pointer ${i === 0 ? 'w-8 bg-pulse' : 'bg-white/30 hover:bg-white/60'}" onclick="goToHero(${i})"></div>
+        `).join('');
+    }
+
     updateHeroContent();
 }
 
@@ -1285,39 +1299,99 @@ function updateHeroContent() {
     const item = state.hero[state.heroIdx];
     const title = item.title || item.name;
     const hTitle = document.getElementById('heroTitle');
+    const hDesc = document.getElementById('heroDesc');
 
-    // Liquid Glass Resizing Logic
-    hTitle.innerText = title;
-    const length = title.length;
-    let size = 5; // Default 5rem
-    if (length > 25) size = 3;
-    else if (length > 15) size = 4;
-    else if (length < 8) size = 7;
+    // Fade out text, slide down slightly
+    hTitle.style.opacity = 0;
+    hTitle.style.transform = 'translateY(15px)';
+    if(hDesc) {
+        hDesc.style.opacity = 0;
+        hDesc.style.transform = 'translateY(15px)';
+    }
 
-    // Adjust for mobile viewports
-    if (window.innerWidth < 768) size = size * 0.6;
+    // Wait for fade out, then swap text and fade in
+    setTimeout(() => {
+        hTitle.innerText = title;
+        if(hDesc) hDesc.innerText = item.overview || "Narrative archive encrypted.";
+        
+        const length = title.length;
+        let size = 3.5;
+        if (length > 25) size = 2;
+        else if (length > 15) size = 2.5;
+        else if (length < 8) size = 4.5;
+        if (window.innerWidth < 768) size = size * 0.7; // Mobile adjustment
+        hTitle.style.setProperty('--title-size', `${size}rem`);
 
-    hTitle.style.setProperty('--title-size', `${size}rem`);
+        hTitle.style.opacity = 1;
+        hTitle.style.transform = 'translateY(0)';
+        if(hDesc) {
+            hDesc.style.opacity = 1;
+            hDesc.style.transform = 'translateY(0)';
+        }
 
-    document.getElementById('heroInfoBtn').onclick = () => openModal(item.id, item.media_type);
-    //watch
-    const watchBtn = document.getElementById('heroWatchBtn');
-    if (watchBtn) watchBtn.onclick = () => openWatchOptions(item.id, item.media_type, encodeURIComponent(title));
+        // Button Assignments
+        document.getElementById('heroInfoBtn').onclick = () => openModal(item.id, item.media_type);
+        const watchBtn = document.getElementById('heroWatchBtn');
+        if (watchBtn) watchBtn.onclick = () => openWatchOptions(item.id, item.media_type, encodeURIComponent(title));
 
-    // Fetch trailer for hero
-    fetchAPI(`/${item.media_type}/${item.id}/videos`).then(v => {
-        const tr = v.results.find(x => x.type === 'Trailer');
-        document.getElementById('heroTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
-    });
+        fetchAPI(`/${item.media_type}/${item.id}/videos`).then(v => {
+            const tr = v.results.find(x => x.type === 'Trailer');
+            document.getElementById('heroTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
+        });
+    }, 400); 
+}
+
+function goToHero(idx) {
+    if(idx === state.heroIdx) return;
+    const items = document.querySelectorAll('.hero-item');
+    const dots = document.querySelectorAll('.hero-dot');
+    
+    // Animate out current
+    items[state.heroIdx].classList.remove('active');
+    items[state.heroIdx].classList.add('inactive');
+    items[state.heroIdx].querySelector('img').classList.remove('scale-105');
+    items[state.heroIdx].querySelector('img').classList.add('scale-100');
+    items[state.heroIdx].querySelector('.hero-overlay').classList.replace('opacity-0', 'opacity-60');
+    if(dots[state.heroIdx]) {
+        dots[state.heroIdx].classList.replace('w-8', 'w-2');
+        dots[state.heroIdx].classList.replace('bg-pulse', 'bg-white/30');
+    }
+
+    state.heroIdx = idx;
+
+    // Animate in new
+    items[state.heroIdx].classList.remove('inactive');
+    items[state.heroIdx].classList.add('active');
+    items[state.heroIdx].querySelector('img').classList.remove('scale-100');
+    items[state.heroIdx].querySelector('img').classList.add('scale-105');
+    items[state.heroIdx].querySelector('.hero-overlay').classList.replace('opacity-60', 'opacity-0');
+    if(dots[state.heroIdx]) {
+        dots[state.heroIdx].classList.replace('w-2', 'w-8');
+        dots[state.heroIdx].classList.replace('bg-white/30', 'bg-pulse');
+    }
+
+    updateHeroContent();
 }
 
 function nextHero() {
-    const items = document.querySelectorAll('.hero-item');
-    items[state.heroIdx].classList.replace('opacity-100', 'opacity-0');
-    state.heroIdx = (state.heroIdx + 1) % state.hero.length;
-    items[state.heroIdx].classList.replace('opacity-0', 'opacity-100');
-    updateHeroContent();
+    goToHero((state.heroIdx + 1) % state.hero.length);
 }
+
+// User Status Counter Toggle
+window.toggleHomeCounters = function() {
+    const wrapper = document.getElementById('homeCountersWrapper');
+    const icon = document.getElementById('counterToggleIcon');
+    
+    if(wrapper.classList.contains('grid-rows-0')) {
+        wrapper.classList.remove('grid-rows-0', 'opacity-0', 'pointer-events-none', 'mt-0');
+        wrapper.classList.add('grid-rows-[1fr]', 'opacity-100', 'pointer-events-auto', 'mt-4');
+        icon.classList.add('rotate-180');
+    } else {
+        wrapper.classList.add('grid-rows-0', 'opacity-0', 'pointer-events-none', 'mt-0');
+        wrapper.classList.remove('grid-rows-[1fr]', 'opacity-100', 'pointer-events-auto', 'mt-4');
+        icon.classList.remove('rotate-180');
+    }
+};
 
 // Modal Layout Controller
 window.updateModalTopLeftButtons = function () {
@@ -2544,12 +2618,12 @@ async function openRandomSuggestion(type) {
 function renderRow(id, items, type) {
     const container = document.getElementById(id);
     container.innerHTML = items.map(item => `
-        <div class="flex-none w-[240px] group cursor-pointer" onclick="openModal(${item.id}, '${type}')">
-            <div class="relative aspect-[2/3] rounded-[40px] overflow-hidden mb-5 border border-white/5 group-hover:scale-105 transition-all duration-700">
-                <img src="${IMG + item.poster_path}" class="w-full h-full object-cover">
+        <div class="flex-none w-[200px] lg:w-[240px] group cursor-pointer" onclick="openModal(${item.id}, '${type}')">
+            <div class="relative aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:scale-105 group-hover:border-pulse/50 transition-all duration-500 shadow-xl bg-dark">
+                <img src="${IMG + item.poster_path}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity">
                 ${getPlayHoverHTML({ ...item, type: type })}
             </div>
-            <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2">${item.title || item.name}</h3>
+            <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2 text-white glow-hover transition-colors">${item.title || item.name}</h3>
             <div class="text-[8px] font-bold text-gray-600 mt-2 uppercase px-2 tracking-widest">${(item.release_date || item.first_air_date || '').split('-')[0]} • ★ ${item.vote_average.toFixed(1)}</div>
         </div>
     `).join('');
@@ -7431,4 +7505,42 @@ window.toggleAppHub = function () {
         modal.firstElementChild.classList.add('scale-95');
         setTimeout(() => modal.classList.add('hidden'), 300);
     }
+}// --- NEW TOP 10 RATED ENGINE ---
+function renderTop10(items) {
+    const container = document.getElementById('row-top10');
+    if(!container) return;
+    
+    container.innerHTML = items.map((item, idx) => {
+        // High Def posters for Top 10
+        const posterUrl = item.poster_path ? IMG_HD + item.poster_path : 'https://via.placeholder.com/500x750';
+        
+        return `
+        <div class="flex-none w-[170px] md:w-[220px] lg:w-[260px] group cursor-pointer relative top10-card" onclick="openModal(${item.id}, '${item.media_type || 'movie'}')">
+            
+            <div class="absolute -left-6 -bottom-4 text-[130px] md:text-[180px] font-black italic text-white/5 z-0 pointer-events-none group-hover:text-pulse/20 transition-colors duration-500 select-none leading-none">
+                ${idx + 1}
+            </div>
+
+            <div class="relative aspect-[2/3] rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/10 shadow-2xl z-10 group-hover:border-pulse transition-all duration-500 bg-dark">
+                <img src="${posterUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                
+                <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent opacity-80 z-20 pointer-events-none"></div>
+
+                <div class="absolute top-0 left-0 bg-gradient-to-br from-pulse to-transparent p-4 w-16 h-16 z-30 opacity-90">
+                    <span class="text-white font-black text-lg drop-shadow-md">#${idx + 1}</span>
+                </div>
+                
+                ${getPlayHoverHTML({...item, type: item.media_type || 'movie'})}
+            </div>
+            
+            <div class="relative z-10 mt-5 px-2">
+                <h3 class="font-black text-[12px] md:text-[14px] uppercase line-clamp-1 text-white glow-hover transition-all tracking-wide">${item.title || item.name}</h3>
+                <div class="text-[9px] font-bold text-gray-500 mt-2 uppercase tracking-widest flex items-center gap-2">
+                    <span class="text-pulse bg-pulse/10 px-2 py-0.5 rounded"><i class="fas fa-star text-[8px]"></i> ${item.vote_average.toFixed(1)}</span>
+                    <span class="opacity-50">•</span>
+                    <span>${(item.release_date || item.first_air_date || '').split('-')[0] || 'TBA'}</span>
+                </div>
+            </div>
+        </div>
+        `}).join('');
 }
