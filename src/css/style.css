@@ -2766,8 +2766,6 @@
 }
 
 /* --- OVERRIDE OLD MOBILE HERO BEHAVIOR --- */
-/* Search your CSS for the old "#view-home > div:first-child" and replace it with this if necessary, 
-   otherwise just pasting this will overwrite the bad legacy styles causing the 95% stretch */
 @media (max-width: 1024px) {
     #view-home > div:first-child {
         height: 60vh !important; 
@@ -2813,5 +2811,5 @@
 /* --- BROWSER PERFORMANCE OPTIMIZATIONS --- */
 /* Tells the browser to skip rendering calculations for images outside the viewport */
 img {
-    content-visibility: auto;
+    content-visibility: auto !important;
 }
