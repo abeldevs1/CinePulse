@@ -431,7 +431,7 @@
                 </button>
             </div>
         </div>
-     <div id="view-home" class="page-view pt-20 lg:pt-28">
+        <div id="view-home" class="page-view pt-20 lg:pt-28">
             <div class="relative w-full max-w-[96%] lg:max-w-[98%] mx-auto h-[65vh] min-h-[500px] lg:h-[75vh] rounded-[30px] lg:rounded-[40px] overflow-hidden shadow-[0_30px_60px_rgba(0,0,0,0.6)] group/slider border border-white/10">
                 <div id="heroSlider" class="w-full h-full relative"></div>
                 
@@ -570,116 +570,6 @@
                 <div id="homeGenres" class="flex flex-wrap gap-4 pt-10 border-t border-white/5 opacity-40"></div>
             </div>
         </div>
-
-            <div class="px-10 lg:px-20 space-y-32 pb-32">
-                <section>
-                    <h2 onclick="openCategoryPage('trending', 'movie')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">
-                        Trending Movies <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-movies" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-                <section>
-                    <h2 onclick="openCategoryPage('trending', 'tv')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">
-                        Series & TV Shows <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-tv" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-                <section>
-                    <h2 onclick="openCategoryPage('trending', 'anime')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">
-                        Popular Anime <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-anime" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-                <section>
-                    <h2 onclick="openCategoryPage('trending', 'kdrama')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">
-                        K-Drama <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-kdrama" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-                <section>
-                    <h2 onclick="openCategoryPage('trending', 'turkish')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">
-                        Turkish <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-turkish" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-
-                <section>
-                    <h2 onclick="openCategoryPage('trending', 'asian')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic">
-                        Asian Drama <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-asian" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-
-                <section>
-                    <h2 onclick="openCategoryPage('upcoming', 'movie')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic text-pulse/80">
-                        Anticipated Movies <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-up-movies" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-
-
-
-                <section>
-                    <h2 onclick="openCategoryPage('upcoming', 'tv')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic text-pulse/80">
-                        Upcoming Series <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-up-tv" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-                <section>
-                    <h2 onclick="openCategoryPage('upcoming', 'anime')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic text-pulse/80">
-                        Upcoming Anime <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-up-anime" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-                <section>
-                    <h2 onclick="openCategoryPage('upcoming', 'kdrama')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic text-pulse/80">
-                        Upcoming K-Drama <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-up-kdrama" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-                <section>
-                    <h2 onclick="openCategoryPage('upcoming', 'turkish')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic text-pulse/80">
-                        Upcoming Turkish <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-up-turkish" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-
-                <section>
-                    <h2 onclick="openCategoryPage('upcoming', 'asian')"
-                        class="glow-title text-sm font-black uppercase text-white/40 mb-8 tracking-[0.5em] flex items-center gap-4 italic text-pulse/80">
-                        Upcoming Asian <i class="fas fa-chevron-right text-[10px]"></i>
-                        <div class="h-px flex-1 bg-white/5"></div>
-                    </h2>
-                    <div id="row-up-asian" class="flex gap-8 overflow-x-auto hide-scroll pb-6"></div>
-                </section>
-
-                <div id="homeGenres" class="flex flex-wrap gap-4 pt-10 border-t border-white/5 opacity-40"></div>
-            </div>
-        </div>
-
-
         <div id="view-masterpieces" class="page-view hidden p-10 lg:p-24 pt-32 min-h-screen relative">
             <!-- Page Info Button: Recalibrated for zero-overlap -->
             <button onclick="openPageInfo('masterpieces')"
