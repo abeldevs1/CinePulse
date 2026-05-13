@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap');
+
       body {
           background-color: #020408;
           color: #f3f4f6;
@@ -83,6 +85,44 @@
           letter-spacing: -0.04em;
           pointer-events: none;
           mix-blend-mode: hard-light;
+      }
+
+      .background-card-number,
+      .background-card-number-top10 {
+          font-family: 'Orbitron', 'Outfit', sans-serif;
+          font-weight: 900;
+          font-style: normal;
+          letter-spacing: -0.05em;
+          color: rgba(255, 255, 255, 0.1);
+          text-shadow: 0 0 14px rgba(255, 45, 85, 0.1);
+          transition: color 0.35s ease, text-shadow 0.35s ease, transform 0.35s ease;
+          pointer-events: none;
+      }
+
+      .background-card-number {
+          font-size: clamp(70px, 6vw, 95px);
+      }
+
+      .background-card-number-top10 {
+          font-size: clamp(110px, 8vw, 150px);
+      }
+
+      .group:hover .background-card-number,
+      .top10-card:hover .background-card-number-top10 {
+          color: rgba(255, 45, 85, 0.24);
+          text-shadow: 0 0 30px rgba(255, 45, 85, 0.45),
+              0 0 20px rgba(255, 255, 255, 0.12);
+          transform: translateX(1px) scale(1.02);
+      }
+
+      .background-card-number-top10 {
+          text-shadow: 0 0 18px rgba(255, 45, 85, 0.12);
+      }
+
+      .group:hover .background-card-number-top10 {
+          color: rgba(255, 45, 85, 0.26);
+          text-shadow: 0 0 36px rgba(255, 45, 85, 0.5),
+              0 0 24px rgba(255, 255, 255, 0.15);
       }
 
       /* Responsive Title Scaling Logic */
@@ -2338,9 +2378,15 @@
               padding-top: 6rem !important;
           }
 
-          /* Scale down main headers slightly to save vertical space */
+          /* Shrink page view headers for desktop website layout */
           .page-view h2 {
-              font-size: 3.5rem !important;
+              font-size: 1rem !important;
+              line-height: 1.1 !important;
+          }
+
+          #view-home .glow-title {
+              font-size: 0.85rem !important;
+              line-height: 1.15 !important;
           }
       }
 
@@ -2766,6 +2812,8 @@
 }
 
 /* --- OVERRIDE OLD MOBILE HERO BEHAVIOR --- */
+/* Search your CSS for the old "#view-home > div:first-child" and replace it with this if necessary, 
+   otherwise just pasting this will overwrite the bad legacy styles causing the 95% stretch */
 @media (max-width: 1024px) {
     #view-home > div:first-child {
         height: 60vh !important; 
@@ -2808,8 +2856,66 @@
     transform: translateX(5px);
 }
 
+@media (min-width: 1024px) {
+    #view-home h2 {
+            font-size: 1.05rem !important;
+            line-height: 1.2 !important;
+        }
+
+        #view-home .glow-title {
+            font-size: 0.95rem !important;
+            line-height: 1.2 !important;
+        }
+}
+
 /* --- BROWSER PERFORMANCE OPTIMIZATIONS --- */
 /* Tells the browser to skip rendering calculations for images outside the viewport */
 img {
     content-visibility: auto !important;
 }
+/* --- HOLOGRAPHIC NEURAL MATRIX CARDS --- */
+/* The base wrapper handles the 3D lift */
+.matrix-card {
+    transform-style: preserve-3d;
+}
+
+.matrix-card:hover {
+    transform: translateY(-12px) scale(1.05);
+    z-index: 50;
+}
+
+/* The holographic glowing border effect */
+.holo-wrapper::before {
+    content: '';
+    position: absolute;
+    inset: -3px; /* Slightly larger than the card */
+    border-radius: 26px;
+    background: conic-gradient(from 0deg, #ff2d55, transparent, #3b82f6, transparent, #ff2d55);
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.matrix-card:hover .holo-wrapper::before {
+    opacity: 1;
+    animation: rotateHolo 3s linear infinite;
+    box-shadow: 0 0 30px rgba(255, 45, 85, 0.4);
+}
+
+@keyframes rotateHolo {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* --- BONUS: NEURAL FOCUS MODE --- */
+/* When hovering anywhere inside the Matrix Grid, dim EVERYTHING */
+.group\/matrix:hover .matrix-card {
+    opacity: 0.3;
+    filter: grayscale(80%) blur(1px);
+}
+
+/* Except the one card you are actively hovering over! */
+.group\/matrix .matrix-card:hover {
+    opacity: 1;
+    filter: grayscale(0%) blur(0px);
+}       
