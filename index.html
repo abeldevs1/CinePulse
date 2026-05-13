@@ -455,6 +455,10 @@
                         </button>
                     </div>
                 </div>
+                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 opacity-60 hover:opacity-100 transition-opacity cursor-pointer animate-bounce" onclick="window.scrollBy({top: window.innerHeight * 0.7, behavior: 'smooth'})">
+                    <span class="text-[8px] font-black uppercase tracking-[0.4em] text-white/80 drop-shadow-md">Explore</span>
+                    <i class="fas fa-chevron-down text-white text-sm drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]"></i>
+                </div>
                 <div id="heroNavDots" class="absolute right-8 bottom-12 flex gap-2 z-20 hidden md:flex"></div>
             </div>
 
@@ -2382,14 +2386,14 @@
     </div>
 
     <!-- Back to Top / Bottom Floating Controls: PC Layout (Right Shelf) -->
-    <div class="fixed right-6 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-3 z-[101]">
+    <div class="fixed right-2 md:right-3 top-1/2 -translate-y-1/2 hidden lg:flex flex-col gap-3 z-[101]">
         <button id="pcBackToTop" onclick="scrollToTop()"
-            class="w-12 h-12 bg-[#0a0c12]/80 backdrop-blur-2xl border border-white/10 text-gray-400 hover:text-white hover:border-pulse rounded-2xl flex items-center justify-center transition-all opacity-0 pointer-events-none shadow-2xl group">
-            <i class="fas fa-chevron-up group-hover:-translate-y-1 transition-transform"></i>
+            class="w-10 h-10 bg-[#0a0c12]/90 backdrop-blur-2xl border border-white/10 text-gray-400 hover:text-white hover:border-pulse rounded-xl flex items-center justify-center transition-all opacity-0 pointer-events-none shadow-2xl group">
+            <i class="fas fa-chevron-up group-hover:-translate-y-1 transition-transform text-xs"></i>
         </button>
         <button id="pcBackToBot" onclick="scrollToBottom()"
-            class="w-12 h-12 bg-[#0a0c12]/80 backdrop-blur-2xl border border-white/10 text-gray-400 hover:text-white hover:border-pulse rounded-2xl flex items-center justify-center transition-all opacity-0 pointer-events-none shadow-2xl group">
-            <i class="fas fa-chevron-down group-hover:translate-y-1 transition-transform"></i>
+            class="w-10 h-10 bg-[#0a0c12]/90 backdrop-blur-2xl border border-white/10 text-gray-400 hover:text-white hover:border-pulse rounded-xl flex items-center justify-center transition-all opacity-0 pointer-events-none shadow-2xl group">
+            <i class="fas fa-chevron-down group-hover:translate-y-1 transition-transform text-xs"></i>
         </button>
     </div>
 
