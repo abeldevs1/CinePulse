@@ -401,6 +401,7 @@ async function init() {
 
         renderHero();
         renderContinueWatching(); // NEW: Render Continue Watching on load
+        initializeSmartHomeSections();
 // NEW: Extract & Render Top 10 Highest Rated from Trending
         const top10 = [...trending.results]
             .filter(i => i.vote_average > 0 && i.poster_path) // ensure valid items
@@ -2616,17 +2617,36 @@ async function openRandomSuggestion(type) {
 }
 
 function renderRow(id, items, type) {
+    if (!window.homeDataStore) window.homeDataStore = {};
+    window.homeDataStore[id] = { items, type }; // Cache data for instant flipping
+
     const container = document.getElementById(id);
-    container.innerHTML = items.map(item => `
-        <div class="flex-none w-[200px] lg:w-[240px] group cursor-pointer" onclick="openModal(${item.id}, '${type}')">
-            <div class="relative aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:scale-105 group-hover:border-pulse/50 transition-all duration-500 shadow-xl bg-dark">
-                <img src="${IMG + item.poster_path}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity">
-                ${getPlayHoverHTML({ ...item, type: type })}
+    if (!container) return;
+
+    if (!prefs.homeLayouts) prefs.homeLayouts = {};
+    const isGrid = prefs.homeLayouts[id] === 'grid';
+
+    if (isGrid) {
+        // Automatically switch to Grid Mode if saved
+        container.className = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 md:gap-6 pb-6 px-2';
+        renderGrid(id, items, type, true); 
+    } else {
+        // Standard Row Mode
+        container.className = 'flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2';
+        container.innerHTML = items.map((item, idx) => `
+            <div class="flex-none w-[170px] md:w-[190px] lg:w-[210px] group cursor-pointer relative overflow-visible" onclick="openModal(${item.id}, '${type}')">
+                <div class="absolute -left-6 bottom-2 background-card-number z-0 select-none leading-none">
+                    ${idx + 1}
+                </div>
+                <div class="relative aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:scale-105 group-hover:border-pulse/50 transition-all duration-500 shadow-xl bg-dark z-10 ml-6">
+                    <img src="${IMG + item.poster_path}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity">
+                    ${getPlayHoverHTML({ ...item, type: type })}
+                </div>
+                <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2 text-white glow-hover transition-colors">${item.title || item.name}</h3>
+                <div class="text-[8px] font-bold text-gray-600 mt-2 uppercase px-2 tracking-widest">${(item.release_date || item.first_air_date || '').split('-')[0]} • ★ ${item.vote_average.toFixed(1)}</div>
             </div>
-            <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2 text-white glow-hover transition-colors">${item.title || item.name}</h3>
-            <div class="text-[8px] font-bold text-gray-600 mt-2 uppercase px-2 tracking-widest">${(item.release_date || item.first_air_date || '').split('-')[0]} • ★ ${item.vote_average.toFixed(1)}</div>
-        </div>
-    `).join('');
+        `).join('');
+    }
 }
 
 function renderGrid(id, items, forced, clear = true) {
@@ -6403,7 +6423,7 @@ function getContinueWatchingHTML() {
     let html = `
     <div class="mb-12 mt-6">
         <div class="flex justify-between items-center mb-4 pr-2">
-            <h2 class="text-xs md:text-sm font-black uppercase tracking-[0.2em] text-white border-l-4 border-pulse pl-3 flex items-center gap-2">
+            <h2 class="text-[10px] md:text-[11px] font-black uppercase tracking-[0.2em] text-white border-l-4 border-pulse pl-3 flex items-center gap-2">
                 <i class="fas fa-play-circle text-pulse"></i> Continue Watching
             </h2>
             <button onclick="clearAllContinueWatching()" class="text-[9px] text-gray-500 hover:text-pulse uppercase font-black tracking-widest flex items-center gap-2 transition-colors">
@@ -6447,7 +6467,7 @@ function getContinueWatchingHTML() {
         if (isTV) cleanSlug += `-s${item.season || 1}e${item.ep || 1}`;
 
         html += `
-        <div class="relative w-32 sm:w-40 shrink-0 group cursor-pointer" title="Click to resume ${item.title}">
+        <div class="relative w-28 sm:w-32 shrink-0 group cursor-pointer" title="Click to resume ${item.title}">
             <button onclick="event.stopPropagation(); event.preventDefault(); window.removeContinueWatching(${item.id})" class="absolute top-2 right-2 w-7 h-7 bg-black/80 border border-white/20 rounded-full flex items-center justify-center text-white hover:bg-pulse hover:border-pulse z-50 transition-all opacity-0 group-hover:opacity-100 shadow-xl">
                 <i class="fas fa-times text-[10px]"></i>
             </button>
@@ -7515,13 +7535,13 @@ function renderTop10(items) {
         const posterUrl = item.poster_path ? IMG_HD + item.poster_path : 'https://via.placeholder.com/500x750';
         
         return `
-        <div class="flex-none w-[170px] md:w-[220px] lg:w-[260px] group cursor-pointer relative top10-card" onclick="openModal(${item.id}, '${item.media_type || 'movie'}')">
+        <div class="flex-none w-[210px] md:w-[260px] lg:w-[300px] group cursor-pointer relative top10-card overflow-visible" onclick="openModal(${item.id}, '${item.media_type || 'movie'}')">
             
-            <div class="absolute -left-6 -bottom-4 text-[130px] md:text-[180px] font-black italic text-white/5 z-0 pointer-events-none group-hover:text-pulse/20 transition-colors duration-500 select-none leading-none">
+            <div class="absolute -left-7 bottom-4 background-card-number-top10 z-0 select-none leading-none">
                 ${idx + 1}
             </div>
 
-            <div class="relative aspect-[2/3] rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/10 shadow-2xl z-10 group-hover:border-pulse transition-all duration-500 bg-dark">
+            <div class="relative aspect-[2/3] rounded-[24px] md:rounded-[32px] overflow-hidden border border-white/10 shadow-2xl z-10 group-hover:border-pulse transition-all duration-500 bg-dark ml-8">
                 <img src="${posterUrl}" loading="lazy" decoding="async" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                 
                 <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent opacity-80 z-20 pointer-events-none"></div>
@@ -7543,4 +7563,223 @@ function renderTop10(items) {
             </div>
         </div>
         `}).join('');
+}
+// ==========================================
+// --- NEURAL SECTION LAYOUT & TIME ENGINE ---
+// ==========================================
+window.homeDataStore = {}; // Caches section data for instant layout flipping
+function initializeSmartHomeSections() {
+    if (!prefs.homeLayouts) prefs.homeLayouts = {};
+    const sections = document.querySelectorAll('#view-home section');
+    
+    sections.forEach(sec => {
+        const h2 = sec.querySelector('h2');
+        const container = sec.querySelector('div[id^="row-"]');
+        if(!h2 || !container || sec.classList.contains('smart-initialized')) return;
+        sec.classList.add('smart-initialized');
+
+        const containerId = container.id;
+        const onClickAttr = h2.getAttribute('onclick') || '';
+        const typeMatch = onClickAttr.match(/'([^']+)',\s*'([^']+)'/);
+        const apiMode = typeMatch ? typeMatch[1] : 'trending'; 
+        const apiType = typeMatch ? typeMatch[2] : 'movie';
+
+        const headerWrapper = document.createElement('div');
+        headerWrapper.className = 'flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-white/5 pb-3 gap-4 transition-all';
+        
+        sec.insertBefore(headerWrapper, container);
+        h2.classList.remove('mb-6');
+        headerWrapper.appendChild(h2);
+
+        const controls = document.createElement('div');
+        controls.className = 'flex items-center gap-2 self-end md:self-auto';
+        
+        const isGrid = prefs.homeLayouts[containerId] === 'matrix';
+        const iconClass = isGrid ? 'fa-list text-pulse' : 'fa-layer-group text-gray-400';
+
+        controls.innerHTML = `
+            <button onclick="toggleHomeLayout('${containerId}', '${apiMode}', '${apiType}')" class="w-10 h-10 shrink-0 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:text-white hover:border-pulse hover:bg-pulse/20 transition-all shadow-xl group">
+                <i id="icon-${containerId}" class="fas ${iconClass} group-hover:scale-110 transition-transform"></i>
+            </button>
+        `;
+        headerWrapper.appendChild(controls);
+    });
+}
+
+// Triggers the Matrix Layout switch
+window.toggleHomeLayout = async function(containerId, apiMode, apiType) {
+    const container = document.getElementById(containerId);
+    const icon = document.getElementById('icon-' + containerId);
+    
+    if(!prefs.homeLayouts) prefs.homeLayouts = {};
+    const isCurrentlyMatrix = prefs.homeLayouts[containerId] === 'matrix';
+    const targetLayout = isCurrentlyMatrix ? 'row' : 'matrix';
+    
+    prefs.homeLayouts[containerId] = targetLayout;
+    savePrefs();
+
+    container.style.opacity = '0';
+    container.style.transform = 'translateY(15px)';
+    container.style.transition = 'all 0.4s ease';
+    
+    setTimeout(async () => {
+        if(targetLayout === 'matrix') {
+            icon.className = 'fas fa-list text-pulse drop-shadow-[0_0_8px_rgba(255,45,85,0.8)]';
+            
+            // BONUS: View Snapping
+            const sectionHeader = container.previousElementSibling;
+            if(sectionHeader) {
+                const headerOffset = sectionHeader.getBoundingClientRect().top + window.scrollY - 80;
+                window.scrollTo({ top: headerOffset, behavior: 'smooth' });
+            }
+
+            await renderTimeMatrix(containerId, apiMode, apiType);
+        } else {
+            icon.className = 'fas fa-layer-group text-gray-400';
+            // Restore standard row using cached data
+            const dataCache = window.homeDataStore[containerId];
+            if(dataCache) {
+                container.className = 'flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2';
+                renderRow(containerId, dataCache.items, dataCache.type); 
+            }
+        }
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+    }, 400);
+}
+
+// The core matrix builder
+window.renderTimeMatrix = async function(containerId, apiMode, type) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="col-span-full py-20 page-loader"></div>';
+    container.className = 'flex flex-col gap-12 pb-10 w-full group/matrix'; // group/matrix is for Neural Focus
+    
+    const today = new Date().toISOString().split('T')[0];
+    const apiType = (type === 'anime' || type === 'kdrama' || type === 'turkish' || type === 'asian') ? 'tv' : type;
+    let paths = {};
+    
+    // Auto-map API language/genre filters
+    let filterString = '';
+    if(type === 'anime') filterString = '&with_genres=16&with_original_language=ja';
+    if(type === 'kdrama') filterString = '&with_original_language=ko';
+    if(type === 'turkish') filterString = '&with_original_language=tr';
+    if(type === 'asian') filterString = '&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16';
+
+    if (apiMode === 'upcoming') {
+        let nxtWk = new Date(); nxtWk.setDate(nxtWk.getDate() + 7);
+        let nxtMo = new Date(); nxtMo.setMonth(nxtMo.getMonth() + 1);
+        let nxtYr = new Date(); nxtYr.setFullYear(nxtYr.getFullYear() + 1);
+        
+        const dateType = apiType === 'movie' ? 'primary_release_date' : 'first_air_date';
+        paths = {
+            '🔥 Dropping This Week': `/discover/${apiType}?${dateType}.gte=${today}&${dateType}.lte=${nxtWk.toISOString().split('T')[0]}&sort_by=popularity.desc`,
+            '🌟 Coming Next Month': `/discover/${apiType}?${dateType}.gte=${nxtWk.toISOString().split('T')[0]}&${dateType}.lte=${nxtMo.toISOString().split('T')[0]}&sort_by=popularity.desc`,
+            '📅 Highly Anticipated': `/discover/${apiType}?${dateType}.gte=${today}&${dateType}.lte=${nxtYr.toISOString().split('T')[0]}&sort_by=popularity.desc`
+        };
+    } else {
+        paths = {
+            '🔥 Daily Pulse': `/trending/${apiType}/day?`,
+            '🌟 Weekly Top': `/trending/${apiType}/week?`,
+            '📅 2026 Hits': `/discover/${apiType}?primary_release_year=2026&sort_by=popularity.desc`,
+            '🏆 All-Time Legends': `/discover/${apiType}?sort_by=vote_average.desc&vote_count.gte=1500`
+        };
+    }
+
+    let matrixHTML = '';
+    
+    for (const [title, path] of Object.entries(paths)) {
+        try {
+            const sep = path.includes('?') ? '&' : '?';
+            const data = await fetchAPI(path + sep + filterString.substring(1)); // substring removes leading '&'
+            const top10 = data.results.filter(i => i.poster_path).slice(0, 10);
+            
+            if(top10.length === 0) continue;
+
+            matrixHTML += `
+                <div class="w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <div class="flex items-center gap-4 mb-6">
+                        <h4 class="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-white italic drop-shadow-[0_0_10px_rgba(255,45,85,0.3)]">${title}</h4>
+                        <div class="h-px flex-1 bg-gradient-to-r from-pulse/50 to-transparent"></div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-5 md:gap-8 px-2">
+                        ${top10.map((item, idx) => `
+                            <div class="matrix-card flex-none group cursor-pointer relative overflow-visible transition-all duration-500 ease-out" onclick="openModal(${item.id}, '${apiType}')">
+                                
+                                <div class="absolute -left-6 bottom-4 text-[100px] md:text-[140px] font-black italic text-white/5 z-0 pointer-events-none group-hover:text-pulse/20 transition-colors duration-500 select-none leading-none tracking-tighter drop-shadow-lg">
+                                    ${idx + 1}
+                                </div>
+                                
+                                <div class="holo-wrapper relative aspect-[2/3] rounded-[24px] z-10 ml-4 mb-4">
+                                    <div class="absolute inset-0 rounded-[24px] bg-dark overflow-hidden shadow-2xl border border-white/10 group-hover:border-transparent transition-all z-20">
+                                        <img src="${IMG + item.poster_path}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent opacity-80 z-20 pointer-events-none group-hover:opacity-100 transition-opacity"></div>
+                                        
+                                        <div class="absolute top-2 right-2 bg-dark/80 backdrop-blur-md px-2 py-1 rounded border border-white/10 z-30">
+                                            <span class="text-[9px] font-black text-pulse drop-shadow-md">#${idx + 1}</span>
+                                        </div>
+                                        
+                                        ${getPlayHoverHTML({...item, type: apiType})}
+                                    </div>
+                                </div>
+                                
+                                <div class="relative z-10 pl-5">
+                                    <h3 class="font-black text-[11px] md:text-xs uppercase line-clamp-1 text-white group-hover:text-pulse transition-colors drop-shadow-md">${item.title || item.name}</h3>
+                                    <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">
+                                        ${(item.release_date || item.first_air_date || '').split('-')[0] || 'TBA'} • ★ ${item.vote_average.toFixed(1)}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } catch (e) { console.error("Matrix Tier Failed:", e); }
+    }
+    container.innerHTML = matrixHTML;
+}
+
+// Smart API Time Filter Engine
+window.applyTimeFilter = async function(containerId, mode, type, timeFrame, btnElement) {
+    const bar = btnElement.parentElement;
+    bar.querySelectorAll('button').forEach(b => {
+        b.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors shrink-0";
+    });
+    btnElement.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-pulse text-white shadow-[0_0_10px_rgba(255,45,85,0.4)] shrink-0 transition-all";
+
+    const container = document.getElementById(containerId);
+    container.innerHTML = '<div class="col-span-full py-16 page-loader"></div>';
+
+    let path = '';
+    const today = new Date().toISOString().split('T')[0];
+    const apiType = (type === 'anime' || type === 'kdrama' || type === 'turkish' || type === 'asian') ? 'tv' : type;
+
+    if (mode === 'upcoming') {
+        let future = new Date();
+        if(timeFrame === 'day') future.setDate(future.getDate() + 2);
+        if(timeFrame === 'week') future.setDate(future.getDate() + 7);
+        if(timeFrame === 'year') future.setFullYear(future.getFullYear() + 1);
+        if(timeFrame === 'all') future.setFullYear(future.getFullYear() + 5);
+        let fDate = future.toISOString().split('T')[0];
+
+        if(apiType === 'movie') path = `/discover/movie?primary_release_date.gte=${today}&primary_release_date.lte=${fDate}&sort_by=popularity.desc`;
+        else path = `/discover/tv?first_air_date.gte=${today}&first_air_date.lte=${fDate}&sort_by=popularity.desc`;
+    } else {
+        if(timeFrame === 'day') path = `/trending/${apiType}/day`;
+        if(timeFrame === 'week') path = `/trending/${apiType}/week`;
+        if(timeFrame === 'year') path = `/discover/${apiType}?primary_release_year=${new Date().getFullYear()}&sort_by=popularity.desc`;
+        if(timeFrame === 'all') path = `/discover/${apiType}?sort_by=vote_average.desc&vote_count.gte=1500`;
+    }
+
+    if(type === 'anime') path += '&with_genres=16&with_original_language=ja';
+    if(type === 'kdrama') path += '&with_original_language=ko';
+    if(type === 'turkish') path += '&with_original_language=tr';
+    if(type === 'asian') path += '&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16';
+
+    try {
+        const data = await fetchAPI(path);
+        window.homeDataStore[containerId] = { items: data.results, type: apiType }; // Update cache
+        renderGrid(containerId, data.results.slice(0, 18), apiType, true);
+    } catch (e) {
+        container.innerHTML = '<div class="col-span-full py-16 text-center text-pulse font-black text-[10px] uppercase">Filter Link Severed</div>';
+    }
 }
