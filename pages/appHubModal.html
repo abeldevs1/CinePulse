@@ -1,0 +1,51 @@
+<div id="appHubModal" onclick="toggleAppHub()"
+        class="fixed inset-0 z-[600] hidden flex items-center justify-center bg-black/80 backdrop-blur-2xl p-4 transition-all opacity-0">
+        <div onclick="event.stopPropagation()"
+            class="relative w-full max-w-4xl bg-dark/50 border border-white/10 rounded-[40px] shadow-2xl p-8 md:p-12 transform scale-95 transition-all duration-300">
+            <button type="button" onclick="toggleAppHub()"
+                class="absolute top-6 right-6 w-12 h-12 bg-white/5 rounded-full flex items-center justify-center text-gray-500 hover:text-white hover:bg-pulse transition-all">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <h2 class="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white mb-2">App <span
+                    class="text-pulse">Tools</span></h2>
+            <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-10">System Settings & Collections
+            </p>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                <button type="button" onclick="toggleAppHub(); navigate('rhythmlab')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-pulse hover:bg-pulse/10 transition-all group text-left">
+                    <i
+                        class="fas fa-layer-group text-2xl text-pulse mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Full Library</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Advanced Grid View</div>
+                </button>
+                <button type="button" onclick="toggleAppHub(); navigate('sagamatrix')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-[#a855f7] hover:bg-[#a855f7]/10 transition-all group text-left">
+                    <i class="fas fa-cubes text-2xl text-[#a855f7] mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Franchises</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Movie Collections</div>
+                </button>
+                <button type="button" onclick="toggleAppHub(); navigate('masterpieces')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-yellow-500 hover:bg-yellow-500/10 transition-all group text-left">
+                    <i
+                        class="fas fa-crown text-2xl text-yellow-500 mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Top Rated</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Highest Scores</div>
+                </button>
+                <button type="button" onclick="toggleAppHub(); navigate('neurallink')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-[#3b82f6] hover:bg-[#3b82f6]/10 transition-all group text-left">
+                    <i
+                        class="fas fa-network-wired text-2xl text-[#3b82f6] mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Device Sync</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Connect Phones & PCs</div>
+                </button>
+                <button type="button" onclick="toggleAppHub(); navigate('sources')"
+                    class="bg-white/5 border border-white/10 p-6 rounded-3xl hover:border-gray-300 hover:bg-white/10 transition-all group text-left">
+                    <i class="fas fa-server text-2xl text-gray-400 mb-4 group-hover:scale-110 transition-transform"></i>
+                    <div class="text-sm font-black uppercase text-white tracking-widest">Video Sources</div>
+                    <div class="text-[8px] text-gray-500 uppercase mt-1">Manage Link Providers</div>
+                </button>
+            </div>
+        </div>
+    </div>

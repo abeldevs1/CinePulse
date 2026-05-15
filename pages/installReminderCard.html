@@ -1,0 +1,25 @@
+<div id="installReminderCard"
+        class="hidden lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-[340px] z-[100] p-5 bg-[#0a0c12]/95 backdrop-blur-xl border border-pulse/30 rounded-[24px] shadow-[0_10px_40px_rgba(0,0,0,0.8),0_0_30px_rgba(255,45,85,0.15)] flex flex-col group/card">
+        <div class="absolute inset-0 bg-gradient-to-br from-pulse/10 to-transparent rounded-[24px] pointer-events-none">
+        </div>
+        <button onclick="dismissInstallReminder(event)"
+            class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-white/5 rounded-full text-gray-400 hover:text-white hover:bg-pulse/80 transition-all z-30 opacity-80">
+            <i class="fas fa-times text-[10px]"></i>
+        </button>
+        <div class="relative z-10 flex items-center gap-4">
+            <div
+                class="w-12 h-12 rounded-[16px] bg-gradient-to-br from-pulse to-pulse/60 flex items-center justify-center text-white shadow-[0_4px_15px_rgba(255,45,85,0.4)] shrink-0 border border-white/10">
+                <i class="fas fa-mobile-screen-button text-xl"></i>
+            </div>
+            <div class="flex-1 min-w-0 pr-4">
+                <h4 class="text-[12px] font-black uppercase text-white tracking-widest leading-tight">CinePulse App</h4>
+                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1 truncate">Install for best
+                    experience</p>
+            </div>
+        </div>
+        <div class="relative z-10 mt-4 h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        <button onclick="window.location.href='pages/app.html'"
+            class="relative z-10 mt-4 w-full bg-pulse text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-[0_4px_20px_rgba(255,45,85,0.3)] flex items-center justify-center gap-2">
+            <i class="fas fa-download"></i> Install Now
+        </button>
+    </div>

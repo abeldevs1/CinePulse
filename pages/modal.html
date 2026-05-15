@@ -1,0 +1,319 @@
+<div id="modal" class="fixed inset-0 z-[700] hidden bg-dark overflow-y-auto">
+
+    <button id="modalSidebarToggle" onclick="toggleModalSidebar()"
+        class="fixed top-6 left-6 lg:top-10 lg:left-10 z-[720] w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-br from-[#7f1d8c] via-[#d946ef] to-[#ec4899] text-white rounded-full flex items-center justify-center shadow-[0_12px_30px_rgba(236,72,153,0.45)] hover:scale-110 transition-all duration-300">
+        <i class="fas fa-stream rotate-0 transition-transform duration-300"></i>
+    </button>
+
+    <div id="modalSidebarHoverArea" class="fixed left-0 top-0 h-full w-4 z-[269] cursor-pointer"></div>
+
+    <aside id="modalSidebar"
+        class="fixed left-0 top-0 h-full w-0 bg-[#0a0c12]/95 border-r border-white/10 z-[260] overflow-hidden transition-all duration-300">
+        <div id="modalSidebarInner"
+            class="opacity-0 pointer-events-none transition-opacity duration-300 p-4 pt-24 lg:pt-32">
+            <nav id="modalSidebarNav" class="space-y-2"></nav>
+        </div>
+    </aside>
+
+    <div id="modalSidebarBackdrop"
+        class="fixed inset-0 bg-black/50 z-[255] opacity-0 pointer-events-none transition-all duration-300"></div>
+
+    <div class="relative h-[40vh] md:h-[50vh] lg:h-[60vh]">
+
+        <img id="mBackdrop" class="w-full h-full object-cover object-top">
+        <div class="absolute inset-0 bg-gradient-to-t from-dark via-dark/40 to-transparent"></div>
+
+        <button onclick="closeModal()"
+            class="fixed top-6 right-6 lg:top-10 lg:right-10 z-[270] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <button id="mBackBtn" onclick="modalGoBack()"
+            class="fixed top-6 left-6 lg:top-10 lg:left-10 z-[270] w-10 h-10 lg:w-14 lg:h-14 bg-gradient-to-r from-[#22c55e] to-[#14b8a6] text-white rounded-full lg:rounded-2xl flex items-center justify-center border border-white/20 shadow-xl hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(34,197,94,0.35)] transition-all duration-300 hidden"
+            aria-label="Go back">
+            <i class="fas fa-arrow-left-long"></i>
+        </button>
+
+        <button onclick="closeModal(); navigate('home')"
+            class="fixed top-6 right-20 lg:top-10 lg:right-28 z-[270] w-10 h-10 lg:w-14 lg:h-14 bg-white/10 backdrop-blur-2xl rounded-full flex items-center justify-center border border-white/10 hover:bg-pulse transition-all shadow-xl"
+            title="Return to Home">
+            <i class="fas fa-home"></i>
+        </button>
+
+        <div id="modalSearchWrapper"
+            class="fixed top-6 left-[72px] lg:top-10 lg:left-28 z-[270] transition-all duration-500 ease-in-out">
+
+            <div class="relative group flex items-center">
+
+                <div id="modalSearchContainer"
+                    class="relative flex items-center bg-white/10 backdrop-blur-xl border border-white/20 rounded-full shadow-2xl transition-all duration-500 overflow-hidden w-[45px] md:w-[300px]">
+
+                    <i
+                        class="fas fa-search absolute left-[15px] top-1/2 -translate-y-1/2 text-white/70 text-[12px] pointer-events-none"></i>
+
+                    <input type="text" id="modalSearch" autocomplete="off" placeholder="SEARCH..."
+                        class="w-full bg-transparent py-3 pl-12 pr-4 text-[10px] font-black uppercase tracking-widest text-white placeholder:text-white/40 outline-none opacity-0 md:opacity-100 transition-opacity duration-300">
+
+                    <button id="closeModalSearch"
+                        class="hidden absolute right-3 text-white/50 hover:text-pulse transition-colors">
+                        <i class="fas fa-times text-[10px]"></i>
+                    </button>
+                </div>
+
+                <div id="modalSearchDrop"
+                    class="absolute top-full left-0 w-[280px] md:w-full mt-3 bg-[#0a0c12]/90 backdrop-blur-3xl border border-white/10 rounded-2xl hidden overflow-hidden shadow-2xl z-[280]">
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full p-6 md:p-10 lg:p-20">
+            <div id="mGenres" class="flex flex-wrap gap-2 lg:gap-3 mb-4 lg:mb-8"></div>
+
+            <div class="flex items-start lg:items-center justify-between gap-4 mb-4 lg:mb-8 w-full">
+                <div id="mAirStatus"
+                    class="hidden inline-block px-3 py-1 rounded-md text-[9px] font-black uppercase tracking-[0.2em] border mb-3">
+                </div>
+                <h2 id="mTitle"
+                    class="flex-1 text-3xl md:text-4xl lg:text-7xl font-black italic uppercase leading-tight line-clamp-2 m-0 cursor-pointer select-auto pr-4">
+                </h2>
+
+                <button id="copyTitleBtn" onclick="copyModalTitle()"
+                    class="w-8 h-8 lg:w-12 lg:h-12 rounded-full bg-white/10 border border-white/5 hover:bg-pulse hover:border-pulse flex items-center justify-center transition-all text-white/50 hover:text-white shrink-0 mt-1 lg:mt-0 shadow-lg"
+                    title="Copy Title">
+                    <i class="fas fa-copy text-xs lg:text-base"></i>
+                </button>
+                <button onclick="shareActiveItem()"
+                    class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-[#3b82f6] hover:bg-[#3b82f6]/10 hover:border-[#3b82f6]/30 transition-all shadow-lg"
+                    title="Share Entity Link">
+                    <i class="fas fa-share-nodes text-[10px] md:text-sm"></i>
+                </button>
+            </div>
+
+            <div
+                class="flex flex-wrap items-center gap-4 lg:gap-10 text-[9px] lg:text-[11px] font-black uppercase tracking-widest text-white/50">
+                <span id="mYear"></span>
+                <span id="mCountry"
+                    class="border border-white/10 px-2 py-1 rounded-md text-gray-400 bg-white/5 hidden"></span>
+                <span id="mRating" class="text-pulse"></span>
+                <button id="mTrailerBtn" class="border-b border-pulse pb-1 text-white">Watch Trailer</button>
+
+                <button onclick="openWatchMenu()"
+                    class="border-b border-[#22c55e] pb-1 text-[#22c55e] flex items-center gap-2">
+                    <i class="fas fa-play"></i> Watch
+                </button>
+            </div>
+
+            <div id="mNetworkActions" class="hidden flex-wrap items-center gap-4 mt-6 pt-4 border-t border-white/10">
+                <button onclick="castToPeer()"
+                    class="text-[9px] font-black uppercase tracking-widest text-[#a855f7] hover:text-white transition-colors flex items-center gap-2"><i
+                        class="fas fa-tv"></i> Cast to Peer</button>
+                <button onclick="pingPeer()"
+                    class="text-[9px] font-black uppercase tracking-widest text-[#3b82f6] hover:text-white transition-colors flex items-center gap-2"><i
+                        class="fas fa-paper-plane"></i> Ping Recommendation</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-10 lg:px-20 py-12 lg:py-24 flex flex-col-reverse lg:grid lg:grid-cols-3 gap-10 lg:gap-24">
+
+
+        <div class="lg:col-span-2 space-y-24">
+            <div>
+                <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-8 italic">Narrative
+                    Arc</h4>
+                <p id="mOverview" class="text-xl lg:text-3xl font-light text-gray-400 leading-relaxed"></p>
+            </div>
+            <div id="mCountdownBox"
+                class="hidden mt-8 p-6 lg:p-8 bg-[#0a0c12] border border-pulse/30 rounded-[24px] relative overflow-hidden shadow-[0_10px_30px_rgba(255,45,85,0.1)] group">
+                <div
+                    class="absolute top-0 right-0 w-32 h-32 bg-pulse/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none">
+                </div>
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+                    <div>
+                        <h4 id="mCountdownLabel"
+                            class="text-[9px] font-black uppercase text-pulse tracking-[0.3em] mb-3">Release
+                            Countdown</h4>
+                        <div id="mCountdownTimer"
+                            class="flex gap-3 text-white text-xl md:text-3xl font-black italic tracking-tighter">
+                        </div>
+                    </div>
+                    <button id="mRemindBtn" onclick="toggleReminder()"
+                        class="w-full lg:w-auto px-8 py-4 bg-pulse text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform shadow-lg shadow-pulse/30 flex items-center justify-center gap-3 shrink-0">
+                        <i class="fas fa-bell"></i> <span id="mRemindText">Remind Me</span>
+                    </button>
+                </div>
+            </div>
+            <div>
+                <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-10 italic">Cast &
+                    Credits</h4>
+                <div id="mCast" class="flex gap-10 overflow-x-auto hide-scroll pb-6"></div>
+            </div>
+
+            <div>
+                <h4 class="text-[10px] font-black uppercase tracking-[0.4em] text-gray-600 mb-10 italic">Neural
+                    Recommendations</h4>
+                <div id="mRecGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
+                <div id="mRecLoadBtnBox" class="flex justify-center mt-10 hidden">
+                    <button id="mRecLoadBtn"
+                        class="bg-white/5 border border-white/10 px-8 py-3 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] hover:border-pulse hover:text-white transition-all text-gray-400">
+                        Load More Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="space-y-12">
+            <div class="p-10 bg-white/5 border border-white/10 rounded-[40px]">
+                <div class="space-y-10">
+                    <div>
+                        <label class="text-[10px] font-black text-gray-500 uppercase block mb-4 italic">Library
+                            Status</label>
+                        <select id="mStatus" onchange="updateStatus()"
+                            class="w-full bg-dark border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-pulse">
+                            <option value="">+ Add to List</option>
+                            <option value="Watching">Watching</option>
+                            <option value="Ongoing">Ongoing</option>
+                            <option value="Plan to Watch">Plan to Watch</option>
+                            <option value="Finished">Finished</option>
+                            <option value="On Hold">On Hold</option>
+                            <option value="Dropped">Dropped</option>
+                        </select>
+                        <div class="mt-4">
+                            <label class="text-[10px] font-black text-gray-500 uppercase block mb-4 italic">Assigned
+                                Universe</label>
+                            <select id="mSagaAssign" onchange="assignToSaga(this.value)"
+                                class="w-full bg-dark border border-white/10 p-5 rounded-2xl text-[11px] font-black uppercase outline-none focus:border-pulse">
+                                <option value="">None / Independent</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="mProgressBox" class="hidden space-y-4">
+                        <div class="flex justify-between items-end text-[10px] font-black uppercase">
+                            <span class="text-gray-500 tracking-widest">Neural Progress</span>
+                            <span id="mEpLabel"
+                                class="text-pulse text-xs bg-pulse/10 px-3 py-1 rounded-full border border-pulse/20">0/0</span>
+                        </div>
+
+                        <div id="mSeasonsList" class="flex flex-wrap gap-2 overflow-x-auto hide-scroll pb-2"></div>
+
+                        <div class="h-1.5 bg-white/5 rounded-full overflow-hidden shadow-inner">
+                            <div id="mProgressBar" class="h-full bg-pulse transition-all duration-300"></div>
+                        </div>
+
+                        <div class="flex items-center gap-3 bg-dark/50 p-2 rounded-2xl border border-white/5">
+                            <button onclick="adjustProgress(-1)"
+                                class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-pulse hover:shadow-[0_0_15px_rgba(255,45,85,0.4)] transition-all text-white shrink-0">
+                                <i class="fas fa-minus text-xs"></i>
+                            </button>
+                            <input type="range" id="mEpRange" min="0" oninput="syncProgress(this.value)"
+                                class="w-full accent-pulse h-2 bg-transparent">
+                            <button onclick="adjustProgress(1)"
+                                class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center hover:bg-[#22c55e] hover:shadow-[0_0_15px_rgba(34,197,94,0.4)] transition-all text-white shrink-0">
+                                <i class="fas fa-plus text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+
+                    <div id="mRatingCard" class="hidden p-8 bg-pulse/5 border border-pulse/20 rounded-3xl text-center">
+                        <h5
+                            class="text-[10px] font-black uppercase text-pulse mb-4 tracking-widest flex justify-between items-center px-2">
+                            <span>Rate this Title</span>
+                            <select id="mainRatingScaleToggle" onchange="resetStarHover()"
+                                class="bg-transparent text-gray-500 hover:text-white outline-none cursor-pointer">
+                                <option value="5">/ 5</option>
+                                <option value="10">/ 10</option>
+                            </select>
+                        </h5>
+
+                        <div class="relative inline-block cursor-pointer px-4 py-2" id="precisionStarContainer"
+                            onmousemove="handleStarHover(event)" onmouseleave="resetStarHover()"
+                            onclick="commitPrecisionRating(event)" ontouchmove="handleStarHover(event)"
+                            ontouchend="commitPrecisionRating(event)">
+
+                            <div class="flex items-center gap-2 text-3xl text-gray-700 pointer-events-none">
+                                <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                                    class="fas fa-star"></i><i class="fas fa-star"></i>
+                            </div>
+
+                            <div id="precisionStarFill"
+                                class="absolute top-2 left-4 bottom-2 overflow-hidden pointer-events-none transition-all duration-75 whitespace-nowrap"
+                                style="width: 0%;">
+                                <div class="flex items-center gap-2 text-3xl text-yellow-400">
+                                    <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
+                                        class="fas fa-star"></i><i class="fas fa-star"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center mt-3">
+                            <div class="text-2xl font-black italic text-white w-12 text-center" id="ratingValueDisplay">
+                                0.0</div>
+                        </div>
+
+                        <p class="text-[8px] font-bold text-gray-600 uppercase mt-4 mb-4">Personal Sentiment Score
+                        </p>
+
+                        <div id="mCrownUI" class="border-t border-pulse/20 pt-6 mt-2">
+                            <p class="text-[8px] font-bold text-gray-500 uppercase mb-3 tracking-widest">Crown
+                                Ranking</p>
+                            <select id="mCrownSelect" onchange="handleCrownSelect(this.value)"
+                                class="w-full bg-dark border border-white/10 p-3 rounded-xl text-[10px] font-black uppercase outline-none focus:border-yellow-500 text-yellow-500 text-center">
+                                <option value="0">Uncrowned</option>
+                                <option value="1" class="text-yellow-400">👑 #1 Crown (Global limit)</option>
+                                <option value="2" class="text-gray-300">👑 #2 Crown (Global limit)</option>
+                                <option value="3" class="text-amber-600">👑 #3 Crown (Global limit)</option>
+                                <option value="4" class="text-pulse">💎 Genre Sovereign (Unlimited)</option>
+                            </select>
+
+                            <div id="mSovereignRealmBox"
+                                class="hidden mt-4 animate-in fade-in zoom-in duration-300 bg-pulse/10 p-3 rounded-xl border border-pulse/30">
+                                <p class="text-[8px] font-bold text-pulse uppercase mb-2 tracking-widest text-center">
+                                    Select Sovereign Realm</p>
+                                <select id="mSovereignRealmSelect" onchange="saveSovereignRealm(this.value)"
+                                    class="w-full bg-dark border border-white/10 p-2 rounded-lg text-[9px] font-black uppercase outline-none focus:border-pulse text-white text-center">
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-white/10 mt-6">
+                        <button onclick="document.getElementById('mTypeOverrideBox').classList.toggle('hidden')"
+                            class="w-full text-left text-[8px] text-gray-500 uppercase font-black hover:text-white flex items-center gap-2 transition-colors">
+                            <i class="fas fa-sliders-h"></i> Manual Type Override
+                        </button>
+                        <div id="mTypeOverrideBox" class="hidden mt-3">
+                            <select id="mTypeOverride" onchange="overrideType(this.value)"
+                                class="bg-dark border border-white/10 p-3 rounded-xl text-[9px] font-black uppercase text-gray-400 w-full outline-none focus:border-pulse">
+                                <option value="movie">Movie</option>
+                                <option value="tv">Series</option>
+                                <option value="anime">Anime</option>
+                                <option value="kdrama">K-Drama</option>
+                                <option value="asian">Asian Drama</option>
+                                <option value="turkish">Turkish</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="mSagaPromptBox"
+                        class="hidden mt-6 p-6 bg-pulse/10 border border-pulse/30 rounded-2xl text-center animate-in zoom-in duration-300 shadow-xl">
+                        <div
+                            class="w-10 h-10 mx-auto bg-pulse/20 rounded-full flex items-center justify-center mb-3 text-pulse text-lg">
+                            <i class="fas fa-link"></i>
+                        </div>
+                        <h4 class="text-[10px] font-black uppercase text-white mb-2 tracking-widest">Universe
+                            Detected</h4>
+                        <p id="mSagaPromptText" class="text-[9px] text-gray-400 mb-4 font-bold leading-relaxed"></p>
+                        <button id="mSagaPromptConfirm"
+                            class="w-full bg-pulse text-white py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-pulse/30">
+                            Track Entire Universe
+                        </button>
+                    </div>
+                    <button id="mRemoveBtn" onclick="removeItem()"
+                        class="hidden w-full text-[10px] font-black uppercase text-gray-700 hover:text-pulse transition-all pt-6">Eject
+                        from Library</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

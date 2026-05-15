@@ -1,0 +1,25 @@
+<div id="factoryResetModal" onclick="closeFactoryResetModal()"
+        class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 transition-all">
+        <div onclick="event.stopPropagation()"
+            class="relative w-full max-w-md bg-[#0a0c12] border border-red-600/50 rounded-[40px] shadow-[0_20px_60px_rgba(220,38,38,0.2)] flex flex-col p-8 md:p-12 text-center animate-in zoom-in duration-300">
+            <div
+                class="w-24 h-24 mx-auto bg-red-600/10 rounded-full flex items-center justify-center mb-6 border border-red-600/30 text-red-500 text-4xl">
+                <i class="fas fa-biohazard animate-pulse"></i>
+            </div>
+            <h3 class="text-3xl font-black italic uppercase text-white mb-4">Total System Wipe</h3>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-8 leading-relaxed">
+                WARNING: This will obliterate <span class="text-red-500">EVERYTHING</span>. Library, Sagas, Radar,
+                Sources, and Preferences will be permanently destroyed.
+            </p>
+            <div class="flex flex-col gap-4">
+                <button onclick="executeFactoryReset()"
+                    class="w-full bg-red-600 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors shadow-lg shadow-red-600/30 text-white">
+                    Initiate Factory Reset
+                </button>
+                <button onclick="closeFactoryResetModal()"
+                    class="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-gray-400">
+                    Abort
+                </button>
+            </div>
+        </div>
+    </div>

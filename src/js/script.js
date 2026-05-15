@@ -209,6 +209,20 @@ const GENRE_MAP = {
     10752: [10752, 10768], // War <-> War & Politics
     10768: [10768, 10752]
 };
+
+const HARD_BLOCK_LIST = {
+    ids: [124440, 95557, 101161, 71597, 85404, 76269], // Overflow, Adam's Sweet Agony, etc.
+    names: ["overflow", "adam's sweet agony", "adams sweet agony", "furyu", "mankitsu", "euphoria"]
+};
+
+function isBlocked(item) {
+    if (!item) return true;
+    const title = (item.title || item.name || '').toLowerCase();
+    const isAdult = item.adult || item.genre_ids?.includes(10749) && item.genre_ids?.includes(16); // Double check for Hentai pattern
+    return HARD_BLOCK_LIST.ids.includes(item.id) ||
+        HARD_BLOCK_LIST.names.some(n => title.includes(n)) ||
+        isAdult;
+}
 // --- NETWORK LOADER LOGIC ---
 function showLoader() {
     let el = document.getElementById('globalLoader');
@@ -293,6 +307,7 @@ window.fetch = async (...args) => {
         throw error;
     }
 };
+let globalHeroInterval = null;
 let discoverPage = 1;
 let currentPersonCredits = [];
 let personDisplayLimit = 8;
@@ -312,6 +327,10 @@ let prefs = JSON.parse(localStorage.getItem('cp_elite_prefs')) || {
 if (typeof prefs.safeMode === 'undefined') prefs.safeMode = true;
 
 let currentSearchLayout = prefs.searchLayout;
+let calendarOffset = 0;
+let calendarWasOpen = false;
+let calendarHoverLocked = false;
+let calendarHoverKey = null;
 let state = {
     hero: [],
     heroIdx: 0,
@@ -340,7 +359,9 @@ let state = {
     mpTab: 'crowned',
     mpLimit: 25,
     mpFilter: 'all',
-    reminders: JSON.parse(localStorage.getItem('cp_elite_reminders')) || [],
+    currentSyncBatch: [],
+    radar: (() => { try { return JSON.parse(localStorage.getItem('cp_neural_radar') || '[]'); } catch (e) { return []; } })(),
+    reminders: (() => { try { return JSON.parse(localStorage.getItem('cp_elite_reminders') || '[]'); } catch (e) { return []; } })(),
     catMode: 'trending', // Tracks if category page is looking at trending or upcoming
     catRawData: [], // For local searching
 
@@ -378,14 +399,16 @@ async function init() {
         ] = await Promise.all([
             fetchAPI('/trending/all/week'),
             fetchAPI('/discover/tv?sort_by=popularity.desc&with_original_language=en'),
-            fetchAPI('/discover/tv?with_genres=16&with_original_language=ja&sort_by=popularity.desc'),
+            fetchAPI('/discover/tv?with_genres=16&with_original_language=ja&without_genres=10749&include_adult=false&sort_by=popularity.desc'),
             fetchAPI('/discover/tv?with_original_language=ko&sort_by=popularity.desc'),
             fetchAPI('/discover/tv?with_original_language=tr&sort_by=popularity.desc'),
             fetchAPI('/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc'),
 
-            fetchAPI('/movie/upcoming?region=US'),
+            // UPCOMING: use /discover with strict date.gte=today so released content never appears
+            fetchAPI(`/discover/movie?primary_release_date.gte=${today}&sort_by=popularity.desc&region=US`),
             fetchAPI(`/discover/tv?first_air_date.gte=${today}&sort_by=popularity.desc&with_original_language=en`),
-            fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`),
+            // Anime upcoming: also exclude hentai (genre 10749) and adult content
+            fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_genres=16&with_original_language=ja&without_genres=10749&include_adult=false&sort_by=popularity.desc`),
             fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=ko&sort_by=popularity.desc`),
             fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_original_language=tr&sort_by=popularity.desc`),
             fetchAPI(`/discover/tv?first_air_date.gte=${today}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`),
@@ -396,65 +419,30 @@ async function init() {
         state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
         const allGenres = [...mGenres.genres, ...tGenres.genres];
         state.genres = Array.from(new Map(allGenres.map(g => [g.id, g])).values());
-        state.hero = trending.results.filter(i => i.backdrop_path).slice(0, 5);
 
+        state.homeData = { trending, tv, anime, kdrama, turkish, asian, upMovie, upTv, upAnime, upKdrama, upTurkish, upAsian };
 
-        renderHero();
-        renderContinueWatching(); // NEW: Render Continue Watching on load
-        initializeSmartHomeSections();
-// NEW: Extract & Render Top 10 Highest Rated from Trending
-        const top10 = [...trending.results]
-            .filter(i => i.vote_average > 0 && i.poster_path) // ensure valid items
-            .sort((a, b) => b.vote_average - a.vote_average)
-            .slice(0, 10);
-        renderTop10(top10);
-        // --- NEW: Intercept URL on Load ---
         const hash = window.location.hash.substring(2);
         if (hash) {
             try {
                 const decodedView = secureDecode(hash);
-                if (document.getElementById(`view-${decodedView}`)) {
-                    navigate(decodedView, true);
-                } else {
-                    navigate('home', true);
-                }
+                await navigate(decodedView, true);
             } catch (e) {
-                navigate('home', true);
+                await navigate('home', true);
             }
         } else {
-            navigate('home', true);
+            await navigate('home', true);
         }
-
-        renderHero();
-
-
-        // Render Trending
-        renderRow('row-movies', trending.results.filter(i => i.media_type === 'movie'), 'movie');
-        renderRow('row-tv', tv.results, 'tv');
-        renderRow('row-anime', anime.results, 'tv');
-        renderRow('row-kdrama', kdrama.results, 'tv');
-        renderRow('row-turkish', turkish.results, 'tv');
-        renderRow('row-asian', asian.results, 'tv');
-
-        // Render Upcoming
-        renderRow('row-up-movies', upMovie.results, 'movie');
-        renderRow('row-up-tv', upTv.results, 'tv');
-        renderRow('row-up-anime', upAnime.results, 'tv');
-        renderRow('row-up-kdrama', upKdrama.results, 'tv');
-        renderRow('row-up-turkish', upTurkish.results, 'tv');
-        renderRow('row-up-asian', upAsian.results, 'tv');
 
         checkReminders(); // Fire reminder check on load
 
         setupFilters();
         updateCounters();
-        startClock();
         setupSearchBehavior();
         setupStarLogic();
         initNeuralEngine();
         renderSources();
         setupLongPressCopy();
-        setInterval(nextHero, 10000);
         setupModalSearch();
         loadCountries();
         updateSafeModeUI();
@@ -476,6 +464,9 @@ async function fetchAPI(path) {
 // --- URL ROUTING (Handles returning from Player) ---
 // --- URL ROUTING & DEEP LINK INTERCEPTOR ---
 document.addEventListener('DOMContentLoaded', () => {
+    // Boot clock IMMEDIATELY so it never shows frozen 00:00 while API calls load
+    startClock();
+
     const urlParams = new URLSearchParams(window.location.search);
 
     // Legacy/Standard Open
@@ -538,12 +529,60 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // api helper 
+
+async function loadModalFragment(id) {
+    if (document.getElementById(id)) return;
+    showLoader();
+    try {
+        const res = await fetch(`pages/${id}.html`);
+        if (res.ok) {
+            const html = await res.text();
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            const el = temp.querySelector(`#${id}`) || temp.firstElementChild;
+            if (el) document.body.appendChild(el);
+        }
+    } catch (e) { console.error("Failed to load modal", id, e); }
+    hideLoader();
+}
+
 function getTodayAPI() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+function renderHome() {
+    if (!state.homeData) return;
+    const { trending, tv, anime, kdrama, turkish, asian, upMovie, upTv, upAnime, upKdrama, upTurkish, upAsian } = state.homeData;
+
+    renderHero();
+    renderContinueWatching();
+    initializeSmartHomeSections();
+    initSmartScrollButtons();
+
+    const top10 = [...trending.results]
+        .filter(i => i.vote_average > 0 && i.poster_path)
+        .sort((a, b) => b.vote_average - a.vote_average)
+        .slice(0, 10);
+    renderTop10(top10);
+
+    renderRow('row-movies', trending.results.filter(i => i.media_type === 'movie'), 'movie');
+    renderRow('row-tv', tv.results, 'tv');
+    renderRow('row-anime', anime.results, 'tv');
+    renderRow('row-kdrama', kdrama.results, 'tv');
+    renderRow('row-turkish', turkish.results, 'tv');
+    renderRow('row-asian', asian.results, 'tv');
+
+    renderRow('row-up-movies', upMovie.results, 'movie');
+    renderRow('row-up-tv', upTv.results, 'tv');
+    renderRow('row-up-anime', upAnime.results, 'tv');
+    renderRow('row-up-kdrama', upKdrama.results, 'tv');
+    renderRow('row-up-turkish', upTurkish.results, 'tv');
+    renderRow('row-up-asian', upAsian.results, 'tv');
+}
+
 // Navigation
-function navigate(view, skipHistory = false) {
+async function navigate(view, skipHistory = false) {
     showLoader();
     state.view = view;
 
@@ -559,15 +598,41 @@ function navigate(view, skipHistory = false) {
         setTimeout(() => sidebar.classList.remove('pointer-events-none'), 600);
     }
 
+    let targetView = document.getElementById(`view-${view}`);
+    if (!targetView) {
+        try {
+            const res = await fetch(`pages/${view}.html`);
+            if (res.ok) {
+                const html = await res.text();
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const loadedView = temp.querySelector(`#view-${view}`) || temp.querySelector('.page-view') || temp.firstElementChild;
+                if (loadedView) {
+                    document.getElementById('mainContent').appendChild(loadedView);
+                    targetView = document.getElementById(`view-${view}`);
+                }
+            } else {
+                console.error(`Failed to load view: ${view}`);
+                hideLoader();
+                return;
+            }
+        } catch (e) {
+            console.error(`Error loading view: ${view}`, e);
+            hideLoader();
+            return;
+        }
+    }
+
     document.querySelectorAll('.page-view').forEach(v => {
         v.classList.add('hidden');
         v.classList.remove('page-transition-enter');
     });
 
-    const targetView = document.getElementById(`view-${view}`);
-    targetView.classList.remove('hidden');
-    void targetView.offsetWidth;
-    targetView.classList.add('page-transition-enter');
+    if (targetView) {
+        targetView.classList.remove('hidden');
+        void targetView.offsetWidth;
+        targetView.classList.add('page-transition-enter');
+    }
 
     document.getElementById('pathLabel').innerText = view.toUpperCase();
 
@@ -576,9 +641,18 @@ function navigate(view, skipHistory = false) {
     if (btn) btn.classList.add('active');
 
     // Run view specific logic
+    if (view === 'home') renderHome();
     if (view === 'mylist') renderList();
     if (view === 'upcoming') loadUpcomingPage();
-    if (view === 'rhythmlab') runLab();
+    if (view === 'rhythmlab') {
+        setupFilters();
+        runLab();
+    }
+    if (view === 'search') {
+        setupFilters();
+        loadCountries();
+        loadDiscoverContent();
+    }
     if (view === 'sync') renderSync();
     if (view === 'masterpieces') renderMasterpieces();
     if (view === 'sagamatrix') renderSagaMatrix();
@@ -1279,14 +1353,14 @@ async function applySearchFilters(append = false) {
 function renderHero() {
     const slider = document.getElementById('heroSlider');
     const dotsContainer = document.getElementById('heroNavDots');
-    
+
     slider.innerHTML = state.hero.map((item, i) => `
         <div class="hero-item absolute inset-0 transition-all duration-1000 ease-[cubic-bezier(0.25,1,0.5,1)] ${i === 0 ? 'active' : 'inactive'}" data-index="${i}">
             <img src="${IMG_HD + item.backdrop_path}" class="w-full h-full object-cover transform transition-transform duration-[10s] ease-out ${i === 0 ? 'scale-105' : 'scale-100'}">
             <div class="hero-overlay absolute inset-0 bg-[#020408] transition-opacity duration-1000 ${i === 0 ? 'opacity-0' : 'opacity-60'} z-10"></div>
         </div>
     `).join('');
-    
+
     if (dotsContainer) {
         dotsContainer.innerHTML = state.hero.map((_, i) => `
             <div class="hero-dot w-2 h-2 rounded-full transition-all duration-500 cursor-pointer ${i === 0 ? 'w-8 bg-pulse' : 'bg-white/30 hover:bg-white/60'}" onclick="goToHero(${i})"></div>
@@ -1294,6 +1368,17 @@ function renderHero() {
     }
 
     updateHeroContent();
+    startHeroAutoSlide();
+}
+
+function startHeroAutoSlide() {
+    clearInterval(globalHeroInterval);
+    if (!state.hero || state.hero.length <= 1) return;
+
+    globalHeroInterval = setInterval(() => {
+        if (document.hidden) return;
+        nextHero();
+    }, 8000);
 }
 
 function updateHeroContent() {
@@ -1305,7 +1390,7 @@ function updateHeroContent() {
     // Fade out text, slide down slightly
     hTitle.style.opacity = 0;
     hTitle.style.transform = 'translateY(15px)';
-    if(hDesc) {
+    if (hDesc) {
         hDesc.style.opacity = 0;
         hDesc.style.transform = 'translateY(15px)';
     }
@@ -1313,8 +1398,8 @@ function updateHeroContent() {
     // Wait for fade out, then swap text and fade in
     setTimeout(() => {
         hTitle.innerText = title;
-        if(hDesc) hDesc.innerText = item.overview || "Narrative archive encrypted.";
-        
+        if (hDesc) hDesc.innerText = item.overview || "Narrative archive encrypted.";
+
         const length = title.length;
         let size = 3.5;
         if (length > 25) size = 2;
@@ -1325,7 +1410,7 @@ function updateHeroContent() {
 
         hTitle.style.opacity = 1;
         hTitle.style.transform = 'translateY(0)';
-        if(hDesc) {
+        if (hDesc) {
             hDesc.style.opacity = 1;
             hDesc.style.transform = 'translateY(0)';
         }
@@ -1339,21 +1424,21 @@ function updateHeroContent() {
             const tr = v.results.find(x => x.type === 'Trailer');
             document.getElementById('heroTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
         });
-    }, 400); 
+    }, 400);
 }
 
 function goToHero(idx) {
-    if(idx === state.heroIdx) return;
+    if (idx === state.heroIdx) return;
     const items = document.querySelectorAll('.hero-item');
     const dots = document.querySelectorAll('.hero-dot');
-    
+
     // Animate out current
     items[state.heroIdx].classList.remove('active');
     items[state.heroIdx].classList.add('inactive');
     items[state.heroIdx].querySelector('img').classList.remove('scale-105');
     items[state.heroIdx].querySelector('img').classList.add('scale-100');
     items[state.heroIdx].querySelector('.hero-overlay').classList.replace('opacity-0', 'opacity-60');
-    if(dots[state.heroIdx]) {
+    if (dots[state.heroIdx]) {
         dots[state.heroIdx].classList.replace('w-8', 'w-2');
         dots[state.heroIdx].classList.replace('bg-pulse', 'bg-white/30');
     }
@@ -1366,31 +1451,39 @@ function goToHero(idx) {
     items[state.heroIdx].querySelector('img').classList.remove('scale-100');
     items[state.heroIdx].querySelector('img').classList.add('scale-105');
     items[state.heroIdx].querySelector('.hero-overlay').classList.replace('opacity-60', 'opacity-0');
-    if(dots[state.heroIdx]) {
+    if (dots[state.heroIdx]) {
         dots[state.heroIdx].classList.replace('w-2', 'w-8');
         dots[state.heroIdx].classList.replace('bg-white/30', 'bg-pulse');
     }
 
     updateHeroContent();
+    startHeroAutoSlide();
 }
 
 function nextHero() {
+    if (!state.hero || state.hero.length <= 1) return;
     goToHero((state.heroIdx + 1) % state.hero.length);
 }
 
 // User Status Counter Toggle
-window.toggleHomeCounters = function() {
+window.toggleHomeCounters = function () {
     const wrapper = document.getElementById('homeCountersWrapper');
     const icon = document.getElementById('counterToggleIcon');
-    
-    if(wrapper.classList.contains('grid-rows-0')) {
-        wrapper.classList.remove('grid-rows-0', 'opacity-0', 'pointer-events-none', 'mt-0');
-        wrapper.classList.add('grid-rows-[1fr]', 'opacity-100', 'pointer-events-auto', 'mt-4');
-        icon.classList.add('rotate-180');
+    if (!wrapper) return;
+
+    // Force a hard toggle check
+    if (wrapper.classList.contains('grid-rows-0') || wrapper.style.display === 'none') {
+        wrapper.style.display = 'grid'; // Force block
+        setTimeout(() => {
+            wrapper.classList.remove('grid-rows-0', 'opacity-0', 'pointer-events-none', 'mt-0');
+            wrapper.classList.add('grid-rows-[1fr]', 'opacity-100', 'pointer-events-auto', 'mt-4');
+        }, 10);
+        if (icon) icon.classList.add('rotate-180');
     } else {
         wrapper.classList.add('grid-rows-0', 'opacity-0', 'pointer-events-none', 'mt-0');
         wrapper.classList.remove('grid-rows-[1fr]', 'opacity-100', 'pointer-events-auto', 'mt-4');
-        icon.classList.remove('rotate-180');
+        setTimeout(() => { wrapper.style.display = 'none'; }, 300);
+        if (icon) icon.classList.remove('rotate-180');
     }
 };
 
@@ -1420,14 +1513,37 @@ window.updateModalTopLeftButtons = function () {
 
 // Modal Logic
 async function openModal(id, type, isBack = false) {
+    let modalEl = document.getElementById('modal');
+    if (!modalEl) {
+        showLoader();
+        try {
+            const res = await fetch(`pages/modal.html`);
+            if (res.ok) {
+                const html = await res.text();
+                const temp = document.createElement('div');
+                temp.innerHTML = html;
+                const loadedModal = temp.querySelector('#modal') || temp.firstElementChild;
+                if (loadedModal) {
+                    document.body.appendChild(loadedModal);
+                    modalEl = document.getElementById('modal');
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load modal HTML", e);
+        }
+        hideLoader();
+    }
+
     let modalCountdownInterval;
     // Save current scroll before opening (used to restore when modal is closed via Back)
-    if (!isBack && document.getElementById('modal').classList.contains('hidden')) {
+    if (!isBack && modalEl && modalEl.classList.contains('hidden')) {
         window._cpModalScrollY = window.scrollY;
     }
-    // Ensure modal starts at the top
-    const modalEl = document.getElementById('modal');
-    if (modalEl) modalEl.scrollTop = 0;
+    // Ensure modal starts at the top and floats above other overlays
+    if (modalEl) {
+        modalEl.scrollTop = 0;
+        modalEl.style.zIndex = '700';
+    }
 
     // Push history state so the Back Button works safely
     if (!isBack) {
@@ -2451,10 +2567,831 @@ async function renderSync() {
     }
 
     container.innerHTML = sectionsHTML.join('') || `<div class="text-center py-20 text-gray-700 font-black uppercase tracking-widest italic">Insufficient elite data for synchronization. Add highly rated shows to seed the engine.</div>`;
+    state.currentSyncBatch = sectionsHTML;
     initSmartScrollButtons();
 }
 
-// Global Helpers
+function saveSyncBatch() {
+    if (!state.currentSyncBatch || state.currentSyncBatch.length === 0) {
+        showNotification("No neural batch to archive.");
+        return;
+    }
+
+    let archives = JSON.parse(localStorage.getItem('cp_sync_archives') || '[]');
+    archives.unshift({
+        id: Date.now(),
+        timestamp: new Date().toLocaleString(),
+        htmls: state.currentSyncBatch,
+        count: state.currentSyncBatch.length
+    });
+
+    localStorage.setItem('cp_sync_archives', JSON.stringify(archives.slice(0, 15)));
+    showNotification("Recommendation snapshot archived to Neural Repository.");
+}
+
+function openSnapshotHub() {
+    const hub = document.getElementById('snapshotHub');
+    const list = document.getElementById('snapshotList');
+    if (!hub || !list) return;
+
+    const archives = JSON.parse(localStorage.getItem('cp_sync_archives') || '[]');
+
+    if (archives.length === 0) {
+        list.innerHTML = `
+            <div class="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-[40px]">
+                <i class="fas fa-box-open text-5xl text-gray-800 mb-6"></i>
+                <p class="text-gray-600 font-black uppercase tracking-widest italic">Repository Empty. Save a batch from the 'For You' page.</p>
+            </div>
+        `;
+    } else {
+        list.innerHTML = archives.map(a => `
+            <div class="bg-white/5 border border-white/10 p-8 rounded-[35px] hover:border-pulse/50 transition-all group relative overflow-hidden">
+                <div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="deleteSnapshot(${a.id})" class="text-gray-500 hover:text-pulse transition-colors"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <div class="text-[9px] text-pulse font-black uppercase tracking-[0.3em] mb-4">Snapshot / ${a.id}</div>
+                <h4 class="text-xl font-black text-white italic mb-2">${a.timestamp}</h4>
+                <p class="text-xs text-gray-500 font-bold mb-8">${a.count} Recommendations Cached</p>
+                <button onclick="loadSnapshot(${a.id})" class="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-pulse hover:text-white transition-all shadow-xl">
+                    Restore Neural View
+                </button>
+            </div>
+        `).join('');
+    }
+
+    hub.classList.remove('hidden');
+    hub.classList.add('flex');
+}
+
+function closeSnapshotHub() { document.getElementById('snapshotHub').classList.add('hidden'); }
+
+function deleteSnapshot(id) {
+    let archives = JSON.parse(localStorage.getItem('cp_sync_archives') || '[]');
+    archives = archives.filter(a => a.id !== id);
+    localStorage.setItem('cp_sync_archives', JSON.stringify(archives));
+    openSnapshotHub();
+    showNotification("Archive deleted from repository.");
+}
+
+function loadSnapshot(id) {
+    const archives = JSON.parse(localStorage.getItem('cp_sync_archives') || '[]');
+    const snap = archives.find(a => a.id === id);
+    if (!snap) return;
+
+    const container = document.getElementById('syncContainer');
+    if (!container) return;
+
+    container.innerHTML = snap.htmls.map(h => h.replace(' Neural ', ' Archived Neural ')).join('');
+    state.currentSyncBatch = snap.htmls;
+    initSmartScrollButtons();
+    closeSnapshotHub();
+    showNotification("Archived batch synchronized.");
+}
+
+function loadSyncBatch() { openSnapshotHub(); }
+
+// --- NEURAL RADAR TRACKING SYSTEM ---
+async function toggleRadar(id, type, title, poster) {
+    const idx = state.radar.findIndex(r => String(r.id) === String(id));
+    if (idx !== -1) {
+        state.radar.splice(idx, 1);
+        showNotification(`${title} removed from Radar.`);
+    } else {
+        const memo = prompt("Add a neural memo for this release (optional):", "");
+
+        let releaseDate = '';
+        let weeklyDay = -1;
+        let overview = '';
+        let statusText = '';
+
+        if (type === 'tv') {
+            const details = await fetchAPI(`/tv/${id}`);
+            overview = details.overview || details.tagline || '';
+            statusText = details.status || '';
+            if (details.next_episode_to_air) {
+                releaseDate = details.next_episode_to_air.air_date;
+                weeklyDay = new Date(releaseDate).getDay();
+            } else if (details.last_episode_to_air) {
+                releaseDate = details.last_episode_to_air.air_date;
+                weeklyDay = new Date(releaseDate).getDay();
+            }
+        } else {
+            const details = await fetchAPI(`/movie/${id}`);
+            overview = details.overview || details.tagline || '';
+            statusText = details.status || '';
+            releaseDate = details.release_date;
+        }
+
+        state.radar.push({
+            id,
+            type,
+            title,
+            poster,
+            memo: memo || 'Tracking for Pulse Release',
+            date: releaseDate,
+            weeklyDay,
+            overview,
+            statusText
+        });
+        showNotification(`${title} added to My Tracker.`);
+    }
+
+    localStorage.setItem('cp_neural_radar', JSON.stringify(state.radar));
+    if (state.view === 'upcoming') loadUpcomingPage();
+}
+
+function closeCalendar() {
+    document.getElementById('calendarModal').classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    calendarHoverLocked = false;
+    calendarHoverKey = null;
+    hideCalendarHoverCard();
+}
+
+function navigateFromCalendar(view) {
+    if (!view) return;
+    const select = document.getElementById('calendarPageSelect');
+    if (select) select.value = '';
+    closeCalendar();
+    navigate(view);
+}
+
+function getCalendarHoverItem(id, source) {
+    if (source === 'radar') return state.radar.find(r => String(r.id) === String(id));
+    if (source === 'episodic') return state.reminders.find(r => String(r.id) === String(id));
+    if (source === 'global') return state.globalCalendarReleases.find(r => String(r.id) === String(id));
+    return null;
+}
+
+function formatCalendarHoverData(item, source) {
+    if (!item) return null;
+    const title = item.title || item.name || 'Untitled';
+    const mediaType = (item.media_type || item.type || 'media').toUpperCase();
+    const category = item.cal_category || (item.isEpisodic ? 'Airing Now' : mediaType === 'MOVIE' ? 'Movie' : 'Series');
+    const itemDate = getCalendarItemDate(item);
+    const date = itemDate ? new Date(itemDate) : null;
+    const dateLabel = date ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown Date';
+    const label = source === 'radar'
+        ? 'PRIORITY TRACKER'
+        : item.nextEp
+            ? `S${item.nextSeason} E${item.nextEp}`
+            : category;
+
+    const memoText = item.memo?.toString().trim();
+    const detailText = (item.description || item.note || item.overview || item.summary || item.statusText || '').toString().trim();
+    let overview = '';
+
+    if (memoText && detailText) {
+        overview = `${memoText}\n\n${detailText}`;
+    } else if (memoText) {
+        overview = memoText;
+    } else if (detailText) {
+        overview = detailText;
+    } else if (source === 'radar' || source === 'episodic') {
+        overview = 'Tracked release details will appear here after the next sync update.';
+    } else {
+        overview = 'No additional details available.';
+    }
+
+    const badge = source === 'global' ? 'GLOBAL RELEASE' : (source === 'radar' ? 'TRACKED' : 'AIRING NOW');
+    return { title, mediaType, category, dateLabel, label, overview, badge };
+}
+
+function positionCalendarHoverCard(target) {
+    const card = document.getElementById('calendarHoverCard');
+    const modal = document.getElementById('calendarModal');
+    if (!card || !modal) return;
+    const targetRect = target.getBoundingClientRect();
+    const modalRect = modal.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    let top = targetRect.top - modalRect.top - cardRect.height - 12;
+    let left = targetRect.left - modalRect.left;
+    if (top < 16) {
+        top = targetRect.bottom - modalRect.top + 12;
+    }
+    if (left + cardRect.width > modalRect.width - 16) {
+        left = Math.max(16, modalRect.width - cardRect.width - 16);
+    }
+    if (left < 16) left = 16;
+    card.style.top = `${top}px`;
+    card.style.left = `${left}px`;
+}
+
+function showCalendarHoverCard(target, id, source) {
+    const card = document.getElementById('calendarHoverCard');
+    const item = getCalendarHoverItem(id, source);
+    if (!card || !item) return;
+    const data = formatCalendarHoverData(item, source);
+    if (!data) return;
+    calendarHoverKey = `${source}-${id}`;
+    card.dataset.hoverKey = calendarHoverKey;
+    card.classList.remove('hidden');
+    document.getElementById('calendarHoverCardBadge').innerText = data.badge;
+    document.getElementById('calendarHoverCardType').innerText = data.mediaType;
+    document.getElementById('calendarHoverCardDate').innerText = data.dateLabel;
+    document.getElementById('calendarHoverCardTitle').innerText = data.title;
+    document.getElementById('calendarHoverCardLabel').innerText = data.label;
+    document.getElementById('calendarHoverCardOverview').innerText = data.overview;
+    requestAnimationFrame(() => positionCalendarHoverCard(target));
+}
+
+function hideCalendarHoverCard() {
+    const card = document.getElementById('calendarHoverCard');
+    if (!card) return;
+    if (calendarHoverLocked) return;
+    card.classList.add('hidden');
+    calendarHoverKey = null;
+}
+
+function toggleCalendarHoverLock(target, id, source) {
+    const key = `${source}-${id}`;
+    if (calendarHoverLocked && calendarHoverKey === key) {
+        calendarHoverLocked = false;
+        hideCalendarHoverCard();
+    } else {
+        calendarHoverLocked = true;
+        showCalendarHoverCard(target, id, source);
+    }
+}
+
+function getCalendarItemDate(item) {
+    return item.next_episode_to_air?.air_date || item.release_date || item.first_air_date || item.date || null;
+}
+
+function getCalendarCategory(item) {
+    const lang = (item.original_language || '').toLowerCase();
+    const countries = (item.origin_country || []).map(c => c.toLowerCase());
+    const country = countries[0] || '';
+
+    if (lang === 'ja' || item.genre_ids?.includes(16) || item.genres?.some(g => g.id === 16 || g.name === 'Animation')) {
+        // Double check it's actually anime (Japanese animation)
+        if (lang === 'ja' || countries.includes('jp')) return 'Anime';
+    }
+
+    if (lang === 'ko' || countries.includes('kr')) return 'K-Drama';
+    if (lang === 'tr' || countries.includes('tr')) return 'Turkish';
+
+    const asianCountries = ['cn', 'tw', 'th', 'ph', 'vn', 'hk', 'my', 'id', 'sg', 'jp'];
+    if (countries.some(c => asianCountries.includes(c))) return 'Asian';
+
+    return item.media_type === 'movie' ? 'Movie' : 'TV';
+}
+
+function getCalendarBadgeClass(category) {
+    switch (category) {
+        case 'Movie': return 'bg-[#2563eb] text-white';
+        case 'Anime': return 'bg-[#7c3aed] text-white';
+        case 'K-Drama': return 'bg-[#ef4444] text-white';
+        case 'Turkish': return 'bg-[#f59e0b] text-black';
+        case 'Asian': return 'bg-[#14b8a6] text-white';
+        default: return 'bg-white/10 text-white';
+    }
+}
+
+async function fetchAiringCalendarItems() {
+    try {
+        const resp = await fetch(BASE + `/tv/on_the_air?api_key=${API_KEY}`);
+        const data = await resp.json();
+        const candidates = (data.results || []).filter(i => (i.vote_count || 0) >= 40).sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0)).slice(0, 16);
+        const details = await Promise.all(candidates.map(i => fetchAPI(`/tv/${i.id}`).catch(() => null)));
+        return details.filter(Boolean).map(detail => ({
+            ...detail,
+            media_type: 'tv',
+            cal_category: getCalendarCategory(detail),
+            date: getCalendarItemDate(detail)
+        }));
+    } catch (err) {
+        console.warn('Airing calendar enrichment failed', err);
+        return [];
+    }
+}
+
+async function openCalendar(highlightId = null) {
+    const modal = document.getElementById('calendarModal');
+    const grid = document.getElementById('calendarGrid');
+    const monthLabelEl = document.getElementById('calendarMonthLabel');
+    if (!modal || !grid) return;
+
+    calendarHoverLocked = false;
+    calendarHoverKey = null;
+    hideCalendarHoverCard();
+    closeCalendarMonthPicker();
+    document.body.style.overflow = 'hidden';
+
+    const today = new Date();
+    const start = new Date(today);
+    if (typeof calendarOffset !== 'number' || isNaN(calendarOffset)) calendarOffset = 0;
+    start.setDate(start.getDate() + calendarOffset);
+    const dateStrStart = start.toISOString().split('T')[0];
+
+    const end = new Date(start);
+    end.setDate(end.getDate() + 34);
+    const dateStrEnd = end.toISOString().split('T')[0];
+
+    const future = new Date(start);
+    future.setDate(future.getDate() + 364);
+    const dateStrFuture = future.toISOString().split('T')[0];
+
+    // Expand queries to cover both TV and Movies for specialized categories
+    // And fetch multiple pages to ensure "indefinite" future coverage doesn't hit the 20-item cap
+    const fetchCategory = async (type, params) => {
+        let items = [];
+        for (let page = 1; page <= 2; page++) {
+            try {
+                const resp = await fetch(BASE + `/discover/${type}?api_key=${API_KEY}&${params}&page=${page}`);
+                const data = await resp.json();
+                if (data.results) items = items.concat(data.results);
+                if (page >= data.total_pages) break;
+            } catch (e) { break; }
+        }
+        return items;
+    };
+
+    const movieParams = `primary_release_date.gte=${dateStrStart}&primary_release_date.lte=${dateStrEnd}&sort_by=popularity.desc`;
+    const tvParams = `first_air_date.gte=${dateStrStart}&first_air_date.lte=${dateStrEnd}&sort_by=popularity.desc`;
+
+    try {
+        const [
+            movies,
+            animeTV, animeMovie,
+            kdramaTV, kdramaMovie,
+            turkishTV, turkishMovie,
+            asianTV, asianMovie,
+            upcomingMovies
+        ] = await Promise.all([
+            fetchCategory('movie', `${movieParams}&vote_count.gte=20`),
+            fetchCategory('tv', `${tvParams}&with_genres=16&with_original_language=ja`),
+            fetchCategory('movie', `${movieParams}&with_genres=16&with_original_language=ja`),
+            fetchCategory('tv', `${tvParams}&with_original_language=ko`),
+            fetchCategory('movie', `${movieParams}&with_original_language=ko`),
+            fetchCategory('tv', `${tvParams}&with_original_language=tr`),
+            fetchCategory('movie', `${movieParams}&with_original_language=tr`),
+            fetchCategory('tv', `${tvParams}&with_origin_country=CN|TW|TH|PH|VN|HK|MY|ID&without_genres=16`),
+            fetchCategory('movie', `${movieParams}&with_origin_country=CN|TW|TH|PH|VN|HK|MY|ID&without_genres=16`),
+            fetch(BASE + `/movie/upcoming?api_key=${API_KEY}&page=1`).then(r => r.json()).catch(() => ({ results: [] }))
+        ]);
+
+        const calendarItems = [
+            ...movies.map(m => ({ ...m, media_type: 'movie', cal_category: 'Movie' })),
+            ...animeTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Anime' })),
+            ...animeMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Anime' })),
+            ...kdramaTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'K-Drama' })),
+            ...kdramaMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'K-Drama' })),
+            ...turkishTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Turkish' })),
+            ...turkishMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Turkish' })),
+            ...asianTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Asian' })),
+            ...asianMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Asian' })),
+            ...(upcomingMovies.results || []).map(m => ({ ...m, media_type: 'movie', cal_category: 'Movie' }))
+        ];
+
+        const airingItems = await fetchAiringCalendarItems();
+        state.globalCalendarReleases = [...calendarItems, ...airingItems]
+            .map(item => ({ ...item, date: getCalendarItemDate(item) }))
+            .filter(item => item.date)
+            // Relaxed filter for future items: if it's in the future, we show it regardless of popularity
+            // This ensures "each day" has content if something is scheduled.
+            .filter(i => {
+                const isFuture = new Date(i.date) > new Date();
+                return isFuture || (i.popularity || 0) >= 8 || (i.vote_count || 0) >= 20 || i.next_episode_to_air;
+            })
+            .filter((item, idx, all) => {
+                const key = `${item.id}-${item.date}`;
+                return all.findIndex(i => `${i.id}-${i.date}` === key) === idx;
+            })
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+    } catch (e) {
+        console.error("Global cal fetch failed", e);
+        state.globalCalendarReleases = [];
+    }
+
+    const startLabel = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const endLabel = end.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    monthLabelEl.innerText = startLabel === endLabel ? startLabel.toUpperCase() : `${startLabel.toUpperCase()} – ${endLabel.toUpperCase()}`;
+
+    grid.innerHTML = Array.from({ length: 35 }).map((_, i) => {
+        const d = new Date(start);
+        d.setDate(d.getDate() + i);
+        const ds = d.toISOString().split('T')[0];
+        const isToday = ds === new Date().toISOString().split('T')[0];
+        const isSelected = ds === highlightId;
+
+        const radarItems = state.radar.filter(r => r.date === ds);
+        const reminders = state.reminders.filter(r => r.isEpisodic && r.date === ds);
+        const trackedIds = new Set([...radarItems, ...reminders].map(it => String(it.id)));
+        const globalOnDay = state.globalCalendarReleases.filter(g => getCalendarItemDate(g) === ds && !trackedIds.has(String(g.id)));
+
+        const highlightPoster = radarItems[0]?.poster || reminders[0]?.poster || globalOnDay[0]?.poster || globalOnDay[0]?.poster_path || globalOnDay[0]?.backdrop_path || '';
+        const backgroundStyle = highlightPoster ? `background-image: linear-gradient(180deg, rgba(10,12,18,0.55) 0%, rgba(10,12,18,0.85) 35%, rgba(10,12,18,0.96) 100%), url(${IMG + highlightPoster}); background-size: cover; background-position: center;` : '';
+
+        const isMobileCalendar = window.matchMedia('(max-width: 768px)').matches;
+        const primaryItem = radarItems[0] || reminders[0] || globalOnDay[0] || null;
+        const primaryPoster = primaryItem ? IMG + (primaryItem.poster || primaryItem.poster_path || primaryItem.backdrop_path || '') : '';
+        const primaryTitle = primaryItem ? (primaryItem.title || primaryItem.name || 'Untitled') : 'No release selected';
+        const primaryBadge = radarItems[0] ? 'Tracked' : reminders[0] ? 'Airing Now' : primaryItem ? (primaryItem.cal_category || 'Anticipated') : 'No release';
+        const primaryLabel = radarItems[0] ? 'Priority Tracker' : reminders[0] ? `E${primaryItem?.nextEp || '?'} ` : primaryItem ? (primaryItem.media_type === 'movie' ? 'Movie' : 'TV') : '';
+
+        if (isMobileCalendar) {
+            return `
+            <div id="cal-day-${ds}" onclick="openDaySummary('${ds}')" class="day-cell flex flex-col min-h-[220px] max-h-none bg-white/5 border ${isSelected ? 'border-pulse shadow-lg shadow-pulse/20' : (isToday ? 'border-pulse/30 bg-pulse/5' : 'border-white/10')} rounded-[35px] hover:bg-white/10 transition-all cursor-pointer group/day overflow-hidden" style="${backgroundStyle}">
+                <div class="flex justify-between items-start mb-4 px-3">
+                    <span class="text-[9px] font-black uppercase tracking-widest ${isToday ? 'text-pulse' : 'text-gray-500'}">${d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                    <span class="text-xl font-black italic ${isToday ? 'text-pulse' : 'text-white'}">${d.getDate()}</span>
+                </div>
+                <div class="mobile-day-card overflow-hidden rounded-[28px] border border-white/10 bg-[#0a0c12]/90 mx-3">
+                    ${primaryPoster ? `<div class="mobile-day-poster" style="background-image:url(${primaryPoster})"></div>` : `<div class="mobile-day-placeholder flex h-40 items-center justify-center text-[10px] uppercase tracking-[0.35em] text-white/70 bg-white/5">No image available</div>`}
+                    <div class="p-4">
+                        <div class="text-[8px] font-black uppercase tracking-[0.35em] text-pulse mb-2">${primaryBadge}</div>
+                        <div class="text-[12px] font-black uppercase text-white leading-tight line-clamp-2 mb-3">${primaryTitle}</div>
+                        <div class="flex items-center justify-between text-[8px] uppercase text-gray-400">
+                            <span>${primaryLabel}</span>
+                            ${primaryItem && primaryItem.vote_average ? `<span>★ ${primaryItem.vote_average.toFixed(1)}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+
+        return `
+            <div id="cal-day-${ds}" onclick="openDaySummary('${ds}')" class="day-cell flex flex-col min-h-[180px] max-h-[340px] p-5 bg-white/5 border ${isSelected ? 'border-pulse shadow-lg shadow-pulse/20' : (isToday ? 'border-pulse/30 bg-pulse/5' : 'border-white/10')} rounded-[35px] hover:bg-white/10 transition-all cursor-pointer group/day" style="${backgroundStyle}">
+                <div class="flex justify-between items-start mb-4">
+                    <span class="text-[9px] font-black uppercase tracking-widest ${isToday ? 'text-pulse' : 'text-gray-500'}">${d.toLocaleDateString('en-US', { weekday: 'short' })}</span>
+                    <span class="text-xl font-black italic ${isToday ? 'text-pulse' : 'text-white'}">${d.getDate()}</span>
+                </div>
+                
+                <div class="space-y-3 flex-1 overflow-y-auto hide-scroll">
+                    ${radarItems.map(it => {
+            const eventTag = it.nextEp === 1 ? '<span class="text-[8px] font-black uppercase text-[#22c55e]">★ FIRST EP</span>' : (it.statusText && /FINISHED/.test(it.statusText) ? '<span class="text-[8px] font-black uppercase text-[#f59e0b]">■ FINAL EP</span>' : '');
+            return `
+                        <div onmouseenter="showCalendarHoverCard(this, ${it.id}, 'radar')" onmouseleave="hideCalendarHoverCard()" onclick="event.stopPropagation(); toggleCalendarHoverLock(this, ${it.id}, 'radar'); openCalendarDetail(${it.id}, '${it.type}', 'radar')" class="group/calitem relative flex items-center gap-3 p-2 bg-pulse/10 rounded-3xl border border-pulse/20 cursor-pointer hover:bg-pulse/20 transition-all">
+                            <img src="${IMG + (it.poster || it.poster_path || it.backdrop_path || '')}" class="w-10 h-14 object-cover rounded-lg shadow-lg">
+                            <div class="min-w-0">
+                                <div class="text-[10px] font-black uppercase text-white truncate">${it.title}</div>
+                                <div class="flex flex-wrap items-center gap-1 mt-1 text-[8px] uppercase font-black">
+                                    <span class="text-pulse">Tracked</span>${eventTag}
+                                </div>
+                            </div>
+                            <div class="absolute left-full ml-4 top-0 w-48 bg-[#0a0c12] border border-white/10 rounded-2xl p-3 z-[100] opacity-0 pointer-events-none group-hover/calitem:opacity-100 transition-opacity shadow-2xl backdrop-blur-xl">
+                                <div class="text-[9px] font-black text-pulse uppercase mb-1">Tracked Content</div>
+                                <div class="text-[10px] font-black text-white uppercase mb-2">${it.title}</div>
+                                <div class="text-[8px] text-gray-500 leading-relaxed line-clamp-3">${it.memo || 'No active memo for this tracker.'}</div>
+                            </div>
+                        </div>
+                    `;
+        }).join('')}
+                    
+                    ${reminders.map(it => {
+            let epLabel = '';
+            if (it.nextEp === 1) epLabel = '<span class="text-[8px] bg-[#22c55e] text-white px-1 rounded ml-1">FIRST EP</span>';
+            if (it.statusText && /FINISHED/.test(it.statusText)) epLabel = '<span class="text-[8px] bg-[#f59e0b] text-black px-1 rounded ml-1">FINAL EP</span>';
+            return `
+                        <div onmouseenter="showCalendarHoverCard(this, ${it.id}, 'episodic')" onmouseleave="hideCalendarHoverCard()" onclick="event.stopPropagation(); toggleCalendarHoverLock(this, ${it.id}, 'episodic'); openCalendarDetail(${it.id}, '${it.type}', 'episodic')" class="group/calitem relative flex items-center gap-3 p-2 bg-kdrama/10 rounded-3xl border border-kdrama/20 cursor-pointer hover:bg-kdrama/20 transition-all">
+                            <img src="${IMG + (it.poster || it.poster_path || it.backdrop_path || '')}" class="w-10 h-14 object-cover rounded-lg shadow-lg">
+                            <div class="min-w-0">
+                                <div class="text-[10px] font-black uppercase text-white truncate">${it.title}</div>
+                                <div class="flex flex-wrap items-center gap-1 mt-1 text-[8px] uppercase font-black">
+                                    <span class="text-kdrama">E${it.nextEp}</span>${epLabel}
+                                </div>
+                            </div>
+                            <div class="absolute left-full ml-4 top-0 w-48 bg-[#0a0c12] border border-white/10 rounded-2xl p-3 z-[100] opacity-0 pointer-events-none group-hover/calitem:opacity-100 transition-opacity shadow-2xl backdrop-blur-xl">
+                                <div class="text-[9px] font-black text-kdrama uppercase mb-1">Upcoming Episode</div>
+                                <div class="text-[10px] font-black text-white uppercase mb-1">${it.title}</div>
+                                <div class="text-[7px] text-white/40 uppercase mb-2">Thursday May 15 at 8 PM</div>
+                                <div class="text-[8px] text-gray-500 leading-relaxed mb-2">Episode ${it.nextEp} releases on this day.</div>
+                            </div>
+                        </div>
+                    `;
+        }).join('')}
+
+                    ${globalOnDay.slice(0, 6).map(it => {
+            const topLabel = (it.vote_average || 0) >= 8 ? '<span class="text-[8px] bg-[#22c55e] text-white px-1 rounded ml-1">★ TOP PICK</span>' : '';
+            const badgeClass = getCalendarBadgeClass(it.cal_category || (it.media_type === 'movie' ? 'Movie' : 'TV'));
+            const badgeLabel = it.cal_category || (it.media_type === 'movie' ? 'Movie' : 'Global');
+            return `
+                        <div onmouseenter="showCalendarHoverCard(this, ${it.id}, 'global')" onmouseleave="hideCalendarHoverCard()" onclick="event.stopPropagation(); toggleCalendarHoverLock(this, ${it.id}, 'global'); closeCalendar(); openModal(${it.id}, '${it.media_type}')" class="group/global relative flex items-center gap-3 p-2 bg-white/10 rounded-3xl border border-white/10 cursor-pointer hover:bg-white/15 transition-all opacity-70 hover:opacity-100">
+                            <div class="relative w-10 h-14 shrink-0">
+                                <img src="${IMG + (it.poster || it.poster_path || it.backdrop_path || '')}" class="w-full h-full object-cover rounded-lg shadow-lg group-hover/global:scale-110 transition-transform">
+                            </div>
+                            <div class="min-w-0">
+                                <div class="text-[10px] font-black uppercase text-gray-200 truncate group-hover/global:text-white transition-colors">${it.title || it.name}</div>
+                                <div class="flex flex-wrap items-center gap-1 mt-1 text-[8px] uppercase font-black">
+                                    <span class="px-2 py-0.5 rounded-full ${badgeClass}">${badgeLabel}</span>${topLabel}
+                                </div>
+                            </div>
+                            <div class="absolute left-full ml-4 top-0 w-48 bg-[#0a0c12] border border-white/10 rounded-2xl p-3 z-[100] opacity-0 pointer-events-none group-hover/global:opacity-100 transition-opacity shadow-2xl backdrop-blur-xl">
+                                <div class="text-[9px] font-black text-white/40 uppercase mb-1">${badgeLabel}</div>
+                                <div class="text-[10px] font-black text-white uppercase mb-2">${it.title || it.name}</div>
+                                <div class="text-[8px] text-gray-500 leading-relaxed line-clamp-3">${it.overview || 'No overview available.'}</div>
+                            </div>
+                        </div>
+                    `}).join('')}
+                    
+                    ${globalOnDay.length > 6 ? `
+                        <div class="text-[8px] font-black uppercase text-gray-400 text-center mt-1">+ ${globalOnDay.length - 6} More</div>` : ''}
+
+                  ${radarItems.length === 0 && reminders.length === 0 && globalOnDay.length === 0 ? (() => {
+                // Force a filler item for empty days so it never looks blank
+                const fillers = state.globalCalendarReleases.filter(g => g.poster_path);
+                if (fillers.length > 0) {
+                    const randomFiller = fillers[Math.floor(Math.random() * fillers.length)];
+                    return `
+            <div onclick="event.stopPropagation(); closeCalendar(); openModal(${randomFiller.id}, '${randomFiller.media_type}')" class="group/global relative flex items-center gap-3 p-2 bg-white/5 rounded-3xl border border-white/5 cursor-pointer hover:bg-white/10 transition-all opacity-50 hover:opacity-100">
+                <div class="relative w-10 h-14 shrink-0">
+                    <img src="${IMG + randomFiller.poster_path}" class="w-full h-full object-cover rounded-lg shadow-lg group-hover/global:scale-110 transition-transform">
+                </div>
+                <div class="min-w-0">
+                    <div class="text-[9px] font-black uppercase text-gray-400 truncate group-hover/global:text-white transition-colors">Anticipated</div>
+                    <div class="text-[10px] font-black text-white truncate">${randomFiller.title || randomFiller.name}</div>
+                </div>
+            </div>
+        `;
+                }
+                return `<div class="text-[10px] text-gray-400 uppercase tracking-[0.25em] text-center mt-4">No Data</div>`;
+            })() : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+
+    if (highlightId) {
+        const el = document.getElementById(`cal-day-${highlightId}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function shiftCalendar(days) {
+    calendarOffset += days;
+    openCalendar();
+}
+
+function goToCalendarToday() {
+    calendarOffset = 0;
+    openCalendar();
+}
+
+function openCalendarMonthPicker(event) {
+    event.stopPropagation();
+    const picker = document.getElementById('calendarMonthPicker');
+    if (!picker) return;
+    picker.classList.toggle('hidden');
+    if (!picker.classList.contains('hidden')) {
+        buildCalendarMonthPicker();
+        setTimeout(() => window.addEventListener('click', closeCalendarMonthPicker), 0);
+    }
+}
+
+function closeCalendarMonthPicker(event) {
+    const picker = document.getElementById('calendarMonthPicker');
+    if (!picker) return;
+    if (event && picker.contains(event.target)) return;
+    picker.classList.add('hidden');
+    window.removeEventListener('click', closeCalendarMonthPicker);
+}
+
+function buildCalendarMonthPicker() {
+    const grid = document.getElementById('calendarMonthPickerGrid');
+    if (!grid) return;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentYear = new Date().getFullYear();
+    // Expand to 5 years for "indefinite" future navigation
+    const years = Array.from({ length: 6 }, (_, i) => currentYear + i);
+
+    grid.innerHTML = years.flatMap(y => [
+        `<div class="col-span-4 text-[9px] uppercase tracking-[0.3em] text-pulse/50 mt-4 mb-2 font-black border-b border-white/5 pb-1">${y}</div>`,
+        ...months.map((label, idx) => {
+            const isCurrentMonth = y === new Date().getFullYear() && idx === new Date().getMonth();
+            return `<button type="button" onclick="selectCalendarMonth(${y}, ${idx})" class="text-[10px] uppercase tracking-[0.15em] ${isCurrentMonth ? 'text-pulse bg-pulse/10 border-pulse/30' : 'text-white/80 bg-white/5 border-white/10'} hover:bg-pulse hover:text-white border rounded-2xl py-2 transition-all font-bold">${label}</button>`;
+        })
+    ]).join('');
+}
+
+function selectCalendarMonth(year, monthIndex) {
+    const today = new Date();
+    const target = new Date(year, monthIndex, 1);
+    target.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+    const deltaDays = Math.floor((target.getTime() - today.getTime()) / 86400000);
+    calendarOffset = Math.max(deltaDays, 0);
+    closeCalendarMonthPicker();
+    openCalendar();
+}
+
+async function openCalendarDetail(id, type, source) {
+    const modal = document.getElementById('calendarDetailModal');
+    if (!modal) return;
+
+    showLoader();
+    try {
+        const data = await fetchAPI(`/${type}/${id}`);
+        const local = state.db.find(i => String(i.id) === String(id));
+        const tracked = source === 'radar' ? state.radar.find(r => String(r.id) === String(id)) : state.reminders.find(r => String(r.id) === String(id));
+
+        document.getElementById('calDetailPoster').style.backgroundImage = `url(${IMG_HD + data.backdrop_path})`;
+        document.getElementById('calDetailTitle').innerText = data.title || data.name;
+        document.getElementById('calDetailBadge').innerText = source === 'radar' ? 'MY TRACKER' : 'AIRING NOW';
+
+        const statusInfo = (() => {
+            if (data.status === 'Returning Series' || data.in_production) return { label: 'Airing', className: 'text-[#22c55e]' };
+            if (data.status === 'Ended') return { label: 'Finished Airing', className: 'text-gray-400' };
+            if (data.status === 'Canceled') return { label: 'Canceled', className: 'text-red-500' };
+            return { label: 'Upcoming', className: 'text-pulse' };
+        })();
+        const statusEl = document.getElementById('calDetailStatus');
+        statusEl.innerText = statusInfo.label;
+        statusEl.className = `text-lg font-black italic uppercase ${statusInfo.className}`;
+
+        let nextText = 'N/A';
+        let nextClass = 'text-gray-400';
+        if (data.next_episode_to_air) {
+            const targetDate = new Date(data.next_episode_to_air.air_date);
+            const diffMs = targetDate.getTime() - new Date().getTime();
+            const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            if (diffMs < 0) {
+                nextText = 'AVAILABLE NOW';
+                nextClass = 'text-[#22c55e]';
+            } else if (days === 0) {
+                nextText = 'AIRING TODAY';
+                nextClass = 'text-[#22c55e]';
+            } else if (days === 1) {
+                nextText = 'TOMORROW';
+                nextClass = 'text-[#f59e0b]';
+            } else if (days <= 7) {
+                nextText = `IN ${days} DAYS`;
+                nextClass = 'text-[#f59e0b]';
+            } else {
+                nextText = `IN ${days} DAYS`;
+                nextClass = 'text-pulse';
+            }
+            nextText = `S${data.next_episode_to_air.season_number} E${data.next_episode_to_air.episode_number} • ${nextText}`;
+        } else if (data.status === 'Ended' || data.status === 'Canceled') {
+            nextText = 'Season Concluded';
+            nextClass = 'text-gray-400';
+        }
+        const nextEl = document.getElementById('calDetailNext');
+        nextEl.innerText = nextText;
+        nextEl.className = `text-lg font-black italic uppercase ${nextClass}`;
+
+        // MEMO logic
+        const memo = tracked?.memo || data.overview?.slice(0, 100) + '...' || 'No pulse memo active.';
+        document.getElementById('calDetailMemo').innerText = memo;
+
+        const progSection = document.getElementById('calDetailProgressSection');
+        if (local && type === 'tv') {
+            progSection.classList.remove('hidden');
+            const ep = local.ep || 0;
+            const max = data.number_of_episodes || local.max_ep || 12;
+            const pct = Math.round((ep / max) * 100);
+            document.getElementById('calDetailProgressText').innerText = `Progress: ${ep}/${max} eps (${pct}%)`;
+            document.getElementById('calDetailProgressBar').style.width = `${pct}%`;
+        } else {
+            progSection.classList.add('hidden');
+        }
+
+        document.getElementById('calDetailActionBtn').onclick = () => {
+            closeCalendarDetail();
+            closeCalendar();
+            openModal(id, type);
+        };
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    } catch (e) {
+        console.error("Cal detail failed", e);
+        showNotification("Failed to fetch deep tracker data.");
+    }
+    hideLoader();
+}
+
+function closeCalendarDetail() { document.getElementById('calendarDetailModal').classList.add('hidden'); }
+
+function jumpToCalendar(date) {
+    if (!date) return;
+    // Calculate offset to center this date
+    const target = new Date(date);
+    const today = new Date();
+    const diff = Math.floor((target - today) / (1000 * 60 * 60 * 24));
+    calendarOffset = diff;
+    openCalendar(date);
+}
+
+function openDaySummary(dateStr) {
+    const modal = document.getElementById('calendarDayModal');
+    const calendar = document.getElementById('calendarModal');
+    if (!modal) return;
+
+    if (calendar && !calendar.classList.contains('hidden')) {
+        calendarWasOpen = true;
+        calendar.classList.add('hidden');
+    }
+    document.body.style.overflow = 'hidden';
+    const d = new Date(dateStr);
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const monthName = d.toLocaleDateString('en-US', { month: 'long' });
+    const dayNum = d.getDate();
+    const year = d.getFullYear();
+
+    document.getElementById('calDayTitle').innerHTML = `<span class="text-pulse">${dayName}</span> <span class="text-white">${monthName} ${dayNum}</span> <span class="text-gray-600">${year}</span>`;
+
+    const radarItems = state.radar.filter(r => r.date === dateStr);
+    const reminders = state.reminders.filter(r => r.isEpisodic && r.date === dateStr);
+    const trackedIds = new Set([...radarItems, ...reminders].map(it => String(it.id)));
+    const globals = state.globalCalendarReleases.filter(g => getCalendarItemDate(g) === dateStr && !trackedIds.has(String(g.id)));
+
+    const content = document.getElementById('calDayContent');
+
+    // Matrix Groups (Columns)
+    const columns = {
+        'Movies': globals.filter(g => g.media_type === 'movie'),
+        'Anime': globals.filter(g => g.cal_category === 'Anime'),
+        'K-Drama': globals.filter(g => g.cal_category === 'K-Drama'),
+        'Turkish': globals.filter(g => g.cal_category === 'Turkish'),
+        'Asian': globals.filter(g => g.cal_category === 'Asian'),
+        'TV Shows': globals.filter(g => g.media_type === 'tv' && !['Anime', 'K-Drama', 'Turkish', 'Asian'].includes(g.cal_category))
+    };
+
+    let html = '';
+
+    // 1. My Tracker Priority Card
+    if (radarItems.length > 0 || reminders.length > 0) {
+        html += `
+            <div class="bg-white/5 border border-white/10 rounded-[40px] p-8 md:p-12 mb-16 shadow-2xl backdrop-blur-xl relative overflow-hidden group">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-pulse/10 blur-[100px] rounded-full -mr-32 -mt-32"></div>
+                <h3 class="text-xs font-black uppercase tracking-[0.5em] text-pulse mb-10 flex items-center gap-4">
+                    <span>Priority Tracker</span>
+                    <div class="h-px flex-1 bg-pulse/20"></div>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    ${[...radarItems, ...reminders].map(it => `
+                        <div onclick="closeDaySummary(); closeCalendar(); openModal(${it.id}, '${it.type}')" class="flex gap-6 items-center p-4 hover:bg-white/5 rounded-[32px] transition-all cursor-pointer">
+                            <img src="${IMG + it.poster}" class="w-20 h-32 object-cover rounded-2xl shadow-xl">
+                            <div>
+                                <h4 class="text-lg font-black text-white uppercase italic leading-tight mb-2">${it.title}</h4>
+                                <div class="text-[9px] text-gray-500 font-bold uppercase tracking-widest">${it.isEpisodic ? 'Airing Episode' : 'Release Day'}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // 2. The Matrix (Columns by Type, Rows by Impact)
+    html += `
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
+            ${Object.keys(columns).map(colName => {
+        const items = columns[colName].sort((a, b) => b.popularity - a.popularity);
+        if (items.length === 0) return '';
+        return `
+                    <div class="space-y-8">
+                        <h4 class="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 border-b border-white/5 pb-4">${colName}</h4>
+                        <div class="space-y-4">
+                            ${items.map(it => {
+            const rating = it.vote_average || 0;
+            const impactColor = rating >= 8 ? 'text-pulse' : (rating >= 7 ? 'text-[#f59e0b]' : 'text-gray-500');
+            return `
+                                    <div onclick="closeDaySummary(); closeCalendar(); openModal(${it.id}, '${it.media_type}')" class="group flex items-center gap-4 p-3 bg-white/5 border border-white/5 rounded-2xl hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer">
+                                        <div class="w-12 h-16 shrink-0 rounded-xl overflow-hidden relative">
+                                            <img src="${IMG + it.poster_path}" class="w-full h-full object-cover">
+                                            <div class="absolute inset-0 bg-dark/40 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="text-[9px] font-black text-white truncate uppercase mb-1">${it.title || it.name}</div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-[8px] font-black ${impactColor}">★ ${rating.toFixed(1)}</span>
+                                                <div class="h-1 flex-1 bg-white/5 rounded-full overflow-hidden"><div class="h-full bg-current ${impactColor}" style="width: ${rating * 10}%"></div></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+        }).join('')}
+                        </div>
+                    </div>
+                `;
+    }).join('')}
+        </div>
+    `;
+
+    content.innerHTML = html || '<div class="h-full flex items-center justify-center text-gray-700 font-black uppercase tracking-widest italic">No global releases detected for this frequency.</div>';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeDaySummary() {
+    const modal = document.getElementById('calendarDayModal');
+    const calendar = document.getElementById('calendarModal');
+    if (modal) modal.classList.add('hidden');
+    if (calendarWasOpen && calendar) {
+        calendar.classList.remove('hidden');
+        calendar.classList.add('flex');
+    }
+    calendarWasOpen = false;
+    if (!calendar || calendar.classList.contains('hidden')) {
+        document.body.style.overflow = 'auto';
+    }
+}
 // --- COUNTER INTERACTIVITY & CATEGORY ENGINE ---
 
 let clickTimer = null; // Used to distinguish single vs double clicks
@@ -2502,6 +3439,8 @@ async function openCategoryPage(mode, type) {
     state.catType = type;
     state.catSort = 'trending'; // Default
     state.catPage = 1;
+    await navigate('category');
+
     document.getElementById('catSearchInput').value = '';
 
     const titleMap = { 'movie': 'Movies', 'tv': 'Series', 'anime': 'Anime', 'kdrama': 'K-Drama', 'turkish': 'Turkish', 'asian': 'Asian Drama' };
@@ -2513,7 +3452,6 @@ async function openCategoryPage(mode, type) {
     document.getElementById('categoryGrid').innerHTML = '<div class="page-loader"></div>';
     document.getElementById('catLoadMore').classList.remove('hidden');
 
-    navigate('category');
     await fetchAndRenderCategory(true);
 }
 
@@ -2542,14 +3480,16 @@ function getCategoryApiPath(mode, type, sort, page) {
         if (type === 'turkish') return `${base}&with_original_language=tr`;
         if (type === 'asian') return `${base}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc`;
     } else {
-        // Your existing trending logic
+        // Trending/Top Rated logic
         if (type === 'movie') return sort === 'trending' ? `/trending/movie/week?page=${page}` : `/movie/top_rated?page=${page}`;
 
         let base = `/discover/tv?page=${page}`;
-        let sortParam = sort === 'trending' ? 'popularity.desc' : 'vote_average.desc&vote_count.gte=300';
+        // Lower vote threshold for specialty categories to ensure "legends" appear
+        let threshold = (type === 'tv' || type === 'movie') ? 300 : 50;
+        let sortParam = sort === 'trending' ? 'popularity.desc' : `vote_average.desc&vote_count.gte=${threshold}`;
 
         if (type === 'tv') return `${base}&sort_by=${sortParam}&with_original_language=en`;
-        if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16&with_original_language=ja`;
+        if (type === 'anime') return `${base}&sort_by=${sortParam}&with_genres=16&with_original_language=ja&without_genres=10749&include_adult=false`;
         if (type === 'kdrama') return `${base}&sort_by=${sortParam}&with_original_language=ko`;
         if (type === 'turkish') return `${base}&sort_by=${sortParam}&with_original_language=tr`;
         if (type === 'asian') return `${base}&sort_by=${sortParam}&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16`;
@@ -2629,50 +3569,75 @@ function renderRow(id, items, type) {
     if (isGrid) {
         // Automatically switch to Grid Mode if saved
         container.className = 'grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 md:gap-6 pb-6 px-2';
-        renderGrid(id, items, type, true); 
+        renderGrid(id, items, type, true);
     } else {
         // Standard Row Mode
         container.className = 'flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2';
-        container.innerHTML = items.map((item, idx) => `
+        const filteredItems = items.filter(i => !isBlocked(i));
+        container.innerHTML = filteredItems.map((item, idx) => `
             <div class="flex-none w-[170px] md:w-[190px] lg:w-[210px] group cursor-pointer relative overflow-visible" onclick="openModal(${item.id}, '${type}')">
                 <div class="absolute -left-6 bottom-2 background-card-number z-0 select-none leading-none">
                     ${idx + 1}
                 </div>
-                <div class="relative aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:scale-105 group-hover:border-pulse/50 transition-all duration-500 shadow-xl bg-dark z-10 ml-6">
-                    <img src="${IMG + item.poster_path}" loading="lazy" decoding="async" class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity">
+                <div class="relative aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:scale-105 group-hover:border-pulse/50 transition-all duration-500 shadow-xl bg-dark z-10 ml-6 skeleton">
+                    <img src="${IMG + item.poster_path}" 
+                         loading="lazy" 
+                         decoding="async" 
+                         class="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity poster-loading"
+                         onload="this.classList.add('poster-loaded'); this.parentElement.classList.remove('skeleton')">
                     ${getPlayHoverHTML({ ...item, type: type })}
                 </div>
-                <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2 text-white glow-hover transition-colors">${item.title || item.name}</h3>
-                <div class="text-[8px] font-bold text-gray-600 mt-2 uppercase px-2 tracking-widest">${(item.release_date || item.first_air_date || '').split('-')[0]} • ★ ${item.vote_average.toFixed(1)}</div>
+                <h3 class="font-black text-[11px] uppercase line-clamp-1 px-2 text-white glow-hover transition-colors ml-6">${item.title || item.name}</h3>
+                <div class="text-[8px] font-bold text-gray-600 mt-2 uppercase px-2 tracking-widest ml-6">${(item.release_date || item.first_air_date || '').split('-')[0]} • ★ ${item.vote_average.toFixed(1)}</div>
             </div>
         `).join('');
     }
 }
-
 function renderGrid(id, items, forced, clear = true) {
     const container = document.getElementById(id);
-    const html = items.map(i => {
+    const html = items.filter(i => !isBlocked(i)).map(i => {
         const type = forced || i.media_type || (i.title ? 'movie' : 'tv');
         const actualType = i.media_type || (i.title ? 'movie' : 'tv');
         const category = determineCategory(i);
         const displayLabel = formatTypeLabel(category, actualType);
         const isPerson = i.media_type === 'person';
+        const poster = i.poster_path || i.profile_path ? IMG + (i.poster_path || i.profile_path) : 'https://via.placeholder.com/300';
+
+        const isTracked = (state.radar || []).some(r => String(r.id) === String(i.id));
 
         return `
         <div class="group cursor-pointer relative" onclick="${isPerson ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${type}')`}">
             
-            ${!isPerson ? `
-                <button onclick="event.stopPropagation(); quickAdd(${i.id}, '${type}')" 
-                        class="absolute top-10 left-3 w-11 h-11 bg-dark/90 backdrop-blur-xl border border-white/20 rounded-2xl text-pulse flex items-center justify-center z-40 opacity-0 group-hover:opacity-100 transition-all hover:bg-pulse hover:text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] active:scale-90">
-                    <i class="fas fa-plus text-sm"></i>
+            <div class="absolute top-10 left-3 flex flex-col gap-2 z-40 opacity-0 group-hover:opacity-100 transition-all">
+                ${!isPerson ? `
+                    <button onclick="event.stopPropagation(); quickAdd(${i.id}, '${type}')" 
+                            title="Quick Add"
+                            class="w-11 h-11 bg-dark/90 backdrop-blur-xl border border-white/20 rounded-2xl text-pulse flex items-center justify-center hover:bg-pulse hover:text-white shadow-[0_0_20px_rgba(0,0,0,0.5)] active:scale-90">
+                        <i class="fas fa-plus text-sm"></i>
+                    </button>
+                ` : ''}
+
+              ${id.includes('upcoming') ? `
+                <button onclick="event.stopPropagation(); toggleRadar(${i.id}, '${type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}')" 
+                        title="${isTracked ? 'Stop Tracking' : 'Track on Radar'}"
+                        class="w-11 h-11 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl ${isTracked ? 'text-kdrama border-kdrama/50 bg-kdrama/10' : 'text-white'} flex items-center justify-center hover:bg-pulse hover:border-pulse transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] active:scale-90">
+                    <i class="fas ${isTracked ? 'fa-satellite-dish' : 'fa-bell'} text-sm"></i>
+                </button>
+                <button onclick="event.stopPropagation(); jumpToCalendar('${i.release_date || i.first_air_date}')" 
+                        title="Jump to Calendar"
+                        class="w-11 h-11 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl text-white/90 flex items-center justify-center hover:text-pulse hover:bg-white/20 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] active:scale-90 mt-2">
+                    <i class="fas fa-calendar-day text-sm"></i>
                 </button>
             ` : ''}
+            </div>
 
             <div class="text-[8px] font-black uppercase text-pulse mb-1">${displayLabel}</div>
             
-            <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative">
-                <img src="${i.poster_path || i.profile_path ? IMG + (i.poster_path || i.profile_path) : 'https://via.placeholder.com/300'}" 
-                     class="w-full h-full object-cover bg-dark">
+            <div class="aspect-[2/3] rounded-[30px] overflow-hidden mb-4 border border-white/5 group-hover:border-pulse transition-all shadow-xl relative skeleton">
+                <img src="${poster}" 
+                     loading="lazy"
+                     class="w-full h-full object-cover bg-dark poster-loading"
+                     onload="this.classList.add('poster-loaded'); this.parentElement.classList.remove('skeleton')">
                 
                 ${i.vote_average ? `
                     <div class="absolute top-3 right-3 bg-dark/80 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black text-pulse border border-white/10 z-30">
@@ -2690,25 +3655,34 @@ function renderGrid(id, items, forced, clear = true) {
         </div>
     `}).join('');
 
-    if (clear) container.innerHTML = html;
+    if (clear) container.innerHTML = html || `<div class="col-span-full py-20 text-center text-gray-700 font-black uppercase tracking-widest italic">No data matched your neural frequency. Try resetting filters.</div>`;
     else container.insertAdjacentHTML('beforeend', html);
 }
 function setupFilters() {
-    const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')];
+    const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')].filter(Boolean);
     const years = Array.from({ length: 50 }, (_, i) => 2026 - i);
     yearSels.forEach(sel => {
+        const currentVal = sel.value;
         sel.innerHTML = `<option value="${sel.id.includes('lab') ? 'all' : ''}">Year</option>` + years.map(y => `<option value="${y}">${y}</option>`).join('');
+        if (currentVal) sel.value = currentVal;
     });
 
-    // UPDATED: Removed 'searchGenre' to prevent null reference errors
-    const genreSels = [document.getElementById('pGenre')];
+    const genreSels = [document.getElementById('pGenre')].filter(Boolean);
     genreSels.forEach(sel => {
-        if (sel) sel.innerHTML = `<option value="">Genre</option>` + state.genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+        const currentVal = sel.value;
+        sel.innerHTML = `<option value="">Genre</option>` + state.genres.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+        if (currentVal) sel.value = currentVal;
     });
 
-    document.getElementById('homeGenres').innerHTML = state.genres.slice(0, 15).map(g => `
-                    <button onclick="deepSearch('${g.name}')" class="text-[9px] font-black uppercase tracking-widest text-gray-600 hover:text-pulse transition-all">#${g.name}</button>
-                `).join('');
+    const hGenres = document.getElementById('homeGenres');
+    if (hGenres) {
+        hGenres.innerHTML = state.genres.slice(0, 15).map(g => `
+            <button onclick="deepSearch('${g.name}')" class="text-[9px] font-black uppercase tracking-widest text-gray-600 hover:text-pulse transition-all">#${g.name}</button>
+        `).join('');
+    }
+
+    // Ensure Discover genres are also rendered if container exists
+    if (document.getElementById('discoverGenreContainer')) renderGenrePills();
 }
 
 function openPicker() {
@@ -2913,12 +3887,12 @@ function closeActorMode(e) {
     fetchDiscoverData(false);
 }
 // --- ENHANCED CLOCK ENGINE ---
-let is24Hour = localStorage.getItem('cp_clock_format') !== '12';
+let is24Hour = localStorage.getItem('cp_clock_format') === '24'; // Default to 12h if not set
 
 window.toggleClockFormat = function () {
     is24Hour = !is24Hour;
     localStorage.setItem('cp_clock_format', is24Hour ? '24' : '12');
-    updateClockDisplay(); // Force instant visual update
+    updateClockDisplay();
 };
 
 function updateClockDisplay() {
@@ -2955,6 +3929,123 @@ function updateClockDisplay() {
     if (secEl) secEl.innerText = seconds;
     if (ampmEl) ampmEl.innerText = ampm;
     if (dateEl) dateEl.innerText = dateStr;
+
+    // RADAR INTEGRATION: Check for releases today
+    updateClockRadarState(d);
+}
+
+function getItemPosterURL(item) {
+    const poster = item.poster || item.poster_path || item.backdrop_path || item.poster_path;
+    return poster ? IMG + poster : '';
+}
+
+function getClockFeaturedItem(d) {
+    const todayStr = d.toISOString().split('T')[0];
+    const todayDay = d.getDay();
+    const hasPoster = item => item && (item.poster || item.poster_path || item.backdrop_path);
+
+    const trackedCandidates = [...(state.radar || []), ...(state.reminders || [])]
+        .filter(item => hasPoster(item) && ((item.type === 'movie' && item.date === todayStr) || (item.type === 'tv' && item.weeklyDay === todayDay) || item.date === todayStr));
+
+    if (trackedCandidates.length) {
+        return trackedCandidates.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.popularity || 0) - (a.popularity || 0))[0];
+    }
+
+    const calendarTodayCandidates = (state.globalCalendarReleases || [])
+        .filter(item => hasPoster(item) && getCalendarItemDate(item) === todayStr);
+
+    if (calendarTodayCandidates.length) {
+        return calendarTodayCandidates.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.popularity || 0) - (a.popularity || 0))[0];
+    }
+
+    const anticipatedCandidates = (state.globalCalendarReleases || [])
+        .filter(item => hasPoster(item) && getCalendarItemDate(item) && getCalendarItemDate(item) >= todayStr);
+
+    if (anticipatedCandidates.length) {
+        return anticipatedCandidates.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.popularity || 0) - (a.popularity || 0))[0];
+    }
+
+    return null;
+}
+
+function updateClockRadarState(d) {
+    const bg = document.getElementById('clockPosterBg');
+    const dot = document.getElementById('clockStatusDot');
+    const label = document.getElementById('clockStatusLabel');
+    const featured = getClockFeaturedItem(d);
+
+    const featureTitle = document.getElementById('clockFeatureTitle');
+    const hoverPoster = document.getElementById('clockHoverPoster');
+    const hoverTitle = document.getElementById('clockHoverTitle');
+    const hoverLocation = document.getElementById('clockHoverLocation');
+
+    if (featured && bg) {
+        const posterUrl = getItemPosterURL(featured);
+        if (posterUrl) {
+            bg.style.backgroundImage = `url(${posterUrl})`;
+            bg.style.opacity = '0.75';
+            bg.style.filter = 'brightness(0.78) contrast(1.12)';
+            if (hoverPoster) hoverPoster.style.backgroundImage = `url(${posterUrl})`;
+        } else {
+            bg.style.backgroundImage = '';
+            bg.style.opacity = '0';
+            bg.style.filter = '';
+            if (hoverPoster) hoverPoster.style.backgroundImage = '';
+        }
+
+        dot.style.backgroundColor = '#ff2d55';
+        dot.style.boxShadow = '0 0 18px #ff2d55';
+        dot.style.width = '0.75rem';
+        dot.style.height = '0.75rem';
+
+        if (featured.type === 'tv' || featured.next_episode_to_air) {
+            label.innerText = 'Episode Out';
+        } else if (featured.release_date || featured.date) {
+            label.innerText = 'Movie Day';
+        } else {
+            label.innerText = 'Anticipated';
+        }
+        label.style.color = '#ff2d55';
+        label.style.textShadow = '0 0 10px rgba(255, 45, 85, 0.6)';
+
+        const titleText = `${featured.title || featured.name || featured.original_title || featured.original_name || 'Featured release'}`;
+        const locationText = featured.type === 'tv'
+            ? 'Watch episode sources in App Tools'
+            : 'Watch movie sources in App Tools';
+
+        if (featureTitle) {
+            featureTitle.innerText = titleText;
+            featureTitle.style.color = 'rgba(255,255,255,0.95)';
+            featureTitle.style.textShadow = '0 0 12px rgba(0,0,0,0.5)';
+        }
+        if (hoverTitle) {
+            hoverTitle.innerText = titleText;
+        }
+        if (hoverLocation) {
+            hoverLocation.innerText = locationText;
+        }
+    } else if (bg) {
+        bg.style.opacity = '0';
+        bg.style.filter = '';
+        dot.style.backgroundColor = '#22c55e';
+        dot.style.boxShadow = '0 0 8px #22c55e';
+        dot.style.width = '0.5rem';
+        dot.style.height = '0.5rem';
+        label.innerText = 'Clock';
+        label.style.color = '';
+        label.style.textShadow = '';
+        if (featureTitle) featureTitle.innerText = '';
+        if (hoverTitle) hoverTitle.innerText = 'No featured release';
+        if (hoverLocation) hoverLocation.innerText = 'Open App Tools for watch sources';
+        if (hoverPoster) hoverPoster.style.backgroundImage = '';
+    }
+}
+
+function openClockHoverDetail() {
+    const featured = getClockFeaturedItem(new Date());
+    if (!featured || !featured.id) return;
+    const type = featured.type || featured.media_type || (featured.name ? 'tv' : 'movie');
+    openModal(featured.id, type);
 }
 
 function startClock() {
@@ -3117,37 +4208,37 @@ async function loadUpcomingPage() {
         // 1. Highly Anticipated Movies
         const anticipatedRes = await fetch(`${BASE}/discover/movie?api_key=${API_KEY}&primary_release_date.gte=${today}&primary_release_date.lte=${futureDate}&sort_by=popularity.desc`);
         const anticipatedData = await anticipatedRes.json();
-        const futureMovies = anticipatedData.results.filter(m => m.release_date >= today);
+        const futureMovies = (anticipatedData.results || []).filter(m => m.release_date >= today);
         renderGrid('upcomingRecommendationsGrid', futureMovies.slice(0, 12), 'movie', true);
 
         // 2. Upcoming Series
         const seriesRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&first_air_date.lte=${futureDate}&sort_by=popularity.desc&with_original_language=en`);
         const seriesData = await seriesRes.json();
-        renderGrid('upcomingSeriesGrid', seriesData.results.slice(0, 12), 'tv', true);
+        renderGrid('upcomingSeriesGrid', (seriesData.results || []).slice(0, 12), 'tv', true);
 
         // 3. Upcoming Anime
         const animeRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&with_genres=16&with_original_language=ja&sort_by=popularity.desc`);
         const animeData = await animeRes.json();
-        renderGrid('upcomingAnimeGrid', animeData.results.slice(0, 12), 'tv', true);
+        renderGrid('upcomingAnimeGrid', (animeData.results || []).slice(0, 12), 'tv', true);
 
-        // 4. K-Drama Radar
+        // 4. K-Drama Tracker
         const kdramaRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&with_original_language=ko&sort_by=popularity.desc`);
         const kdramaData = await kdramaRes.json();
-        renderGrid('upcomingKdramaGrid', kdramaData.results.slice(0, 6), 'tv', true);
+        renderGrid('upcomingKdramaGrid', (kdramaData.results || []).slice(0, 6), 'tv', true);
 
         // 5. Turkish Wave
         const turkishRes = await fetch(`${BASE}/discover/tv?api_key=${API_KEY}&first_air_date.gte=${today}&with_original_language=tr&sort_by=popularity.desc`);
         const turkishData = await turkishRes.json();
-        renderGrid('upcomingTurkishGrid', turkishData.results.slice(0, 6), 'tv', true);
+        renderGrid('upcomingTurkishGrid', (turkishData.results || []).slice(0, 6), 'tv', true);
 
         // 6. General Releasing Soon (Mix)
         const mainRes = await fetch(`${BASE}/movie/upcoming?api_key=${API_KEY}`);
         const mainData = await mainRes.json();
-        const filteredMain = mainData.results.filter(m => m.release_date >= today);
+        const filteredMain = (mainData.results || []).filter(m => m.release_date >= today);
         renderGrid('upcomingMainGrid', filteredMain.slice(0, 18), 'movie', true);
 
     } catch (err) {
-        console.error("Neural fetch failed for Upcoming page.", err);
+        console.error("Pulse fetch failed for Upcoming page.", err);
     }
     initSmartScrollButtons();
 }
@@ -3161,14 +4252,11 @@ function renderUpcomingRadar() {
 
     // FIX: Protect Episodic items from being auto-cleaned if they are in the DB
     const dbIds = new Set(state.db.map(i => i.id));
-    state.reminders = state.reminders.filter(r => r.isEpisodic || !dbIds.has(r.id));
+    state.reminders = (state.reminders || []).filter(r => r.isEpisodic || !dbIds.has(r.id));
     localStorage.setItem('cp_elite_reminders', JSON.stringify(state.reminders));
 
-    // Split reminders
-    const standardReminders = state.reminders.filter(r => !r.isEpisodic);
-    const episodicReminders = state.reminders.filter(r => r.isEpisodic);
-
     // 1. Render Episodic (TV Shows)
+    const episodicReminders = state.reminders.filter(r => r.isEpisodic);
     if (episodicReminders.length === 0) {
         epSection.classList.add('hidden');
     } else {
@@ -3176,20 +4264,9 @@ function renderUpcomingRadar() {
         epGrid.innerHTML = episodicReminders.map(r => {
             const diff = new Date(r.date).getTime() - new Date().getTime();
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            let dayText = days < 0 ? 'AVAILABLE NOW' : (days === 0 ? 'AIRING TODAY' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`));
+            if (r.statusText) dayText = r.statusText;
 
-            let dayText = '';
-            if (r.statusText) {
-                dayText = r.statusText; // 'SEASON FINISHED'
-            } else if (days < 0) {
-                dayText = 'AVAILABLE NOW';
-            } else if (days === 0) {
-                dayText = 'AIRING TODAY';
-            } else if (days === 1) {
-                dayText = 'TOMORROW';
-            } else {
-                dayText = `${days} DAYS LEFT`;
-            }
-            // FIX: Advanced Dynamic Progress Bar Integration
             const localData = state.db.find(i => String(i.id) === String(r.id));
             let progressHtml = '';
             let currentEpText = 'Waiting';
@@ -3199,76 +4276,63 @@ function renderUpcomingRadar() {
                 const ep = localData.ep || 0;
                 const pct = Math.min(100, Math.round((ep / max) * 100));
                 currentEpText = `Watched: ${ep}/${max}`;
-                progressHtml = `
-                <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2">
-                    <div class="bg-[#a855f7] h-full transition-all duration-500" style="width: ${pct}%"></div>
-                </div>`;
+                progressHtml = `<div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden mt-2"><div class="bg-[#a855f7] h-full transition-all duration-500" style="width: ${pct}%"></div></div>`;
             }
 
             return `
-            <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border border-[#a855f7]/30 hover:border-[#a855f7] transition-all cursor-pointer shadow-[0_10px_30px_rgba(168,85,247,0.1)]" onclick="openModal(${r.id}, '${r.type}')">
+            <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border border-[#a855f7]/30 hover:border-[#a855f7] transition-all cursor-pointer shadow-xl group/item" onclick="openModal(${r.id}, '${r.type}')">
                 <div class="w-16 h-24 shrink-0 rounded-xl overflow-hidden border border-white/5 relative">
                     <img src="${IMG + r.poster}" class="w-full h-full object-cover">
+                    <div onclick="event.stopPropagation(); jumpToCalendar('${r.date}')" class="absolute inset-0 bg-pulse/80 flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-opacity z-20"><i class="fas fa-calendar-day text-white text-xl"></i></div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <h4 class="text-sm font-black italic uppercase text-white truncate mb-1">${r.title}</h4>
                     <div class="flex flex-col bg-white/5 px-3 py-2 rounded-lg mb-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-[8px] text-gray-400 font-black uppercase tracking-widest">${currentEpText}</span>
-                            <i class="fas fa-arrow-right text-[8px] text-gray-600 mx-2"></i>
-                           <span class="text-[9px] text-[#a855f7] font-black uppercase tracking-widest">Next: S${r.nextSeason} E${r.nextEp}</span>
-                           
-                        </div>
+                        <div class="flex justify-between items-center"><span class="text-[8px] text-gray-400 font-black uppercase tracking-widest">${currentEpText}</span><span class="text-[9px] text-[#a855f7] font-black uppercase tracking-widest">Next: S${r.nextSeason} E${r.nextEp}</span></div>
                         ${progressHtml}
                     </div>
                     <div class="text-[9px] font-black uppercase tracking-widest text-[#22c55e]"><i class="fas fa-clock"></i> ${dayText}</div>
                 </div>
-                <button onclick="event.stopPropagation(); state.active = {id: ${r.id}}; toggleReminder();" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0">
-                    <i class="fas fa-trash-alt text-[10px]"></i>
-                </button>
-            </div>
-            `;
+                <button onclick="event.stopPropagation(); state.active = {id: ${r.id}}; toggleReminder();" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0"><i class="fas fa-trash-alt text-[10px]"></i></button>
+            </div>`;
         }).join('');
     }
 
-    // 2. Render Standard Radar (Movies/Unreleased Shows)
-    if (standardReminders.length === 0) {
+    // 2. Render Tracker (Radar + Standard Reminders)
+    const combinedTracker = [
+        ...state.radar.map(r => ({ ...r, isRadar: true })),
+        ...state.reminders.filter(r => !r.isEpisodic)
+    ];
+
+    if (combinedTracker.length === 0) {
         radarSection.classList.add('hidden');
     } else {
         radarSection.classList.remove('hidden');
-        radarGrid.innerHTML = standardReminders.map(r => {
+        radarGrid.innerHTML = combinedTracker.map(r => {
             const diff = new Date(r.date).getTime() - new Date().getTime();
             const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
             const isOut = days <= 0;
-
-            const urgencyColor = isOut ? 'text-[#22c55e]' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
-            const urgencyBorder = isOut ? 'border-[#22c55e]/50' : (days <= 7 ? 'border-[#f59e0b]/50' : 'border-pulse/50');
-            const urgencyShadow = isOut ? 'shadow-[#22c55e]/10' : (days <= 7 ? 'shadow-[#f59e0b]/10' : 'shadow-pulse/10');
             const dayText = isOut ? 'AVAILABLE NOW' : (days === 1 ? 'TOMORROW' : `${days} DAYS LEFT`);
+            const urgencyColor = isOut ? 'text-[#22c55e]' : (days <= 7 ? 'text-[#f59e0b]' : 'text-pulse');
 
             return `
-            <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border ${urgencyBorder} hover:border-pulse transition-all cursor-pointer group shadow-xl ${urgencyShadow}" onclick="openModal(${r.id}, '${r.type}')">
+            <div class="flex items-center gap-4 bg-[#0a0c12]/90 backdrop-blur-md p-4 rounded-3xl border border-white/10 hover:border-pulse transition-all cursor-pointer group shadow-xl" onclick="openModal(${r.id}, '${r.type}')">
                 <div class="w-20 h-28 shrink-0 rounded-2xl overflow-hidden shadow-lg border border-white/5 relative">
-                    <img src="${r.poster ? IMG + r.poster : 'https://via.placeholder.com/150'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
-                    ${getPlayHoverHTML({ ...r, type: r.type })}
+                    <img src="${IMG + r.poster}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    <div onclick="event.stopPropagation(); jumpToCalendar('${r.date}')" class="absolute inset-0 bg-pulse/80 flex items-center justify-center opacity-0 group:hover:opacity-100 transition-opacity z-20"><i class="fas fa-calendar-day text-white text-xl"></i></div>
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 mb-2">
                         <span class="text-[8px] font-black uppercase tracking-widest text-white bg-white/10 px-2 py-0.5 rounded border border-white/5">${r.type}</span>
                         <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">${(r.date || '').split('-')[0] || 'TBA'}</span>
                     </div>
-                    <h4 class="text-xs md:text-sm font-black italic uppercase text-white truncate group-hover:text-pulse transition-colors mb-3">${r.title}</h4>
+                    <h4 class="text-xs font-black italic uppercase text-white truncate group-hover:text-pulse transition-colors mb-3">${r.title}</h4>
                     <div class="inline-block border border-white/10 bg-black/40 px-3 py-1.5 rounded-lg backdrop-blur-md">
-                        <span class="text-[9px] font-black uppercase tracking-widest ${urgencyColor} flex items-center gap-2">
-                            <i class="fas fa-stopwatch"></i> ${dayText}
-                        </span>
+                        <span class="text-[9px] font-black uppercase tracking-widest ${urgencyColor} flex items-center gap-2"><i class="fas fa-stopwatch"></i> ${dayText}</span>
                     </div>
                 </div>
-                <button onclick="event.stopPropagation(); state.active = {id: ${r.id}}; toggleReminder();" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0">
-                    <i class="fas fa-trash-alt text-[10px]"></i>
-                </button>
-            </div>
-            `;
+                <button onclick="event.stopPropagation(); ${r.isRadar ? `toggleRadar(${r.id}, '${r.type}', '${r.title.replace(/'/g, "\\'")}', '${r.poster}')` : `state.active = {id: ${r.id}}; toggleReminder();`}" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 hover:text-pulse hover:bg-pulse/20 transition-all shrink-0"><i class="fas fa-trash-alt text-[10px]"></i></button>
+            </div>`;
         }).join('');
     }
 }
@@ -3325,7 +4389,8 @@ function clearUpcomingSearch() {
     handleUpcomingSearch('');
 }
 // ADVANCED I/O MODAL LOGIC
-function openAdvancedIO(mode) {
+async function openAdvancedIO(mode) {
+    await loadModalFragment("advancedIOModal");
     const modal = document.getElementById('advancedIOModal');
     const expConfig = document.getElementById('exportConfig');
     const impConfig = document.getElementById('importConfig');
@@ -3690,7 +4755,8 @@ function setupLongPressSelection() {
 
 
 // FACTORY RESET (THE NUKE)
-function openFactoryResetModal() {
+async function openFactoryResetModal() {
+    await loadModalFragment("factoryResetModal");
     document.getElementById('factoryResetModal').classList.remove('hidden');
 }
 
@@ -3880,21 +4946,24 @@ function isSmartMatch(text, query) {
     text = text.toLowerCase();
     query = query.toLowerCase().trim();
 
-    // Exact substring match (fastest)
+    // 1. Exact substring match (fastest)
     if (text.includes(query)) return true;
 
-    // Check individual words for typos (max 2 typos allowed for longer words)
+    // 2. Word-based matching with typo tolerance
     const titleWords = text.split(/[\s\-:]+/);
     const queryWords = query.split(/[\s\-:]+/);
 
-    return queryWords.every(qw =>
-        titleWords.some(tw => {
+    return queryWords.every(qw => {
+        if (qw.length <= 2) return titleWords.some(tw => tw === qw); // Exact match for short words
+
+        return titleWords.some(tw => {
             if (tw.includes(qw)) return true;
-            // Allow 1 typo for 4 letter words, 2 typos for 5+ letter words
-            const maxTypos = qw.length > 4 ? 2 : (qw.length > 3 ? 1 : 0);
-            return qw.length > 3 && calculateLevenshteinDistance(tw, qw) <= maxTypos;
-        })
-    );
+
+            // Allow 1 typo for 4-5 letter words, 2 typos for 6+ letter words
+            const maxTypos = qw.length > 5 ? 2 : (qw.length > 3 ? 1 : 0);
+            return calculateLevenshteinDistance(tw, qw) <= maxTypos;
+        });
+    });
 }
 
 // Initialize Sources DB
@@ -4326,41 +5395,44 @@ function updateHubUI() {
     `).join('');
 }
 
-const searchInput = document.getElementById("mainSearch");
-const clearBtn = document.getElementById("clearSearch");
-
-searchInput.addEventListener("input", () => {
-    if (searchInput.value.length > 0) {
-        clearBtn.classList.remove("hidden");
-    } else {
-        clearBtn.classList.add("hidden");
-    }
-});
-
-clearBtn.addEventListener("click", () => {
-    searchInput.value = "";
-    clearBtn.classList.add("hidden");
-    searchInput.focus();
-});
 
 // toggleDiscoverFilter :
 async function fetchDiscoverData(append = false) {
     let val = state.discoverFilters.type;
-    let path = `/trending/all/day?page=${discoverPage}`;
+    let page = discoverPage;
+    let path = `/trending/all/day?page=${page}`;
 
-    if (val === 'movie') path = `/discover/movie?sort_by=popularity.desc&page=${discoverPage}`;
-    if (val === 'tv') path = `/discover/tv?sort_by=popularity.desc&with_original_language=en&page=${discoverPage}`;
-    if (val === 'anime') path = `/discover/tv?with_genres=16&sort_by=popularity.desc&with_original_language=ja&page=${discoverPage}`;
-    if (val === 'kdrama') path = `/discover/tv?with_original_language=ko&sort_by=popularity.desc&page=${discoverPage}`;
-    if (val === 'turkish') path = `/discover/tv?with_original_language=tr&sort_by=popularity.desc&page=${discoverPage}`;
-    if (val === 'asian') path = `/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc&page=${discoverPage}`;
+    // Construct genre parameter for discovery
+    let genreParam = state.discoverFilters.genres.length > 0 ? `&with_genres=${state.discoverFilters.genres.join(',')}` : '';
+
+    // Construct year parameter
+    const yearSelect = document.getElementById('searchYear');
+    let yearParam = (yearSelect && yearSelect.value) ? `&primary_release_year=${yearSelect.value}&first_air_date_year=${yearSelect.value}` : '';
+
+    // Construct region parameter
+    const regionSelect = document.getElementById('searchCountry');
+    let regionParam = (regionSelect && regionSelect.value) ? `&with_origin_country=${regionSelect.value}` : '';
+
+    if (val === 'movie') path = `/discover/movie?sort_by=popularity.desc&page=${page}${genreParam}${yearParam}${regionParam}`;
+    else if (val === 'tv') path = `/discover/tv?sort_by=popularity.desc&with_original_language=en&page=${page}${genreParam}${yearParam}${regionParam}`;
+    else if (val === 'anime') {
+        let genres = [16, ...state.discoverFilters.genres];
+        path = `/discover/tv?with_genres=${genres.join(',')}&sort_by=popularity.desc&with_original_language=ja&page=${page}&without_genres=10749&include_adult=false${yearParam}${regionParam}`;
+    }
+    else if (val === 'kdrama') path = `/discover/tv?with_original_language=ko&sort_by=popularity.desc&page=${page}${genreParam}${yearParam}${regionParam}`;
+    else if (val === 'turkish') path = `/discover/tv?with_original_language=tr&sort_by=popularity.desc&page=${page}${genreParam}${yearParam}${regionParam}`;
+    else if (val === 'asian') path = `/discover/tv?with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16&sort_by=popularity.desc&page=${page}${genreParam}${yearParam}${regionParam}`;
+    else if (genreParam || yearParam || regionParam) {
+        // If "All" is selected but filters are active, use discover instead of trending
+        path = `/discover/movie?sort_by=popularity.desc&page=${page}${genreParam}${yearParam}${regionParam}`;
+    }
 
     const data = await fetchAPI(path);
 
     if (append) {
-        state.discoverDataRaw = state.discoverDataRaw.concat(data.results);
+        state.discoverDataRaw = state.discoverDataRaw.concat(data.results.filter(i => !isBlocked(i)));
     } else {
-        state.discoverDataRaw = data.results;
+        state.discoverDataRaw = data.results.filter(i => !isBlocked(i));
     }
     applyDiscoverLocalFilters();
 }
@@ -5391,6 +6463,7 @@ let currentSagaViewContext = null;
 let inlineSearchTimer = null;
 
 async function openSaga(id, isEditing = false) {
+    await loadModalFragment("sagaModal");
     const modal = document.getElementById('sagaModal');
     if (modal) {
         modal.scrollTop = 0;
@@ -6615,8 +7688,15 @@ let playerState = {
 };
 
 // --- WATCH OPTIONS MODAL LOGIC ---
-function openWatchOptions(id, type, title) {
+async function openWatchOptions(id, type, title) {
+    await loadModalFragment("watchOptionsModal");
     const modal = document.getElementById('watchOptionsModal');
+    if (!modal.dataset.clickBound) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) closeWatchOptions();
+        });
+        modal.dataset.clickBound = "1";
+    }
     const titleEl = document.getElementById('watchOptionsTitle');
     const btnInternal = document.getElementById('btnInternalPlayer');
     const linkJustWatch = document.getElementById('linkJustWatch');
@@ -6647,6 +7727,12 @@ function openWatchOptions(id, type, title) {
 
 function closeWatchOptions() {
     const modal = document.getElementById('watchOptionsModal');
+    if (!modal.dataset.clickBound) {
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) closeWatchOptions();
+        });
+        modal.dataset.clickBound = "1";
+    }
     modal.classList.add('opacity-0');
     modal.firstElementChild.classList.add('scale-95');
     setTimeout(() => {
@@ -6655,10 +7741,7 @@ function closeWatchOptions() {
     }, 300);
 }
 
-// Close modal if clicking outside the box
-document.getElementById('watchOptionsModal').addEventListener('click', function (e) {
-    if (e.target === this) closeWatchOptions();
-});
+
 
 function launchInternalPlayer(id, tmdbType, title, sameTab = true) {
     document.getElementById('watchModal').classList.add('hidden');
@@ -6937,7 +8020,7 @@ window.renderTemporalArchive = function () {
 const PAGE_INFO_DATA = {
     search: { icon: 'fa-search', color: '#ff2d55', title: 'Discover & Search', desc: 'Your gateway to the entire cinematic universe. Search millions of titles or browse curated trending content.', features: ['<b>Type Filters</b> — Instantly switch between Movies, Series, Anime, K-Drama, Turkish & Asian.', '<b>Search + Filter</b> — Type a query then use type pills to narrow results to a specific category.', '<b>Genre Pills</b> — Click Genres to expand genre pills for deep filtering.', '<b>Year & Region</b> — Use the dropdowns to filter by release year or country of origin.', '<b>Layout Toggle</b> — Switch between grid densities or list view in the top-right controls.', '<b>Load More</b> — Scroll to the bottom and hit Load More to fetch additional results.'] },
     mylist: { icon: 'fa-layer-group', color: '#3b82f6', title: 'My Library', desc: 'Your personal neural database. Every title you track lives here with full status, score, and episode tracking.', features: ['<b>Status Tracking</b> — Mark titles as Watching, Plan to Watch, Ongoing, or Finished.', '<b>Star Ratings</b> — Score each title 0–5 stars. Crowned titles appear in Masterpieces.', '<b>Import / Export</b> — Back up or migrate your library using the Import/Export tools.', '<b>Timeline</b> — Use Version Control to view and revert to past library snapshots.', '<b>Multi-Select</b> — Long-press or click Select to batch-edit or delete entries.', '<b>Random Picker</b> — Let the neural engine pick what to watch next.'] },
-    upcoming: { icon: 'fa-calendar-alt', color: '#a855f7', title: 'Coming Soon', desc: 'Track unreleased movies and shows. Get notified when episodes drop and monitor active season schedules.', features: ['<b>Radar Tracking</b> — Add any title to your Radar to track its release.', '<b>Episode Alerts</b> — Actively airing shows you track show the next episode countdown.', '<b>Search Future Releases</b> — Use the search bar to find and track any upcoming title.', '<b>Highly Anticipated</b> — Discover the most buzzed-about upcoming releases.'] },
+    upcoming: { icon: 'fa-calendar-alt', color: '#a855f7', title: 'Coming Soon', desc: 'Track unreleased movies and shows. Get notified when episodes drop and monitor active season schedules.', features: ['<b>Personal Tracking</b> — Add any title to your Tracker to monitor its release date.', '<b>Airing Now</b> — Actively airing shows you track show the next episode countdown.', '<b>Release Calendar</b> — View your entire tracking timeline in a dedicated calendar view.', '<b>Highly Anticipated</b> — Discover the most buzzed-about upcoming releases.'] },
     sagamatrix: { icon: 'fa-cubes', color: '#ff2d55', title: 'Saga Matrix', desc: 'Map cinematic universes, trilogies, and multi-part sagas. Forge custom universes with your own watch order.', features: ['<b>Discover Sagas</b> — Browse pre-built cinematic universes with recommended watch orders.', '<b>My Sagas</b> — View custom universes you have forged.', '<b>Universe Forge</b> — Build your own saga by searching and arranging any titles in order.', '<b>Drag & Drop</b> — Re-order entries inside the canvas to set your timeline.', '<b>Mainline vs Spin-off</b> — Scale entries to indicate their importance in the saga.'] },
     masterpieces: { icon: 'fa-crown', color: '#eab308', title: 'Masterpieces', desc: 'Your hall of fame. Perfect scores and crowned titles curated from your library.', features: ['<b>Crowned</b> — Titles you manually marked with the crown icon from their detail card.', '<b>Perfect 5/5s</b> — Every title you rated a full 5 stars.', '<b>Rankings</b> — A sorted leaderboard of your entire library by your personal score.', '<b>Add a Masterpiece</b> — Open any title detail and use the Crown button to add it here.'] },
     rhythmlab: { icon: 'fa-layer-group', color: '#ff2d55', title: 'Collection', desc: 'A high-density view of your entire library organized with advanced filtering and sorting.', features: ['<b>Type & Genre Filters</b> — Drill into specific categories using the type and genre pills.', '<b>Advanced Filters</b> — Access status, year, IMDb score, and personal score filters.', '<b>Local Search</b> — Instantly search your collection by title.', '<b>Grid / List View</b> — Toggle between compact grid and expanded list view.', '<b>Back to Top / Bottom</b> — Floating buttons appear when scrolled for quick navigation.'] },
@@ -6946,38 +8029,90 @@ const PAGE_INFO_DATA = {
     neurallink: { icon: 'fa-microchip', color: '#3b82f6', title: 'Neural Link', desc: 'Peer-to-peer library synchronization. Share your entire database between devices in real-time with no cloud needed.', features: ['<b>Primary Hub</b> — Generate a Sync Key on your main device to broadcast your library.', '<b>Secondary Node</b> — Join a hub via QR scan or by pasting the Host Key.', '<b>Payload Filters</b> — Choose which types to share before syncing.', '<b>Network Topology</b> — View all connected devices and their status.', '<b>Merge Strategy</b> — Choose to merge incoming data or replace your local library.'] }
 };
 
-window.openPageInfo = function (pageId) {
-    var data = PAGE_INFO_DATA[pageId];
+window.openPageInfo = function (type) {
+    const data = PAGE_INFO_DATA[type];
     if (!data) return;
-    var overlay = document.getElementById('pageInfoOverlay');
-    document.getElementById('pageInfoIcon').innerHTML = '<i class="fas ' + data.icon + ' text-2xl" style="color:' + data.color + '"></i>';
-    var titleEl = document.getElementById('pageInfoTitle');
+
+    const overlay = document.getElementById('pageInfoOverlay');
+
+    // Update Header Icons
+    const iconContainer = document.getElementById('pageInfoIcon');
+    const miniIcon = document.getElementById('mobilePageInfoMiniIcon');
+    const iconHtml = `<i class="fas ${data.icon} text-3xl md:text-5xl" style="color:${data.color}"></i>`;
+
+    if (iconContainer) iconContainer.innerHTML = iconHtml;
+    if (miniIcon) {
+        miniIcon.innerHTML = `<i class="fas ${data.icon}"></i>`;
+        miniIcon.style.color = data.color;
+        miniIcon.style.backgroundColor = `${data.color}15`;
+    }
+
+    const titleEl = document.getElementById('pageInfoTitle');
     titleEl.innerText = data.title;
     titleEl.style.color = data.color;
+
     document.getElementById('pageInfoDesc').innerText = data.desc;
-    document.getElementById('pageInfoList').innerHTML = data.features.map(function (f) {
-        return '<li class="flex items-start gap-3 text-[11px] text-gray-300 leading-relaxed"><i class="fas fa-chevron-right text-[8px] mt-1 shrink-0" style="color:' + data.color + '"></i><span>' + f + '</span></li>';
+
+    // Redesigned List Items: Removed fixed widths to prevent horizontal scroll
+    document.getElementById('pageInfoList').innerHTML = data.features.map(f => {
+        const [label, text] = f.split(' — ');
+        return `
+            <li class="flex items-start gap-4 p-5 md:p-8 bg-white/5 border border-white/5 rounded-[25px] md:rounded-[35px] group/info hover:bg-white/10 transition-all w-full">
+                <div class="w-2 h-2 rounded-full mt-2 shrink-0 shadow-[0_0_10px_currentColor]" style="background-color:${data.color}; color:${data.color}"></div>
+                <div class="min-w-0 flex-1">
+                    <span class="block text-[12px] md:text-[15px] text-white font-black uppercase tracking-tight mb-1">${label}</span>
+                    <p class="text-[11px] md:text-[13px] text-gray-400 font-medium leading-relaxed">${text || ''}</p>
+                </div>
+            </li>
+        `;
     }).join('');
 
-    // Sync sidebar links into the info modal sidebar
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+
+    // Sync sidebar links into the info modal sidebar with full labels
     var sourceNav = document.getElementById('sidebarNav');
     var targetNav = document.getElementById('pageInfoSidebarNav');
     if (sourceNav && targetNav) {
-        targetNav.innerHTML = sourceNav.innerHTML;
 
-        // Build deterministic nav behavior so icon clicks route correctly
-        targetNav.querySelectorAll('button').forEach(function (btn) {
-            var oldOnclick = btn.getAttribute('onclick') || '';
-            var routeMatch = oldOnclick.match(/navigate\('([^']+)'\)/);
-            if (routeMatch && routeMatch[1]) {
-                btn.dataset.route = routeMatch[1];
+        // Map current nav to full labeled buttons
+        // Map current nav to full labeled buttons safely handling both FontAwesome (i) and SVGs
+        targetNav.innerHTML = Array.from(sourceNav.querySelectorAll('button')).map(btn => {
+            const iEl = btn.querySelector('i');
+            const svgEl = btn.querySelector('svg');
+
+            // Safely grab the icon depending on its type
+            const iconHtml = iEl
+                ? `<i class="${iEl.className} text-lg w-6"></i>`
+                : (svgEl ? `<div class="w-6 flex justify-center">${svgEl.outerHTML}</div>` : '');
+
+            const spanEl = btn.querySelector('span');
+            const label = spanEl ? spanEl.innerText : 'Menu';
+            const onclickAttr = btn.getAttribute('onclick') || '';
+
+            // Preserve the functionality for non-route buttons (More Tools, Calendar)
+            if (onclickAttr.includes('toggleAppHub') || onclickAttr.includes('openCalendar')) {
+                return `
+                    <button onclick="${onclickAttr}; closePageInfo()" class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 border border-white/5 text-gray-400 hover:text-white hover:bg-pulse/10 transition-all">
+                        ${iconHtml}
+                        <span class="text-[10px] font-black uppercase tracking-widest">${label}</span>
+                    </button>
+                `;
             }
-            btn.removeAttribute('onclick');
-        });
 
+            // Extract standard page navigation routes
+            const routeMatch = onclickAttr.match(/navigate\('([^']+)'\)/);
+            const route = routeMatch ? routeMatch[1] : 'home';
+            return `
+                <button data-route="${route}" class="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-white/5 border border-white/5 text-gray-400 hover:text-white hover:bg-pulse/10 transition-all">
+                    ${iconHtml}
+                    <span class="text-[10px] font-black uppercase tracking-widest">${label}</span>
+                </button>
+            `;
+        }).join('');
         // bind nav buttons from the cloned list to correct behavior
         bindSidebarNavButtons(targetNav, closePageInfo);
-
     }
 
     overlay.classList.remove('hidden');
@@ -7417,7 +8552,8 @@ function copyToClipboard(text, successMessage) {
     });
 }
 // --- CUSTOM UI SHARE ENGINE ---
-function openCustomShare(title, desc, url, richText) {
+async function openCustomShare(title, desc, url, richText) {
+    await loadModalFragment("customShareModal");
     const modal = document.getElementById('customShareModal');
     document.getElementById('shareModalTitle').innerText = title;
     document.getElementById('shareModalDesc').innerText = desc;
@@ -7512,8 +8648,10 @@ window.shareWatchlist = async function () {
         openCustomShare("Share Library", `Total Records: ${state.db.length}`, shareUrl, richText);
     }
 };
-window.toggleAppHub = function () {
+window.toggleAppHub = async function () {
+    await loadModalFragment("appHubModal");
     const modal = document.getElementById('appHubModal');
+    if (!modal) return;
     if (modal.classList.contains('hidden')) {
         modal.classList.remove('hidden');
         setTimeout(() => {
@@ -7528,12 +8666,12 @@ window.toggleAppHub = function () {
 }// --- NEW TOP 10 RATED ENGINE ---
 function renderTop10(items) {
     const container = document.getElementById('row-top10');
-    if(!container) return;
-    
+    if (!container) return;
+
     container.innerHTML = items.map((item, idx) => {
         // High Def posters for Top 10
         const posterUrl = item.poster_path ? IMG_HD + item.poster_path : 'https://via.placeholder.com/500x750';
-        
+
         return `
         <div class="flex-none w-[210px] md:w-[260px] lg:w-[300px] group cursor-pointer relative top10-card overflow-visible" onclick="openModal(${item.id}, '${item.media_type || 'movie'}')">
             
@@ -7550,7 +8688,7 @@ function renderTop10(items) {
                     <span class="text-white font-black text-lg drop-shadow-md">#${idx + 1}</span>
                 </div>
                 
-                ${getPlayHoverHTML({...item, type: item.media_type || 'movie'})}
+                ${getPlayHoverHTML({ ...item, type: item.media_type || 'movie' })}
             </div>
             
             <div class="relative z-10 mt-5 px-2">
@@ -7571,29 +8709,29 @@ window.homeDataStore = {}; // Caches section data for instant layout flipping
 function initializeSmartHomeSections() {
     if (!prefs.homeLayouts) prefs.homeLayouts = {};
     const sections = document.querySelectorAll('#view-home section');
-    
+
     sections.forEach(sec => {
         const h2 = sec.querySelector('h2');
         const container = sec.querySelector('div[id^="row-"]');
-        if(!h2 || !container || sec.classList.contains('smart-initialized')) return;
+        if (!h2 || !container || sec.classList.contains('smart-initialized')) return;
         sec.classList.add('smart-initialized');
 
         const containerId = container.id;
         const onClickAttr = h2.getAttribute('onclick') || '';
         const typeMatch = onClickAttr.match(/'([^']+)',\s*'([^']+)'/);
-        const apiMode = typeMatch ? typeMatch[1] : 'trending'; 
+        const apiMode = typeMatch ? typeMatch[1] : 'trending';
         const apiType = typeMatch ? typeMatch[2] : 'movie';
 
         const headerWrapper = document.createElement('div');
         headerWrapper.className = 'flex flex-col md:flex-row md:items-center justify-between mb-6 border-b border-white/5 pb-3 gap-4 transition-all';
-        
+
         sec.insertBefore(headerWrapper, container);
         h2.classList.remove('mb-6');
         headerWrapper.appendChild(h2);
 
         const controls = document.createElement('div');
         controls.className = 'flex items-center gap-2 self-end md:self-auto';
-        
+
         const isGrid = prefs.homeLayouts[containerId] === 'matrix';
         const iconClass = isGrid ? 'fa-list text-pulse' : 'fa-layer-group text-gray-400';
 
@@ -7607,28 +8745,28 @@ function initializeSmartHomeSections() {
 }
 
 // Triggers the Matrix Layout switch
-window.toggleHomeLayout = async function(containerId, apiMode, apiType) {
+window.toggleHomeLayout = async function (containerId, apiMode, apiType) {
     const container = document.getElementById(containerId);
     const icon = document.getElementById('icon-' + containerId);
-    
-    if(!prefs.homeLayouts) prefs.homeLayouts = {};
+
+    if (!prefs.homeLayouts) prefs.homeLayouts = {};
     const isCurrentlyMatrix = prefs.homeLayouts[containerId] === 'matrix';
     const targetLayout = isCurrentlyMatrix ? 'row' : 'matrix';
-    
+
     prefs.homeLayouts[containerId] = targetLayout;
     savePrefs();
 
     container.style.opacity = '0';
     container.style.transform = 'translateY(15px)';
     container.style.transition = 'all 0.4s ease';
-    
+
     setTimeout(async () => {
-        if(targetLayout === 'matrix') {
+        if (targetLayout === 'matrix') {
             icon.className = 'fas fa-list text-pulse drop-shadow-[0_0_8px_rgba(255,45,85,0.8)]';
-            
+
             // BONUS: View Snapping
             const sectionHeader = container.previousElementSibling;
-            if(sectionHeader) {
+            if (sectionHeader) {
                 const headerOffset = sectionHeader.getBoundingClientRect().top + window.scrollY - 80;
                 window.scrollTo({ top: headerOffset, behavior: 'smooth' });
             }
@@ -7638,9 +8776,9 @@ window.toggleHomeLayout = async function(containerId, apiMode, apiType) {
             icon.className = 'fas fa-layer-group text-gray-400';
             // Restore standard row using cached data
             const dataCache = window.homeDataStore[containerId];
-            if(dataCache) {
+            if (dataCache) {
                 container.className = 'flex gap-6 md:gap-8 overflow-x-auto hide-scroll pb-6 px-2';
-                renderRow(containerId, dataCache.items, dataCache.type); 
+                renderRow(containerId, dataCache.items, dataCache.type);
             }
         }
         container.style.opacity = '1';
@@ -7649,87 +8787,131 @@ window.toggleHomeLayout = async function(containerId, apiMode, apiType) {
 }
 
 // The core matrix builder
-window.renderTimeMatrix = async function(containerId, apiMode, type) {
+window.renderTimeMatrix = async function (containerId, apiMode, type) {
     const container = document.getElementById(containerId);
     container.innerHTML = '<div class="col-span-full py-20 page-loader"></div>';
-    container.className = 'flex flex-col gap-12 pb-10 w-full group/matrix'; // group/matrix is for Neural Focus
-    
+    container.className = 'flex flex-col gap-12 pb-10 w-full group/matrix';
+
     const today = new Date().toISOString().split('T')[0];
-    const apiType = (type === 'anime' || type === 'kdrama' || type === 'turkish' || type === 'asian') ? 'tv' : type;
+    const isSpecialty = ['anime', 'kdrama', 'turkish', 'asian'].includes(type);
+    const apiType = isSpecialty ? 'tv' : type;
     let paths = {};
-    
-    // Auto-map API language/genre filters
+
     let filterString = '';
-    if(type === 'anime') filterString = '&with_genres=16&with_original_language=ja';
-    if(type === 'kdrama') filterString = '&with_original_language=ko';
-    if(type === 'turkish') filterString = '&with_original_language=tr';
-    if(type === 'asian') filterString = '&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16';
+    // NOTE: without_genres=10749 excludes erotic/hentai content from anime results
+    if (type === 'anime') filterString = '&with_genres=16&with_original_language=ja&without_genres=10749&include_adult=false';
+    if (type === 'kdrama') filterString = '&with_original_language=ko';
+    if (type === 'turkish') filterString = '&with_original_language=tr';
+    if (type === 'asian') filterString = '&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16';
+
+    let movieFilterString = '';
+    if (type === 'anime') movieFilterString = '&with_genres=16&with_original_language=ja&without_genres=10749&include_adult=false';
+    if (type === 'kdrama') movieFilterString = '&with_original_language=ko';
+    if (type === 'turkish') movieFilterString = '&with_original_language=tr';
+    if (type === 'asian') movieFilterString = '&with_origin_country=CN|TW|TH|PH|VN|JP';
+
+    const d2 = new Date(); d2.setDate(d2.getDate() - 2); const ago2 = d2.toISOString().split('T')[0];
+    const d7 = new Date(); d7.setDate(d7.getDate() - 7); const ago7 = d7.toISOString().split('T')[0];
+    const d30 = new Date(); d30.setDate(d30.getDate() - 30); const ago30 = d30.toISOString().split('T')[0];
+    const legendVote = isSpecialty ? 100 : 1500;
 
     if (apiMode === 'upcoming') {
         let nxtWk = new Date(); nxtWk.setDate(nxtWk.getDate() + 7);
         let nxtMo = new Date(); nxtMo.setMonth(nxtMo.getMonth() + 1);
         let nxtYr = new Date(); nxtYr.setFullYear(nxtYr.getFullYear() + 1);
-        
-        const dateType = apiType === 'movie' ? 'primary_release_date' : 'first_air_date';
+        const dtv = 'first_air_date'; const dmv = 'primary_release_date';
         paths = {
-            '🔥 Dropping This Week': `/discover/${apiType}?${dateType}.gte=${today}&${dateType}.lte=${nxtWk.toISOString().split('T')[0]}&sort_by=popularity.desc`,
-            '🌟 Coming Next Month': `/discover/${apiType}?${dateType}.gte=${nxtWk.toISOString().split('T')[0]}&${dateType}.lte=${nxtMo.toISOString().split('T')[0]}&sort_by=popularity.desc`,
-            '📅 Highly Anticipated': `/discover/${apiType}?${dateType}.gte=${today}&${dateType}.lte=${nxtYr.toISOString().split('T')[0]}&sort_by=popularity.desc`
+            '🔥 Dropping This Week': {
+                tvPath: `/discover/${apiType}?${dtv}.gte=${today}&${dtv}.lte=${nxtWk.toISOString().split('T')[0]}&sort_by=popularity.desc`,
+                moviePath: isSpecialty ? `/discover/movie?${dmv}.gte=${today}&${dmv}.lte=${nxtWk.toISOString().split('T')[0]}&sort_by=popularity.desc` : null
+            },
+            '🌟 Coming Next Month': {
+                tvPath: `/discover/${apiType}?${dtv}.gte=${nxtWk.toISOString().split('T')[0]}&${dtv}.lte=${nxtMo.toISOString().split('T')[0]}&sort_by=popularity.desc`,
+                moviePath: isSpecialty ? `/discover/movie?${dmv}.gte=${nxtWk.toISOString().split('T')[0]}&${dmv}.lte=${nxtMo.toISOString().split('T')[0]}&sort_by=popularity.desc` : null
+            },
+            '📅 Highly Anticipated': {
+                tvPath: `/discover/${apiType}?${dtv}.gte=${today}&${dtv}.lte=${nxtYr.toISOString().split('T')[0]}&sort_by=popularity.desc`,
+                moviePath: isSpecialty ? `/discover/movie?${dmv}.gte=${today}&${dmv}.lte=${nxtYr.toISOString().split('T')[0]}&sort_by=popularity.desc` : null
+            }
         };
     } else {
         paths = {
-            '🔥 Daily Pulse': `/trending/${apiType}/day?`,
-            '🌟 Weekly Top': `/trending/${apiType}/week?`,
-            '📅 2026 Hits': `/discover/${apiType}?primary_release_year=2026&sort_by=popularity.desc`,
-            '🏆 All-Time Legends': `/discover/${apiType}?sort_by=vote_average.desc&vote_count.gte=1500`
+            '🔥 Daily Picks': {
+                tvPath: isSpecialty
+                    ? `/discover/${apiType}?sort_by=popularity.desc&first_air_date.gte=${ago2}`
+                    : `/trending/${apiType}/day?`,
+                moviePath: isSpecialty ? `/discover/movie?sort_by=popularity.desc&primary_release_date.gte=${ago2}` : null
+            },
+            '🌟 Weekly Top': {
+                tvPath: isSpecialty
+                    ? `/discover/${apiType}?sort_by=popularity.desc&first_air_date.gte=${ago7}`
+                    : `/trending/${apiType}/week?`,
+                moviePath: isSpecialty ? `/discover/movie?sort_by=popularity.desc&primary_release_date.gte=${ago7}` : null
+            },
+            '📆 Monthly Best': {
+                tvPath: `/discover/${apiType}?sort_by=popularity.desc&first_air_date.gte=${ago30}`,
+                moviePath: isSpecialty ? `/discover/movie?sort_by=popularity.desc&primary_release_date.gte=${ago30}` : null
+            },
+            '📅 2026 Hits': {
+                tvPath: `/discover/${apiType}?primary_release_year=2026&sort_by=popularity.desc`,
+                moviePath: isSpecialty ? `/discover/movie?primary_release_year=2026&sort_by=popularity.desc` : null
+            },
+            '🏆 All-Time Legends': {
+                tvPath: `/discover/${apiType}?sort_by=vote_average.desc&vote_count.gte=${legendVote}`,
+                moviePath: isSpecialty ? `/discover/movie?sort_by=vote_average.desc&vote_count.gte=${legendVote}` : null
+            }
         };
     }
 
+    if (!window.matrixPageState) window.matrixPageState = {};
     let matrixHTML = '';
-    
-    for (const [title, path] of Object.entries(paths)) {
+
+    for (const [title, pathObj] of Object.entries(paths)) {
         try {
-            const sep = path.includes('?') ? '&' : '?';
-            const data = await fetchAPI(path + sep + filterString.substring(1)); // substring removes leading '&'
+            const tvPath = pathObj.tvPath;
+            const moviePath = pathObj.moviePath;
+            const sep = tvPath.includes('?') ? '&' : '?';
+            const qf = filterString.startsWith('&') ? filterString.substring(1) : filterString;
+            const data = await fetchAPI(tvPath + sep + qf);
             const top10 = data.results.filter(i => i.poster_path).slice(0, 10);
-            
-            if(top10.length === 0) continue;
+            if (top10.length === 0) continue;
+
+            const secKey = `${containerId}-${title.replace(/[^a-z0-9]/gi, '_')}`;
+            window.matrixPageState[secKey] = {
+                page: 1, tvPath, moviePath, filterString, movieFilterString,
+                apiType, isSpecialty, currentTab: 'tv'
+            };
+
+            const movieTabHTML = isSpecialty && moviePath ? `
+                <div class="flex items-center gap-1 bg-white/5 rounded-full p-1 border border-white/10 shrink-0">
+                    <button onclick="switchMatrixTab('${secKey}','tv')"
+                        id="tab-tv-${secKey}"
+                        class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest bg-pulse text-white transition-all">
+                        Shows
+                    </button>
+                    <button onclick="switchMatrixTab('${secKey}','movie')"
+                        id="tab-movie-${secKey}"
+                        class="px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-white transition-all">
+                        Movies
+                    </button>
+                </div>
+            ` : '';
 
             matrixHTML += `
-                <div class="w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
-                    <div class="flex items-center gap-4 mb-6">
+                <div class="w-full animate-in fade-in slide-in-from-bottom-4 duration-700" id="sec-${secKey}">
+                    <div class="flex flex-wrap items-center gap-3 mb-6">
                         <h4 class="text-[11px] md:text-xs font-black uppercase tracking-[0.3em] text-white italic drop-shadow-[0_0_10px_rgba(255,45,85,0.3)]">${title}</h4>
-                        <div class="h-px flex-1 bg-gradient-to-r from-pulse/50 to-transparent"></div>
+                        <div class="h-px flex-1 bg-gradient-to-r from-pulse/50 to-transparent min-w-[20px]"></div>
+                        ${movieTabHTML}
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-5 md:gap-8 px-2">
-                        ${top10.map((item, idx) => `
-                            <div class="matrix-card flex-none group cursor-pointer relative overflow-visible transition-all duration-500 ease-out" onclick="openModal(${item.id}, '${apiType}')">
-                                
-                                <div class="absolute -left-6 bottom-4 text-[100px] md:text-[140px] font-black italic text-white/5 z-0 pointer-events-none group-hover:text-pulse/20 transition-colors duration-500 select-none leading-none tracking-tighter drop-shadow-lg">
-                                    ${idx + 1}
-                                </div>
-                                
-                                <div class="holo-wrapper relative aspect-[2/3] rounded-[24px] z-10 ml-4 mb-4">
-                                    <div class="absolute inset-0 rounded-[24px] bg-dark overflow-hidden shadow-2xl border border-white/10 group-hover:border-transparent transition-all z-20">
-                                        <img src="${IMG + item.poster_path}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                                        <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-transparent to-transparent opacity-80 z-20 pointer-events-none group-hover:opacity-100 transition-opacity"></div>
-                                        
-                                        <div class="absolute top-2 right-2 bg-dark/80 backdrop-blur-md px-2 py-1 rounded border border-white/10 z-30">
-                                            <span class="text-[9px] font-black text-pulse drop-shadow-md">#${idx + 1}</span>
-                                        </div>
-                                        
-                                        ${getPlayHoverHTML({...item, type: apiType})}
-                                    </div>
-                                </div>
-                                
-                                <div class="relative z-10 pl-5">
-                                    <h3 class="font-black text-[11px] md:text-xs uppercase line-clamp-1 text-white group-hover:text-pulse transition-colors drop-shadow-md">${item.title || item.name}</h3>
-                                    <div class="text-[8px] font-bold text-gray-500 mt-1 uppercase tracking-widest">
-                                        ${(item.release_date || item.first_air_date || '').split('-')[0] || 'TBA'} • ★ ${item.vote_average.toFixed(1)}
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-5 md:gap-8 px-2" id="grid-${secKey}">
+                        ${top10.map((item, idx) => buildMatrixCard(item, idx, apiType)).join('')}
+                    </div>
+                    <div class="flex justify-center mt-8">
+                        <button onclick="loadMoreMatrix('${secKey}')" id="loadmore-${secKey}"
+                            class="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-400 hover:border-pulse hover:text-white hover:bg-pulse/10 transition-all shadow-lg">
+                            <i class="fas fa-plus-circle text-pulse"></i> Load More
+                        </button>
                     </div>
                 </div>
             `;
@@ -7738,8 +8920,122 @@ window.renderTimeMatrix = async function(containerId, apiMode, type) {
     container.innerHTML = matrixHTML;
 }
 
+function buildMatrixCard(item, idx, apiType) {
+    const type = item.media_type || apiType;
+    const rankMeta = [
+        { bg: 'from-[#FFD700] to-[#B8860B]', glow: 'shadow-[0_0_18px_rgba(255,215,0,0.7)]', text: 'text-[#1a1200]' },
+        { bg: 'from-[#C0C0C0] to-[#707070]', glow: 'shadow-[0_0_14px_rgba(200,200,200,0.5)]', text: 'text-[#1a1a1a]' },
+        { bg: 'from-[#CD7F32] to-[#8B4513]', glow: 'shadow-[0_0_14px_rgba(205,127,50,0.5)]', text: 'text-white' },
+    ];
+    const rm = idx < 3 ? rankMeta[idx] : { bg: 'from-pulse to-[#7928ca]', glow: 'shadow-[0_0_12px_rgba(255,45,85,0.4)]', text: 'text-white' };
+    return `
+        <div class="matrix-card flex-none group cursor-pointer relative overflow-visible transition-all duration-500 ease-out" onclick="openModal(${item.id}, '${type}')">
+            <div class="holo-wrapper relative aspect-[2/3] rounded-[24px] z-10 mb-4">
+                <div class="absolute inset-0 rounded-[24px] bg-dark overflow-hidden shadow-2xl border border-white/10 group-hover:border-pulse/40 transition-all duration-500 z-20">
+                    <img src="${IMG + item.poster_path}" loading="lazy" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                    <div class="absolute inset-0 bg-gradient-to-t from-dark/90 via-dark/20 to-transparent z-20 pointer-events-none"></div>
+                    ${getPlayHoverHTML({ ...item, type })}
+                    <div class="absolute top-0 left-0 z-30">
+                        <div class="relative w-12 h-12 overflow-hidden rounded-br-[16px] rounded-tl-[22px]">
+                            <div class="absolute inset-0 bg-gradient-to-br ${rm.bg} ${rm.glow}"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="text-[13px] font-black ${rm.text} leading-none drop-shadow-md">${idx + 1}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 right-0 z-30 p-3 translate-y-1 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                        <div class="text-[8px] font-black text-white/70 uppercase tracking-widest">★ ${item.vote_average.toFixed(1)} • ${(item.release_date || item.first_air_date || '').split('-')[0] || 'TBA'}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="relative z-10 px-1">
+                <h3 class="font-black text-[11px] md:text-xs uppercase line-clamp-1 text-white group-hover:text-pulse transition-colors drop-shadow-md">${item.title || item.name}</h3>
+            </div>
+        </div>
+    `;
+}
+
+window.loadMoreMatrix = async function (secKey) {
+    const ps = window.matrixPageState?.[secKey];
+    if (!ps) return;
+    const btn = document.getElementById(`loadmore-${secKey}`);
+    const grid = document.getElementById(`grid-${secKey}`);
+    if (!btn || !grid) return;
+
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin text-pulse"></i> Loading...';
+    btn.disabled = true;
+
+    try {
+        ps.page += 1;
+        const isMovie = ps.currentTab === 'movie';
+        const basePath = isMovie ? ps.moviePath : ps.tvPath;
+        const filter = isMovie ? ps.movieFilterString : ps.filterString;
+        const apiType = isMovie ? 'movie' : ps.apiType;
+        const sep = basePath.includes('?') ? '&' : '?';
+        const qf = filter.startsWith('&') ? filter.substring(1) : filter;
+        const data = await fetchAPI(`${basePath}${sep}${qf}&page=${ps.page}`);
+        const newItems = data.results.filter(i => i.poster_path).slice(0, 10);
+        const currentCount = grid.querySelectorAll('.matrix-card').length;
+        newItems.forEach((item, idx) => {
+            grid.insertAdjacentHTML('beforeend', buildMatrixCard(item, currentCount + idx, apiType));
+        });
+        if (ps.page >= (data.total_pages || 1)) {
+            btn.remove();
+        } else {
+            btn.innerHTML = '<i class="fas fa-plus-circle text-pulse"></i> Load More';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        btn.innerHTML = '<i class="fas fa-plus-circle text-pulse"></i> Load More';
+        btn.disabled = false;
+    }
+}
+
+window.switchMatrixTab = async function (secKey, tab) {
+    const ps = window.matrixPageState?.[secKey];
+    if (!ps) return;
+    const grid = document.getElementById(`grid-${secKey}`);
+    if (!grid) return;
+    ps.currentTab = tab;
+    ps.page = 1;
+
+    const tvBtn = document.getElementById(`tab-tv-${secKey}`);
+    const movieBtn = document.getElementById(`tab-movie-${secKey}`);
+    if (tab === 'movie') {
+        tvBtn?.classList.remove('bg-pulse', 'text-white');
+        tvBtn?.classList.add('text-gray-400');
+        movieBtn?.classList.add('bg-pulse', 'text-white');
+        movieBtn?.classList.remove('text-gray-400');
+    } else {
+        movieBtn?.classList.remove('bg-pulse', 'text-white');
+        movieBtn?.classList.add('text-gray-400');
+        tvBtn?.classList.add('bg-pulse', 'text-white');
+        tvBtn?.classList.remove('text-gray-400');
+    }
+
+    grid.style.opacity = '0.3';
+    grid.innerHTML = '<div class="col-span-full py-10 page-loader"></div>';
+
+    try {
+        const isMovie = tab === 'movie';
+        const basePath = isMovie ? ps.moviePath : ps.tvPath;
+        const filter = isMovie ? ps.movieFilterString : ps.filterString;
+        const apiType = isMovie ? 'movie' : ps.apiType;
+        const sep = basePath.includes('?') ? '&' : '?';
+        const qf = filter.startsWith('&') ? filter.substring(1) : filter;
+        const data = await fetchAPI(`${basePath}${sep}${qf}`);
+        const top10 = data.results.filter(i => i.poster_path).slice(0, 10);
+        grid.innerHTML = top10.map((item, idx) => buildMatrixCard(item, idx, apiType)).join('');
+        const loadMoreBtn = document.getElementById(`loadmore-${secKey}`);
+        if (loadMoreBtn) { loadMoreBtn.innerHTML = '<i class="fas fa-plus-circle text-pulse"></i> Load More'; loadMoreBtn.disabled = false; }
+    } catch (e) {
+        grid.innerHTML = '<div class="col-span-full py-10 text-center text-pulse text-xs font-black uppercase">Failed to load</div>';
+    }
+    grid.style.opacity = '1';
+}
+
 // Smart API Time Filter Engine
-window.applyTimeFilter = async function(containerId, mode, type, timeFrame, btnElement) {
+window.applyTimeFilter = async function (containerId, mode, type, timeFrame, btnElement) {
     const bar = btnElement.parentElement;
     bar.querySelectorAll('button').forEach(b => {
         b.className = "px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors shrink-0";
@@ -7755,31 +9051,31 @@ window.applyTimeFilter = async function(containerId, mode, type, timeFrame, btnE
 
     if (mode === 'upcoming') {
         let future = new Date();
-        if(timeFrame === 'day') future.setDate(future.getDate() + 2);
-        if(timeFrame === 'week') future.setDate(future.getDate() + 7);
-        if(timeFrame === 'year') future.setFullYear(future.getFullYear() + 1);
-        if(timeFrame === 'all') future.setFullYear(future.getFullYear() + 5);
+        if (timeFrame === 'day') future.setDate(future.getDate() + 2);
+        if (timeFrame === 'week') future.setDate(future.getDate() + 7);
+        if (timeFrame === 'year') future.setFullYear(future.getFullYear() + 1);
+        if (timeFrame === 'all') future.setFullYear(future.getFullYear() + 5);
         let fDate = future.toISOString().split('T')[0];
-
-        if(apiType === 'movie') path = `/discover/movie?primary_release_date.gte=${today}&primary_release_date.lte=${fDate}&sort_by=popularity.desc`;
+        if (apiType === 'movie') path = `/discover/movie?primary_release_date.gte=${today}&primary_release_date.lte=${fDate}&sort_by=popularity.desc`;
         else path = `/discover/tv?first_air_date.gte=${today}&first_air_date.lte=${fDate}&sort_by=popularity.desc`;
     } else {
-        if(timeFrame === 'day') path = `/trending/${apiType}/day`;
-        if(timeFrame === 'week') path = `/trending/${apiType}/week`;
-        if(timeFrame === 'year') path = `/discover/${apiType}?primary_release_year=${new Date().getFullYear()}&sort_by=popularity.desc`;
-        if(timeFrame === 'all') path = `/discover/${apiType}?sort_by=vote_average.desc&vote_count.gte=1500`;
+        if (timeFrame === 'day') path = `/trending/${apiType}/day`;
+        if (timeFrame === 'week') path = `/trending/${apiType}/week`;
+        if (timeFrame === 'year') path = `/discover/${apiType}?primary_release_year=${new Date().getFullYear()}&sort_by=popularity.desc`;
+        if (timeFrame === 'all') path = `/discover/${apiType}?sort_by=vote_average.desc&vote_count.gte=1500`;
     }
 
-    if(type === 'anime') path += '&with_genres=16&with_original_language=ja';
-    if(type === 'kdrama') path += '&with_original_language=ko';
-    if(type === 'turkish') path += '&with_original_language=tr';
-    if(type === 'asian') path += '&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16';
+    if (type === 'anime') path += '&with_genres=16&with_original_language=ja';
+    if (type === 'kdrama') path += '&with_original_language=ko';
+    if (type === 'turkish') path += '&with_original_language=tr';
+    if (type === 'asian') path += '&with_origin_country=CN|TW|TH|PH|VN|JP&without_genres=16';
 
     try {
         const data = await fetchAPI(path);
-        window.homeDataStore[containerId] = { items: data.results, type: apiType }; // Update cache
+        window.homeDataStore[containerId] = { items: data.results, type: apiType };
         renderGrid(containerId, data.results.slice(0, 18), apiType, true);
     } catch (e) {
         container.innerHTML = '<div class="col-span-full py-16 text-center text-pulse font-black text-[10px] uppercase">Filter Link Severed</div>';
     }
 }
+

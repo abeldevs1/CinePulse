@@ -1,0 +1,24 @@
+<div id="networkPurgeModal" onclick="closeNetworkPurgeModal()"
+        class="fixed inset-0 z-[500] hidden flex items-center justify-center bg-black/90 backdrop-blur-xl p-4 transition-all">
+        <div onclick="event.stopPropagation()"
+            class="relative w-full max-w-md bg-[#0a0c12] border border-pulse/50 rounded-[40px] shadow-[0_20px_60px_rgba(255,45,85,0.2)] flex flex-col p-8 md:p-12 text-center animate-in zoom-in duration-300">
+            <div
+                class="w-24 h-24 mx-auto bg-pulse/10 rounded-full flex items-center justify-center mb-6 border border-pulse/30 text-pulse text-4xl">
+                <i class="fas fa-network-wired animate-pulse"></i>
+            </div>
+            <h3 class="text-3xl font-black italic uppercase text-white mb-4">Purge Network?</h3>
+            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-8 leading-relaxed">
+                This will permanently erase all recognized peers and network history from this device.
+            </p>
+            <div class="flex flex-col gap-4">
+                <button onclick="executeNetworkPurge()"
+                    class="w-full bg-pulse py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-pulse/30 text-white">
+                    Confirm Purge
+                </button>
+                <button onclick="closeNetworkPurgeModal()"
+                    class="w-full bg-white/5 border border-white/10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all text-gray-400">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>

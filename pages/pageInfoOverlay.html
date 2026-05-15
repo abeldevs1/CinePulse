@@ -1,0 +1,64 @@
+<div id="pageInfoOverlay"
+    class="fixed inset-0 z-[600] hidden bg-[#020408]/95 backdrop-blur-2xl flex flex-col justify-end md:justify-center md:items-center p-0 md:p-10 lg:p-24 animate-in fade-in duration-300">
+
+    <div
+        class="w-full flex md:hidden items-center justify-between px-6 py-5 border-b border-white/5 bg-[#0a0c12]/50 backdrop-blur-md sticky top-0 z-[620]">
+        <div class="flex items-center gap-3">
+            <div id="mobilePageInfoMiniIcon" class="w-8 h-8 rounded-lg flex items-center justify-center text-xs"></div>
+            <span class="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Pulse Intel</span>
+        </div>
+        <button onclick="closePageInfo()"
+            class="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-gray-400">
+            <i class="fas fa-times text-sm"></i>
+        </button>
+    </div>
+
+    <div id="pageInfoCard"
+        class="w-full max-w-7xl h-[92vh] md:h-auto md:max-h-[85vh] bg-[#0a0c12]/98 border-t md:border border-white/10 rounded-t-[35px] md:rounded-[50px] shadow-2xl overflow-hidden flex flex-col md:flex-row relative animate-in slide-in-from-bottom-20 md:zoom-in-95 duration-500">
+
+        <div class="w-full flex justify-center pt-4 pb-2 md:hidden">
+            <div class="w-12 h-1.5 bg-white/10 rounded-full"></div>
+        </div>
+
+        <button onclick="closePageInfo()"
+            class="hidden md:flex absolute top-10 right-10 w-14 h-14 bg-white/5 border border-white/10 rounded-full items-center justify-center text-gray-500 hover:text-white hover:bg-pulse transition-all z-50">
+            <i class="fas fa-times text-lg"></i>
+        </button>
+
+        <div class="hidden md:flex w-80 bg-white/5 border-r border-white/10 p-12 flex-col shrink-0">
+            <div class="flex items-center gap-4 mb-16">
+                <div
+                    class="w-12 h-12 bg-pulse rounded-2xl flex items-center justify-center text-white shadow-lg shadow-pulse/20">
+                    C</div>
+                <span class="text-2xl font-black italic uppercase tracking-tighter text-white">Manual</span>
+            </div>
+            <div id="pageInfoSidebarNav" class="space-y-4"></div>
+        </div>
+
+        <div class="flex-1 p-6 md:p-16 overflow-y-auto hide-scroll w-full">
+            <div class="flex flex-col md:flex-row md:items-center gap-6 md:gap-10 mb-8 md:mb-14">
+                <div id="pageInfoIcon"
+                    class="w-16 h-16 md:w-28 md:h-28 shrink-0 rounded-[24px] md:rounded-[40px] bg-white/5 border border-white/10 flex items-center justify-center shadow-2xl">
+                </div>
+                <div>
+                    <h2 id="pageInfoTitle"
+                        class="text-3xl md:text-7xl font-black italic uppercase tracking-tighter leading-[0.9] text-white">
+                        Info</h2>
+                    <p class="text-[10px] md:text-[12px] text-gray-500 uppercase tracking-[0.3em] font-bold mt-3">Pulse
+                        Core Neural Architecture</p>
+                </div>
+            </div>
+
+            <p id="pageInfoDesc"
+                class="text-sm md:text-xl text-gray-400 leading-relaxed mb-10 md:mb-16 font-medium max-w-3xl">
+                Information summary unavailable.
+            </p>
+
+            <div class="h-px w-full bg-gradient-to-r from-pulse/40 to-transparent mb-10 md:mb-16"></div>
+
+            <h4 class="text-[10px] font-black uppercase text-gray-600 tracking-[0.4em] mb-8">System Capabilities</h4>
+            <ul id="pageInfoList" class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-10 pb-20 md:pb-0">
+            </ul>
+        </div>
+    </div>
+</div>

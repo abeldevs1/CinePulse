@@ -1045,7 +1045,13 @@ window.autoRestoreNeuralLink = function () {
 // Attach to your existing DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {
     renderTopology();
-    // Auto-boot previously established connections
+    // FIXED: Only auto-restore if the user explicitly left the master switch ON.
+    // Returning from player.html or any other page does NOT trigger auto-connect.
+    const masterOn = localStorage.getItem('cp_neural_master_switch') === 'ON';
+    if (!masterOn) {
+        NeuralSync.isEngineActive = false;
+        return; // Do not auto-reconnect if engine is off
+    }
     setTimeout(() => {
         const savedRole = localStorage.getItem('cp_neural_role');
         const savedHostId = localStorage.getItem('cp_neural_host_id');
