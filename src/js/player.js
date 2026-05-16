@@ -600,7 +600,7 @@ document.getElementById('playerSearch').addEventListener('input', (e) => {
 
             if (valid.length > 0) {
                 dropdown.innerHTML = valid.map(item => `
-                    <div onclick="window.location.href='player.html?id=${item.id}&type=${item.media_type}'" class="flex items-center gap-4 p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 transition-colors">
+                    <div onmousedown="window.location.href='player.html?id=${item.id}&type=${item.media_type}'" class="flex items-center gap-4 p-3 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 transition-colors">
                         <img src="${item.poster_path ? IMG + item.poster_path : 'https://via.placeholder.com/50'}" class="w-10 h-14 rounded object-cover shadow-md">
                         <div>
                             <div class="text-[11px] font-black uppercase text-white line-clamp-1">${item.title || item.name}</div>

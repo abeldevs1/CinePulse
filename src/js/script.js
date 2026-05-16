@@ -2225,9 +2225,16 @@ function toggleReminder() {
 
     const idx = state.reminders.findIndex(r => r.id === item.id);
     if (idx > -1) {
+        const deletedItem = state.reminders[idx];
         state.reminders.splice(idx, 1);
-        updateRemindBtnUI(false);
-        showNotification(`Removed ${item.title || item.name} from Radar.`);
+        const btn = document.getElementById('mRemindBtn');
+        if (btn) updateRemindBtnUI(false);
+        showNotification(`Removed ${deletedItem.title || deletedItem.name || 'item'} from Radar.`);
+        
+        const upcomingView = document.getElementById('view-upcoming');
+        if (upcomingView && !upcomingView.classList.contains('hidden')) {
+            renderUpcomingRadar();
+        }
     } else {
         let releaseDate = item.release_date;
         let isEpisodic = false;
@@ -3957,6 +3964,15 @@ function getClockFeaturedItem(d) {
         return calendarTodayCandidates.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.popularity || 0) - (a.popularity || 0))[0];
     }
 
+    const anticipatedCandidates = (state.globalCalendarReleases || [])
+        .filter(item => hasPoster(item) && getCalendarItemDate(item) && getCalendarItemDate(item) > todayStr);
+
+    if (anticipatedCandidates.length) {
+        const item = anticipatedCandidates.sort((a, b) => new Date(getCalendarItemDate(a)) - new Date(getCalendarItemDate(b)))[0];
+        item.isAnticipated = true;
+        return item;
+    }
+
     return null;
 }
 
@@ -3992,18 +4008,27 @@ function updateClockRadarState(d) {
         dot.style.width = '0.75rem';
         dot.style.height = '0.75rem';
 
-        if (featured.type === 'tv' || featured.next_episode_to_air) {
-            label.innerText = 'Episode Out';
-        } else if (featured.release_date || featured.date) {
-            label.innerText = 'Movie Day';
-        } else {
+        if (featured.isAnticipated) {
             label.innerText = 'Anticipated';
+            const daysLeft = Math.ceil((new Date(getCalendarItemDate(featured)).getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+            let dayText = daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
+            const typeText = featured.type === 'tv' ? 'show' : 'movie';
+            hoverLocation.innerText = `${typeText} ${featured.title || featured.name} will be out ${dayText} stay tuned`;
+        } else {
+            if (featured.type === 'tv' || featured.next_episode_to_air) {
+                label.innerText = 'Episode Out';
+            } else if (featured.release_date || featured.date) {
+                label.innerText = 'Movie Day';
+            } else {
+                label.innerText = 'Anticipated';
+            }
+            hoverLocation.innerText = 'Click here to watch';
         }
+
         label.style.color = '#ff2d55';
         label.style.textShadow = '0 0 10px rgba(255, 45, 85, 0.6)';
 
         const titleText = `${featured.title || featured.name || featured.original_title || featured.original_name || 'Featured release'}`;
-        const locationText = 'Click here to watch';
 
         if (featureTitle) {
             featureTitle.innerText = titleText;
@@ -4012,9 +4037,6 @@ function updateClockRadarState(d) {
         }
         if (hoverTitle) {
             hoverTitle.innerText = titleText;
-        }
-        if (hoverLocation) {
-            hoverLocation.innerText = locationText;
         }
     } else if (bg) {
         if (hoverCard) hoverCard.classList.add('hidden');
@@ -4181,6 +4203,7 @@ async function loadUpcomingPage() {
     await refreshEpisodicReminders();
     // 1. Render Tracked Radar immediately
     renderUpcomingRadar();
+    renderUpcomingMatrix();
 
     const today = new Date().toISOString().split('T')[0];
     let future = new Date();
@@ -4328,6 +4351,64 @@ function renderUpcomingRadar() {
             </div>`;
         }).join('');
     }
+}
+
+function renderUpcomingMatrix() {
+    const timeFilter = document.getElementById('matrixTimeFilter')?.value || 'today';
+    const typeFilter = document.getElementById('matrixTypeFilter')?.value || 'all';
+    const grid = document.getElementById('upcomingMatrixGrid');
+    if (!grid) return;
+
+    let items = state.globalCalendarReleases || [];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // Time Filtering
+    items = items.filter(item => {
+        const itemDateStr = getCalendarItemDate(item);
+        if (!itemDateStr) return false;
+        
+        // Parse date reliably assuming YYYY-MM-DD
+        const [year, month, day] = itemDateStr.split('-');
+        const itemDate = new Date(year, month - 1, day);
+        
+        if (timeFilter === 'today') {
+            return itemDate.getTime() === today.getTime();
+        } else if (timeFilter === 'week') {
+            const nextWeek = new Date(today);
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            return itemDate >= today && itemDate <= nextWeek;
+        } else if (timeFilter === 'month') {
+            return itemDate.getFullYear() === today.getFullYear() && itemDate.getMonth() === today.getMonth();
+        }
+        return true;
+    });
+
+    // Type Filtering
+    if (typeFilter !== 'all') {
+        items = items.filter(item => {
+            if (typeFilter === 'movie' || typeFilter === 'tv') {
+                return (item.media_type === typeFilter || (typeFilter === 'movie' && item.cal_category === 'Movie') || (typeFilter === 'tv' && item.cal_category === 'Series'));
+            } else {
+                return item.cal_category && item.cal_category.toLowerCase() === typeFilter;
+            }
+        });
+    }
+
+    if (items.length === 0) {
+        grid.innerHTML = '<div class="col-span-full py-12 text-center text-gray-500 font-bold uppercase tracking-widest text-[10px] italic border border-white/5 rounded-2xl bg-white/5">No releases matched your filter.</div>';
+        return;
+    }
+
+    // Sort by popularity / vote average
+    items.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+
+    // Dedup by id
+    const uniqueMap = new Map();
+    items.forEach(i => uniqueMap.set(i.id, i));
+    items = Array.from(uniqueMap.values());
+
+    renderGrid('upcomingMatrixGrid', items, false, true);
 }
 
 // 3. Dynamic Search Execution
