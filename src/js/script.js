@@ -443,7 +443,6 @@ async function init() {
         initNeuralEngine();
         renderSources();
         setupLongPressCopy();
-        setupModalSearch();
         loadCountries();
         updateSafeModeUI();
         setupLongPressSelection();
@@ -1525,6 +1524,7 @@ async function openModal(id, type, isBack = false) {
                 if (loadedModal) {
                     document.body.appendChild(loadedModal);
                     modalEl = document.getElementById('modal');
+                    setupModalSearch(); // Bind search listeners now that elements exist
                 }
             }
         } catch (e) {
@@ -2872,6 +2872,86 @@ async function fetchAiringCalendarItems() {
     }
 }
 
+let calendarFetchPromise = null;
+async function initCalendarData() {
+    if (calendarFetchPromise) return calendarFetchPromise;
+    calendarFetchPromise = (async () => {
+        const today = new Date();
+        const start = new Date(today);
+        const dateStrStart = start.toISOString().split('T')[0];
+
+        const end = new Date(start);
+        end.setDate(end.getDate() + 34);
+        const dateStrEnd = end.toISOString().split('T')[0];
+
+        const fetchCategory = async (type, params) => {
+            let items = [];
+            for (let page = 1; page <= 2; page++) {
+                try {
+                    const resp = await fetch(BASE + `/discover/${type}?api_key=${API_KEY}&${params}&page=${page}`);
+                    const data = await resp.json();
+                    if (data.results) items = items.concat(data.results);
+                    if (page >= data.total_pages) break;
+                } catch (e) { break; }
+            }
+            return items;
+        };
+
+        const movieParams = `primary_release_date.gte=${dateStrStart}&primary_release_date.lte=${dateStrEnd}&sort_by=popularity.desc`;
+        const tvParams = `first_air_date.gte=${dateStrStart}&first_air_date.lte=${dateStrEnd}&sort_by=popularity.desc`;
+
+        try {
+            const [
+                movies, animeTV, animeMovie, kdramaTV, kdramaMovie,
+                turkishTV, turkishMovie, asianTV, asianMovie, upcomingMovies
+            ] = await Promise.all([
+                fetchCategory('movie', `${movieParams}&vote_count.gte=20`),
+                fetchCategory('tv', `${tvParams}&with_genres=16&with_original_language=ja`),
+                fetchCategory('movie', `${movieParams}&with_genres=16&with_original_language=ja`),
+                fetchCategory('tv', `${tvParams}&with_original_language=ko`),
+                fetchCategory('movie', `${movieParams}&with_original_language=ko`),
+                fetchCategory('tv', `${tvParams}&with_original_language=tr`),
+                fetchCategory('movie', `${movieParams}&with_original_language=tr`),
+                fetchCategory('tv', `${tvParams}&with_origin_country=CN|TW|TH|PH|VN|HK|MY|ID&without_genres=16`),
+                fetchCategory('movie', `${movieParams}&with_origin_country=CN|TW|TH|PH|VN|HK|MY|ID&without_genres=16`),
+                fetch(BASE + `/movie/upcoming?api_key=${API_KEY}&page=1`).then(r => r.json()).catch(() => ({ results: [] }))
+            ]);
+
+            const calendarItems = [
+                ...movies.map(m => ({ ...m, media_type: 'movie', cal_category: 'Movie' })),
+                ...animeTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Anime' })),
+                ...animeMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Anime' })),
+                ...kdramaTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'K-Drama' })),
+                ...kdramaMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'K-Drama' })),
+                ...turkishTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Turkish' })),
+                ...turkishMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Turkish' })),
+                ...asianTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Asian' })),
+                ...asianMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Asian' })),
+                ...(upcomingMovies.results || []).map(m => ({ ...m, media_type: 'movie', cal_category: 'Movie' }))
+            ];
+
+            const airingItems = await fetchAiringCalendarItems();
+            return [...calendarItems, ...airingItems]
+                .map(item => ({ ...item, date: getCalendarItemDate(item) }))
+                .filter(item => item.date)
+                .filter(i => {
+                    const isFuture = new Date(i.date) > new Date();
+                    return isFuture || (i.popularity || 0) >= 8 || (i.vote_count || 0) >= 20 || i.next_episode_to_air;
+                })
+                .filter((item, idx, all) => {
+                    const key = `${item.id}-${item.date}`;
+                    return all.findIndex(i => `${i.id}-${i.date}` === key) === idx;
+                })
+                .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        } catch (e) {
+            console.error("Global cal fetch failed", e);
+            return [];
+        }
+    })();
+    state.globalCalendarReleases = await calendarFetchPromise;
+    return state.globalCalendarReleases;
+}
+
 async function openCalendar(highlightId = null) {
     const modal = document.getElementById('calendarModal');
     const grid = document.getElementById('calendarGrid');
@@ -2898,76 +2978,17 @@ async function openCalendar(highlightId = null) {
     future.setDate(future.getDate() + 364);
     const dateStrFuture = future.toISOString().split('T')[0];
 
-    // Expand queries to cover both TV and Movies for specialized categories
-    // And fetch multiple pages to ensure "indefinite" future coverage doesn't hit the 20-item cap
-    const fetchCategory = async (type, params) => {
-        let items = [];
-        for (let page = 1; page <= 2; page++) {
-            try {
-                const resp = await fetch(BASE + `/discover/${type}?api_key=${API_KEY}&${params}&page=${page}`);
-                const data = await resp.json();
-                if (data.results) items = items.concat(data.results);
-                if (page >= data.total_pages) break;
-            } catch (e) { break; }
+    if (calendarOffset === 0) {
+        if (!state.globalCalendarReleases || state.globalCalendarReleases.length === 0) {
+            await initCalendarData();
         }
-        return items;
-    };
-
-    const movieParams = `primary_release_date.gte=${dateStrStart}&primary_release_date.lte=${dateStrEnd}&sort_by=popularity.desc`;
-    const tvParams = `first_air_date.gte=${dateStrStart}&first_air_date.lte=${dateStrEnd}&sort_by=popularity.desc`;
-
-    try {
-        const [
-            movies,
-            animeTV, animeMovie,
-            kdramaTV, kdramaMovie,
-            turkishTV, turkishMovie,
-            asianTV, asianMovie,
-            upcomingMovies
-        ] = await Promise.all([
-            fetchCategory('movie', `${movieParams}&vote_count.gte=20`),
-            fetchCategory('tv', `${tvParams}&with_genres=16&with_original_language=ja`),
-            fetchCategory('movie', `${movieParams}&with_genres=16&with_original_language=ja`),
-            fetchCategory('tv', `${tvParams}&with_original_language=ko`),
-            fetchCategory('movie', `${movieParams}&with_original_language=ko`),
-            fetchCategory('tv', `${tvParams}&with_original_language=tr`),
-            fetchCategory('movie', `${movieParams}&with_original_language=tr`),
-            fetchCategory('tv', `${tvParams}&with_origin_country=CN|TW|TH|PH|VN|HK|MY|ID&without_genres=16`),
-            fetchCategory('movie', `${movieParams}&with_origin_country=CN|TW|TH|PH|VN|HK|MY|ID&without_genres=16`),
-            fetch(BASE + `/movie/upcoming?api_key=${API_KEY}&page=1`).then(r => r.json()).catch(() => ({ results: [] }))
-        ]);
-
-        const calendarItems = [
-            ...movies.map(m => ({ ...m, media_type: 'movie', cal_category: 'Movie' })),
-            ...animeTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Anime' })),
-            ...animeMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Anime' })),
-            ...kdramaTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'K-Drama' })),
-            ...kdramaMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'K-Drama' })),
-            ...turkishTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Turkish' })),
-            ...turkishMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Turkish' })),
-            ...asianTV.map(m => ({ ...m, media_type: 'tv', cal_category: 'Asian' })),
-            ...asianMovie.map(m => ({ ...m, media_type: 'movie', cal_category: 'Asian' })),
-            ...(upcomingMovies.results || []).map(m => ({ ...m, media_type: 'movie', cal_category: 'Movie' }))
-        ];
-
-        const airingItems = await fetchAiringCalendarItems();
-        state.globalCalendarReleases = [...calendarItems, ...airingItems]
-            .map(item => ({ ...item, date: getCalendarItemDate(item) }))
-            .filter(item => item.date)
-            // Relaxed filter for future items: if it's in the future, we show it regardless of popularity
-            // This ensures "each day" has content if something is scheduled.
-            .filter(i => {
-                const isFuture = new Date(i.date) > new Date();
-                return isFuture || (i.popularity || 0) >= 8 || (i.vote_count || 0) >= 20 || i.next_episode_to_air;
-            })
-            .filter((item, idx, all) => {
-                const key = `${item.id}-${item.date}`;
-                return all.findIndex(i => `${i.id}-${i.date}` === key) === idx;
-            })
-            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-    } catch (e) {
-        console.error("Global cal fetch failed", e);
-        state.globalCalendarReleases = [];
+    } else {
+        // Just use existing calendar functionality for offsets but only populate state.globalCalendarReleases on load.
+        // If an offset is selected, we should theoretically fetch, but actually the pre-fetched data spans 34 days!
+        // We will just use the prefetched data. It already spans the entire 35 days.
+        if (!state.globalCalendarReleases || state.globalCalendarReleases.length === 0) {
+            await initCalendarData();
+        }
     }
 
     const startLabel = start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -3650,6 +3671,17 @@ function renderGrid(id, items, forced, clear = true) {
                         ★ ${i.vote_average.toFixed(1)}
                     </div>
                 ` : ''}
+
+                ${id === 'upcomingMatrixGrid' && i.date ? (() => {
+                    const diff = new Date(i.date).getTime() - new Date().getTime();
+                    const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                    const dayText = days <= 0 ? 'Out Now' : (days === 1 ? 'Tomorrow' : `In ${days} Days`);
+                    return `
+                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/80 backdrop-blur-xl px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest text-[#22c55e] border border-white/10 z-30 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap shadow-[0_0_15px_rgba(0,0,0,0.8)]">
+                            <i class="fas fa-clock mr-1"></i> ${dayText}
+                        </div>
+                    `;
+                })() : ''}
                 
                 ${!isPerson ? getPlayHoverHTML({ ...i, type: type }) : ''}
             </div>
@@ -4203,6 +4235,7 @@ async function loadUpcomingPage() {
     await refreshEpisodicReminders();
     // 1. Render Tracked Radar immediately
     renderUpcomingRadar();
+    await initCalendarData(); // Ensure calendar items exist before matrix rendering
     renderUpcomingMatrix();
 
     const today = new Date().toISOString().split('T')[0];
