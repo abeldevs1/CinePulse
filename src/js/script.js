@@ -3968,6 +3968,37 @@ function updateClockDisplay() {
     if (ampmEl) ampmEl.innerText = ampm;
     if (dateEl) dateEl.innerText = dateStr;
 
+    // Update the hover card countdown timer
+    const countdownEl = document.getElementById('clockCountdown');
+    if (countdownEl) {
+        const featured = getClockFeaturedItem(d);
+        if (featured) {
+            const targetDate = getCalendarItemDate(featured);
+            if (targetDate) {
+                const diff = new Date(targetDate).getTime() - d.getTime();
+                if (diff > 0) {
+                    const totalSecs = Math.floor(diff / 1000);
+                    const dd = Math.floor(totalSecs / 86400);
+                    const hh = Math.floor((totalSecs % 86400) / 3600);
+                    const mm = Math.floor((totalSecs % 3600) / 60);
+                    const ss = totalSecs % 60;
+                    const parts = [];
+                    if (dd > 0) parts.push(`${dd}d`);
+                    parts.push(`${String(hh).padStart(2,'0')}h`);
+                    parts.push(`${String(mm).padStart(2,'0')}m`);
+                    parts.push(`${String(ss).padStart(2,'0')}s`);
+                    countdownEl.innerText = parts.join(' ');
+                } else {
+                    countdownEl.innerText = '🎬 Available Now';
+                }
+            } else {
+                countdownEl.innerText = '';
+            }
+        } else {
+            countdownEl.innerText = '';
+        }
+    }
+
     // RADAR INTEGRATION: Check for releases today
     updateClockRadarState(d);
 }
@@ -4042,10 +4073,6 @@ function updateClockRadarState(d) {
 
         if (featured.isAnticipated) {
             label.innerText = 'Anticipated';
-            const daysLeft = Math.ceil((new Date(getCalendarItemDate(featured)).getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-            let dayText = daysLeft === 1 ? 'tomorrow' : `in ${daysLeft} days`;
-            const typeText = featured.type === 'tv' ? 'show' : 'movie';
-            hoverLocation.innerText = `${typeText} ${featured.title || featured.name} will be out ${dayText} stay tuned`;
         } else {
             if (featured.type === 'tv' || featured.next_episode_to_air) {
                 label.innerText = 'Episode Out';
@@ -4054,7 +4081,6 @@ function updateClockRadarState(d) {
             } else {
                 label.innerText = 'Anticipated';
             }
-            hoverLocation.innerText = 'Click here to watch';
         }
 
         label.style.color = '#ff2d55';
@@ -4098,6 +4124,10 @@ function openClockHoverDetail() {
 function startClock() {
     updateClockDisplay(); // Initialize immediately to prevent "00:00" flash
     setInterval(updateClockDisplay, 1000);
+    // Silently pre-fetch calendar data so clock shows without needing calendar click
+    if (!state.globalCalendarReleases || state.globalCalendarReleases.length === 0) {
+        initCalendarData().then(() => updateClockRadarState(new Date()));
+    }
 }
 function save(skipBroadcast = false) {
     localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db));
@@ -8160,8 +8190,7 @@ window.openPageInfo = function (type) {
 
     document.getElementById('pageInfoDesc').innerText = data.desc;
 
-    // Redesigned List Items: Removed fixed widths to prevent horizontal scroll
-    document.getElementById('pageInfoList').innerHTML = data.features.map(f => {
+    const listHtml = data.features.map(f => {
         const [label, text] = f.split(' — ');
         return `
             <li class="flex items-start gap-4 p-5 md:p-8 bg-white/5 border border-white/5 rounded-[25px] md:rounded-[35px] group/info hover:bg-white/10 transition-all w-full">
@@ -8173,6 +8202,22 @@ window.openPageInfo = function (type) {
             </li>
         `;
     }).join('');
+
+    // Populate desktop list
+    const listEl = document.getElementById('pageInfoList');
+    if (listEl) listEl.innerHTML = listHtml;
+
+    // Populate mobile list (same content, same styling)
+    const mobileListEl = document.getElementById('pageInfoListMobile');
+    if (mobileListEl) mobileListEl.innerHTML = listHtml;
+
+    // Populate mobile header
+    const titleMob = document.getElementById('pageInfoTitleMobile');
+    const descMob = document.getElementById('pageInfoDescMobile');
+    const iconMob = document.getElementById('pageInfoIconMobile');
+    if (titleMob) { titleMob.innerText = data.title; titleMob.style.color = data.color; }
+    if (descMob) descMob.innerText = data.desc;
+    if (iconMob) iconMob.innerHTML = `<i class="fas ${data.icon} text-xl" style="color:${data.color}"></i>`;
 
     overlay.classList.remove('hidden');
     overlay.classList.add('flex');
