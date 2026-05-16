@@ -1298,28 +1298,34 @@ body {
     gap: 16px !important;
 }
 
-#searchGrid.list-view .group {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    gap: 24px !important;
-    background: rgba(255, 255, 255, 0.03);
-    padding: 12px;
-    border-radius: 24px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+.list-item-premium {
+    transform-origin: center left;
+    will-change: transform, background-color;
+    transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
 
-#searchGrid.list-view .group .aspect-\[2\/3\] {
-    width: 70px !important;
-    min-width: 70px !important;
-    height: 105px !important;
-    margin-bottom: 0 !important;
-    border-radius: 16px !important;
+.list-item-premium:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 45, 85, 0.3);
+    transform: translateX(10px);
 }
 
-#searchGrid.list-view .group>div:nth-child(2) {
-    font-size: 16px !important;
-    flex: 1;
+.list-item-premium img {
+    transition: transform 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.list-item-premium:hover img {
+    transform: scale(1.08);
+}
+
+.layout-btn.active {
+    background: #ff2d55 !important;
+    color: white !important;
+    box-shadow: 0 10px 20px rgba(255, 45, 85, 0.3) !important;
+}
+
+.layout-btn.active i {
+    color: white !important;
 }
 
 /* --- PHENOMENAL DISCOVER PAGE (MOBILE ONLY) --- */
@@ -2926,10 +2932,7 @@ section:hover .scroll-btn-smart.is-active {
 }
 
 /* --- BROWSER PERFORMANCE OPTIMIZATIONS --- */
-/* Tells the browser to skip rendering calculations for images outside the viewport */
-img {
-    content-visibility: auto !important;
-}
+/* (Removed content-visibility as it caused image un-rendering on scroll) */
 
 /* --- HOLOGRAPHIC NEURAL MATRIX CARDS --- */
 /* The base wrapper handles the 3D lift */
@@ -3270,8 +3273,6 @@ body.modal-open {
 
 /* 2. Instant Lazy Loading Animations (Zero Lag) */
 img {
-    /* Tell the browser to prioritize images instantly */
-    content-visibility: auto;
     will-change: transform, opacity, filter;
 }
 

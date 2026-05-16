@@ -156,7 +156,7 @@
     </div>
 
     <aside id="mainSidebar"
-        class="fixed left-0 top-0 h-full w-20 hover:w-64 bg-[#0a0c12]/95 backdrop-blur-md border-r border-white/5 z-[100] flex flex-col transition-all duration-200 ease-in-out group peer overflow-hidden will-change-[width]">
+        class="fixed left-0 top-0 h-full w-20 hover:w-80 bg-[#0a0c12] border-r border-white/5 z-[100] flex flex-col transition-all duration-200 ease-out group peer overflow-hidden shadow-2xl">
 
         <div class="p-8 flex items-center">
             <span class="text-pulse text-3xl font-black italic tracking-tighter shrink-0">C</span>
@@ -170,7 +170,7 @@
                 <i class="fas fa-hand-pointer mr-2"></i>
                 <span>Swipe</span>
             </div>
-            <nav id="sidebarNav" class="flex-1 space-y-2 mt-4 w-64 overflow-y-auto overflow-x-hidden hide-scroll pb-6">
+            <nav id="sidebarNav" class="flex-1 space-y-2 mt-4 w-80 overflow-y-auto overflow-x-hidden hide-scroll pb-6">
                 <button onclick="navigate('home')"
                     class="nav-btn nav-btn-effect sidebar-link w-full flex items-center px-7 py-4 text-gray-500 transition-all active">
                     <i class="fas fa-home text-xl w-6 text-center shrink-0"></i>
@@ -306,9 +306,9 @@
 
     <!-- Clock Hover Card Portal — fixed outside the sidebar so it doesn't get clipped -->
     <div id="clockHoverCard"
-        class="fixed z-[150] w-52 rounded-[28px] overflow-hidden shadow-2xl border border-white/10 opacity-0 pointer-events-none transition-all duration-300"
-        style="bottom: 24px; left: 272px;">
-        <div id="clockHoverCardInner" class="pointer-events-auto cursor-pointer relative" onclick="openClockHoverDetail()">
+        class="hidden fixed z-[150] w-52 rounded-[28px] overflow-hidden shadow-2xl border border-white/10 opacity-0 pointer-events-none transition-all duration-300"
+        style="bottom: 24px; left: 336px; display: none;">
+        <div id="clockHoverCardInner" class="cursor-pointer relative" onclick="openClockHoverDetail()">
             <!-- Full poster -->
             <div id="clockHoverPoster" class="w-full h-64 bg-cover bg-center bg-[#111] relative">
                 <!-- Gradient overlay -->
@@ -572,7 +572,7 @@
     </div>
 
     <header
-        class="fixed top-0 right-0 left-20 lg:peer-hover:left-64 z-[90] px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between gap-4 transition-all duration-300 ease-out">
+        class="fixed top-0 right-0 left-20 z-[90] px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between gap-4 transition-all duration-200 ease-out">
 
         <div id="searchBar" class="relative flex-1 max-w-xl min-w-0">
             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
@@ -609,7 +609,7 @@
     </header>
 
     <main id="mainContent"
-        class="pl-20 lg:peer-hover:pl-64 transition-all duration-300 ease-out transform origin-top opacity-100 relative">
+        class="pl-20 transition-all duration-200 ease-out transform origin-top opacity-100 relative">
         <div id="topScrollAnchor" class="absolute top-0 left-0 w-full h-px pointer-events-none"></div>
 
 

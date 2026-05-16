@@ -655,14 +655,16 @@ async function navigate(view, skipHistory = false) {
             
             const input = document.getElementById('mainSearch');
             const header = document.getElementById('searchHeader');
-            if (!input.value && !header.innerText.includes('• Works')) {
-                header.innerText = "Discover";
+            if (!input.value && (!header || !header.innerText.includes('• Works'))) {
+                if (header) header.innerText = "Discover";
                 loadDiscoverContent();
             }
+            // Sync layout buttons and grid classes
+            setSearchLayout(currentSearchLayout);
         }
         if (view === 'sync') renderSync();
-        if (view === 'masterpieces') renderMasterpieces();
-        if (view === 'sagamatrix') renderSagaMatrix();
+        if (view === 'masterpieces') setMpTab(state.mpTab || 'crowned');
+        if (view === 'sagamatrix') setSagaTab(typeof currentSagaTab !== 'undefined' ? currentSagaTab : 'discover');
         if (view === 'radar') renderRadar();
     }, 50);
 
@@ -1754,8 +1756,12 @@ async function openModal(id, type, isBack = false) {
         </div>
     `).join('');
 
-    const tr = vids.results.find(v => v.type === 'Trailer');
-    document.getElementById('mTrailerBtn').onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
+    const tr = (vids && vids.results) ? vids.results.find(v => v.type === 'Trailer') : null;
+    const trailerBtn = document.getElementById('mTrailerBtn');
+    if (trailerBtn) {
+        trailerBtn.onclick = () => tr ? window.open(`https://youtube.com/watch?v=${tr.key}`) : null;
+        trailerBtn.classList.toggle('opacity-50', !tr);
+    }
 
     document.getElementById('mStatus').value = local ? local.status : '';
     populateSagaDropdown(local ? local.sagaId : null);
@@ -3632,6 +3638,54 @@ function renderGrid(id, items, forced, clear = true) {
 
         const isTracked = (state.radar || []).some(r => String(r.id) === String(i.id));
 
+        if (id === 'searchGrid' && currentSearchLayout === 'list') {
+            return `
+            <div class="list-item-premium group relative flex items-center gap-6 p-4 rounded-[32px] bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-pulse/30 transition-all duration-300 cursor-pointer" 
+                 onclick="${isPerson ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${type}')`}">
+                
+                <div class="relative w-24 h-36 shrink-0 rounded-[24px] overflow-hidden shadow-2xl border border-white/10 group-hover:border-pulse transition-all">
+                    <img src="${poster}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                    ${i.vote_average ? `
+                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-full text-[7px] font-black text-pulse border border-white/10">
+                            ★ ${i.vote_average.toFixed(1)}
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="flex-1 min-w-0 pr-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-[8px] font-black uppercase text-pulse tracking-[0.2em] bg-pulse/10 px-2 py-0.5 rounded">${displayLabel}</span>
+                        <span class="text-[8px] font-bold text-gray-500 uppercase tracking-widest">${(i.release_date || i.first_air_date || '').split('-')[0] || 'N/A'}</span>
+                    </div>
+                    <h3 class="text-lg md:text-xl font-black uppercase text-white group-hover:text-pulse transition-colors truncate mb-2">${i.title || i.name}</h3>
+                    <p class="text-[11px] text-gray-500 line-clamp-2 leading-relaxed font-medium mb-3">${i.overview || 'Neural link data stream interrupted. No synopsis available.'}</p>
+                    
+                    <div class="flex items-center gap-4">
+                         ${!isPerson ? `
+                            <button onclick="event.stopPropagation(); quickAdd(${i.id}, '${type}')" 
+                                    class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-white hover:bg-pulse hover:border-pulse transition-all">
+                                <i class="fas fa-plus"></i> Quick Add
+                            </button>
+                        ` : ''}
+                        <div class="text-[9px] font-black uppercase text-gray-600 tracking-[0.3em] flex items-center gap-2">
+                            <i class="fas fa-heart"></i> ${Math.round(i.popularity || 0)} POPULARITY
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex flex-col gap-2 shrink-0 pr-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                     ${id.includes('upcoming') ? `
+                        <button onclick="event.stopPropagation(); toggleRadar(${i.id}, '${type}', '${(i.title || i.name).replace(/'/g, "\\'")}', '${i.poster_path}')" 
+                                class="w-10 h-10 bg-white/5 rounded-2xl flex items-center justify-center text-gray-400 hover:text-pulse transition-all">
+                            <i class="fas ${isTracked ? 'fa-satellite-dish' : 'fa-bell'}"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+            `;
+        }
+
         return `
         <div class="group cursor-pointer relative" onclick="${isPerson ? `openPersonModal(${i.id})` : `openModal(${i.id}, '${type}')`}">
             
@@ -3691,14 +3745,15 @@ function renderGrid(id, items, forced, clear = true) {
                 ${(i.release_date || i.first_air_date || '').split('-')[0] || 'N/A'}
             </div>
         </div>
-    `}).join('');
+    `;
+}).join('');
 
     if (clear) container.innerHTML = html || `<div class="col-span-full py-20 text-center text-gray-700 font-black uppercase tracking-widest italic">No data matched your neural frequency. Try resetting filters.</div>`;
     else container.insertAdjacentHTML('beforeend', html);
 }
 function setupFilters() {
-    const yearSels = [document.getElementById('searchYear'), document.getElementById('labYear')].filter(Boolean);
-    const years = Array.from({ length: 50 }, (_, i) => 2026 - i);
+    const yearSels = [document.getElementById('searchYear'), document.getElementById('searchYearMobile'), document.getElementById('labYear')].filter(Boolean);
+    const years = Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i);
     yearSels.forEach(sel => {
         const currentVal = sel.value;
         sel.innerHTML = `<option value="${sel.id.includes('lab') ? 'all' : ''}">Year</option>` + years.map(y => `<option value="${y}">${y}</option>`).join('');
@@ -4111,9 +4166,13 @@ function updateClockRadarState(d) {
 }
 
 function openClockHoverDetail() {
+    const card = document.getElementById('clockHoverCard');
+    if (card && (card.style.opacity === '0' || card.style.pointerEvents === 'none')) return;
+
     const featured = getClockFeaturedItem(new Date());
     if (!featured || !featured.id) return;
-    const type = featured.type || featured.media_type || (featured.name ? 'tv' : 'movie');
+    // CRITICAL: Map to actual TMDB media types (movie or tv)
+    const type = (featured.title || featured.release_date) ? 'movie' : 'tv';
     openModal(featured.id, type);
 }
 
@@ -4134,8 +4193,16 @@ function startClock() {
     let hideTimeout;
 
     const showCard = () => {
-        if (!window._clockHasFeatured) return;
+        if (!window._clockHasFeatured || window.innerWidth < 1024) return;
+        
+        // Ensure sidebar is expanded before showing (approx 80px is collapsed, 256px expanded)
+        const sidebar = document.getElementById('mainSidebar');
+        if (sidebar && sidebar.getBoundingClientRect().width < 100) return;
+
         clearTimeout(hideTimeout);
+        hoverCard.style.display = 'block';
+        // Force reflow
+        void hoverCard.offsetWidth;
         hoverCard.style.opacity = '1';
         hoverCard.style.pointerEvents = 'auto';
         hoverCard.style.transform = 'translateY(0)';
@@ -4145,6 +4212,12 @@ function startClock() {
             hoverCard.style.opacity = '0';
             hoverCard.style.pointerEvents = 'none';
             hoverCard.style.transform = 'translateY(8px)';
+            // Hide physically after animation
+            setTimeout(() => {
+                if (hoverCard.style.opacity === '0') {
+                    hoverCard.style.display = 'none';
+                }
+            }, 300);
         }, 120);
     };
 
@@ -4955,6 +5028,42 @@ function executeFactoryReset() {
 // --- NEW: Grid Layout Engine ---
 
 
+function toggleLayoutMenu() {
+    const menu = document.getElementById('layoutSelector');
+    if (menu) {
+        if (menu.classList.contains('hidden')) {
+            menu.classList.remove('hidden');
+            menu.classList.add('flex');
+        } else {
+            menu.classList.add('hidden');
+            menu.classList.remove('flex');
+        }
+    }
+}
+
+function toggleMobileFilters() {
+    const container = document.getElementById('discoverTypeFilters');
+    if (container) {
+        if (container.classList.contains('hidden')) {
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+            container.classList.add('animate-in', 'slide-in-from-top-4', 'duration-300');
+        } else {
+            container.classList.add('hidden');
+            container.classList.remove('flex');
+        }
+    }
+}
+
+function syncSearchSelects(sourceId, targetId) {
+    const src = document.getElementById(sourceId);
+    const tar = document.getElementById(targetId);
+    if (src && tar) {
+        tar.value = src.value;
+        applySearchFilters();
+    }
+}
+
 function setSearchLayout(layout) {
     currentSearchLayout = layout;
 
@@ -4962,13 +5071,23 @@ function setSearchLayout(layout) {
     document.querySelectorAll('.layout-btn').forEach(btn => {
         btn.classList.remove('active', 'bg-pulse', 'text-white', 'shadow-lg', 'shadow-pulse/20');
         btn.classList.add('text-gray-500');
-        if (btn.getAttribute('onclick').includes(layout)) {
+        if (btn.getAttribute('data-layout') === layout) {
             btn.classList.add('active', 'bg-pulse', 'text-white', 'shadow-lg', 'shadow-pulse/20');
             btn.classList.remove('text-gray-500');
         }
     });
 
+    // Close menu after selection
+    const menu = document.getElementById('layoutSelector');
+    if (menu) menu.classList.add('hidden');
+
     applyLayoutToGrid();
+    
+    // Re-render search grid if we are on the search page to apply new HTML structure for list view
+    if (state.view === 'search') {
+        applyDiscoverLocalFilters();
+    }
+    
     savePrefs();
 }
 
@@ -5673,7 +5792,12 @@ function toggleDiscoverGenre(target, genreId) {
     if (idx > -1) state.discoverFilters.genres.splice(idx, 1);
     else state.discoverFilters.genres.push(genreId);
     renderGenrePills();
-    applyDiscoverLocalFilters();
+    
+    if (state.searchMode === 'actor' || document.getElementById('mainSearch').value.trim() !== '') {
+        applyDiscoverLocalFilters();
+    } else {
+        applySearchFilters(false);
+    }
 }
 function applyDiscoverLocalFilters() {
     // 1. Determine which data source to filter based on current mode
@@ -6330,13 +6454,13 @@ async function loadCountries() {
         { iso: 'BR', name: 'Brazil' }
     ];
 
-    const select = document.getElementById('searchCountry');
-    if (select) {
-        // Sort them alphabetically just for a clean look, but keep US/UK at top if you prefer (currently alphabetical)
-        const sorted = topCountries.sort((a, b) => a.name.localeCompare(b.name));
-        const options = sorted.map(c => `<option value="${c.iso}">${c.name}</option>`).join('');
-        select.innerHTML = '<option value="">All Regions</option>' + options;
-    }
+    const sorted = topCountries.sort((a, b) => a.name.localeCompare(b.name));
+    const options = '<option value="">All Regions</option>' + sorted.map(c => `<option value="${c.iso}">${c.name}</option>`).join('');
+    
+    const sels = [document.getElementById('searchCountry'), document.getElementById('searchCountryMobile')].filter(Boolean);
+    sels.forEach(select => {
+        select.innerHTML = options;
+    });
 }
 // --- SAGA MATRIX ENGINE (UPGRADED) ---
 const EXTENDED_SAGAS = [
