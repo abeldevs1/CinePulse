@@ -666,6 +666,7 @@ async function navigate(view, skipHistory = false) {
         if (view === 'masterpieces') setMpTab(state.mpTab || 'crowned');
         if (view === 'sagamatrix') setSagaTab(typeof currentSagaTab !== 'undefined' ? currentSagaTab : 'discover');
         if (view === 'radar') renderRadar();
+        if (view === 'sources') renderSources();
     }, 50);
 
     if (view === 'neurallink') {
@@ -1162,7 +1163,7 @@ function quickWatch(event, id, cat, tmdbType, title, year) {
             </h4>
             <button onclick="launchInternalPlayer(${id}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
                     class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
+                <i class="fas fa-play"></i> Watch Here
             </button>
         </div>
         <h4 class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 mb-4 flex items-center gap-2">
@@ -5406,7 +5407,7 @@ function openWatchMenu() {
             </h4>
             <button onclick="launchInternalPlayer(${tmdbId}, '${tmdbType}', '${title.replace(/'/g, "\\'")}')"
                     class="w-full bg-[#22c55e]/10 border border-[#22c55e]/30 text-[#22c55e] hover:bg-[#22c55e] hover:text-white transition-all py-4 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-3">
-                <i class="fas fa-broadcast-tower"></i> Launch Secure Stream
+                <i class="fas fa-play"></i> Watch Here
             </button>
         </div>
     `;

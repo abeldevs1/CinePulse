@@ -132,13 +132,30 @@
             <div id="iframeContainer"
                 class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
                 <div class="iframe-loader spinner"></div>
-                <iframe id="neuralIframe" class="w-full h-full border-none absolute inset-0" allowfullscreen="true"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox"
-                    referrerpolicy="origin"></iframe>
+                <!-- No sandbox: embeds need full browser capability to function.
+                     User is still protected by the browser's Same-Origin Policy. -->
+                <iframe id="neuralIframe"
+                    class="w-full h-full border-none absolute inset-0"
+                    allowfullscreen="true"
+                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
+                    referrerpolicy="no-referrer-when-downgrade">
+                </iframe>
 
-                <div id="sandboxIndicator"
-                    class="hidden absolute top-3 right-3 z-20 bg-yellow-500/20 border border-yellow-500/40 text-yellow-400 text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full backdrop-blur-md flex items-center gap-1.5">
-                    <i class="fas fa-unlock text-[9px]"></i> Sandbox Open
+                <!-- Click-to-Play overlay: lifts browser muted-autoplay restriction via user gesture -->
+                <div id="playUnmuteOverlay"
+                    class="absolute inset-0 z-30 flex flex-col items-center justify-center cursor-pointer select-none"
+                    style="background: rgba(2,4,8,0.72); backdrop-filter: blur(4px); display:none;"
+                    onclick="dismissPlayOverlay()">
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="relative w-20 h-20 rounded-full bg-pulse/20 border-2 border-pulse flex items-center justify-center">
+                            <i class="fas fa-volume-up text-3xl text-pulse"></i>
+                            <div class="absolute inset-0 rounded-full border-2 border-pulse animate-ping opacity-30"></div>
+                        </div>
+                        <div class="text-center">
+                            <p class="text-white text-sm font-black uppercase tracking-widest">Click to Play with Sound</p>
+                            <p class="text-gray-400 text-[10px] font-bold tracking-wider mt-1">Browser requires a tap to enable audio</p>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="playerOverlayControls"
@@ -196,7 +213,7 @@
                 </div>
 
                 <div class="flex flex-col items-center">
-                    <div class="relative inline-block cursor-pointer px-4 py-2" id="playerPrecisionStarContainer"
+                    <div class="relative inline-block cursor-pointer" id="playerPrecisionStarContainer"
                         onmousemove="handleStarHover(event)" onmouseleave="resetStarHover()"
                         onclick="commitPrecisionRating(event)" ontouchmove="handleStarHover(event)"
                         ontouchend="commitPrecisionRating(event)">
@@ -207,7 +224,7 @@
                         </div>
 
                         <div id="precisionStarFill"
-                            class="absolute top-2 left-4 bottom-2 overflow-hidden pointer-events-none transition-all duration-75 whitespace-nowrap"
+                            class="absolute top-0 left-0 bottom-0 overflow-hidden pointer-events-none transition-all duration-75 whitespace-nowrap"
                             style="width: 0%;">
                             <div class="flex items-center gap-2 md:gap-4 text-3xl text-yellow-400">
                                 <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i
@@ -256,19 +273,15 @@
                     <div class="flex justify-between items-center border-b border-white/10 pb-4">
                         <h4 class="text-[10px] font-black uppercase text-gray-400 tracking-widest"><i
                                 class="fas fa-server mr-2 text-pulse"></i> Source Engine</h4>
-                        <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3">
                             <div id="animeControls" class="hidden flex bg-dark border border-white/10 rounded-lg p-1">
                                 <button id="btnSub" onclick="setAudioMode('sub')"
                                     class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all bg-[#a855f7] text-white">Sub</button>
                                 <button id="btnDub" onclick="setAudioMode('dub')"
                                     class="px-4 py-1.5 rounded-md text-[10px] font-black uppercase transition-all text-gray-500 hover:text-white">Dub</button>
                             </div>
-                            <!-- Sandbox Toggle Button -->
-                            <button id="sandboxToggleBtn" onclick="toggleIframeSandbox()"
-                                class="px-5 py-2.5 rounded-xl border text-[10px] font-black uppercase tracking-widest transition-all bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10"
-                                title="Toggle iframe sandbox permissions">
-                                <i class="fas fa-lock mr-2"></i> Sandbox: Locked
-                            </button>
+                            <!-- Sandbox removed — embeds play freely. Button hidden but kept for no-op stub. -->
+                            <button id="sandboxToggleBtn" class="hidden" onclick="toggleIframeSandbox()"></button>
                         </div>
                     </div>
 
@@ -320,11 +333,10 @@
                                 class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
                                 <h5
                                     class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
-                                    <i class="fas fa-server"></i> Server Selection
+                                    <i class="fas fa-random"></i> Auto Server Switch
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    For Multi-Server sources, click the internal server menu and select <strong>Server
-                                        2</strong> for optimal Neural Link stability.
+                                    If a source doesn't load in <strong>12 seconds</strong>, the player automatically tries the next one. You can also click any server card to switch instantly.
                                 </p>
                             </div>
                             <div
@@ -334,43 +346,27 @@
                                     <i class="fas fa-shield-alt"></i> Ad Blocker Recommended
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    For the cleanest stream without pop-ups, we highly recommend using the <strong>Brave
-                                        Browser</strong> or installing <strong>uBlock Origin</strong>.
+                                    For the cleanest stream without pop-ups, use <strong>Brave Browser</strong> or install <strong>uBlock Origin</strong> — especially for sources with internal ads.
                                 </p>
                             </div>
                             <div
                                 class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
                                 <h5
-                                    class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
-                                    <i class="fas fa-language"></i> Audio / Subs
+                                    class="text-[9px] font-black text-purple-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="fas fa-language"></i> Multi-Language & Sub/Dub
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    If manual buttons fail, use the <strong>Gear Icon ⚙️</strong> inside the video frame
-                                    to toggle native sub/dub tracks.
+                                    Sub/Dub toggles do not work for all anime. If you want to change the language or audio track, please <strong>switch servers</strong> using the list above or check settings inside the player frame.
                                 </p>
                             </div>
-
                             <div
                                 class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
                                 <h5
-                                    class="text-[9px] font-black text-pulse mb-2 uppercase tracking-widest flex items-center gap-2">
-                                    <i class="fas fa-bolt"></i> Buffering
+                                    class="text-[9px] font-black text-green-400 mb-2 uppercase tracking-widest flex items-center gap-2">
+                                    <i class="fas fa-forward"></i> Skip Intro & Features
                                 </h5>
                                 <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    Pause for 30 seconds to allow the stream buffer to initialize, or switch
-                                    <strong>Source Engines</strong> if issues persist.
-                                </p>
-                            </div>
-
-                            <div
-                                class="p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
-                                <h5
-                                    class="text-[9px] font-black text-yellow-500 mb-2 uppercase tracking-widest flex items-center gap-2">
-                                    <i class="fas fa-unlock"></i> Full Access Mode
-                                </h5>
-                                <p class="text-[10px] text-gray-400 leading-relaxed group-hover:text-gray-300">
-                                    If the player is blank, toggle <strong>Access: Full</strong> above to bypass
-                                    relay-server sandboxing restrictions.
+                                    <strong>VidLink Pro</strong> has built-in skip intro, next episode, and quality selector buttons inside the player frame.
                                 </p>
                             </div>
                         </div>
