@@ -29,8 +29,8 @@
         }
 
         .glass-nav {
-            background: rgba(10, 12, 18, 0.8);
-            backdrop-filter: blur(20px);
+            background: rgba(10, 12, 18, 0.9);
+            backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
@@ -111,7 +111,7 @@
 
     <div id="backdropSection" class="relative w-full pt-20 flex flex-col items-center bg-cover bg-center min-h-screen"
         style="background-image: url('https://via.placeholder.com/1920x1080/020408/020408');">
-        <div class="absolute inset-0 bg-gradient-to-b from-dark/95 via-dark/80 to-dark backdrop-blur-sm"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-dark/95 via-dark/90 to-dark"></div>
 
         <div class="relative z-20 w-full max-w-[1400px] px-4 md:px-8 mt-4 md:mt-8 flex flex-col gap-6">
 
@@ -130,7 +130,7 @@
             </div>
 
             <div id="iframeContainer"
-                class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-[0_20px_60px_rgba(0,0,0,0.8)] bg-black">
+                class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
                 <div class="iframe-loader spinner"></div>
                 <iframe id="neuralIframe" class="w-full h-full border-none absolute inset-0" allowfullscreen="true"
                     sandbox="allow-scripts allow-same-origin allow-forms allow-presentation allow-popups allow-popups-to-escape-sandbox"

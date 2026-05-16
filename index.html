@@ -156,7 +156,7 @@
     </div>
 
     <aside id="mainSidebar"
-        class="fixed left-0 top-0 h-full w-20 hover:w-64 bg-[#0a0c12]/95 backdrop-blur-2xl border-r border-white/5 z-[100] flex flex-col transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group peer overflow-hidden">
+        class="fixed left-0 top-0 h-full w-20 hover:w-64 bg-[#0a0c12]/95 backdrop-blur-2xl border-r border-white/5 z-[100] flex flex-col transition-all duration-300 ease-out group peer overflow-hidden">
 
         <div class="p-8 flex items-center">
             <span class="text-pulse text-3xl font-black italic tracking-tighter shrink-0">C</span>
@@ -273,7 +273,7 @@
             </div>
 
             <div id="clockHoverCard"
-                class="absolute left-1/2 bottom-full mb-4 -translate-x-1/2 w-56 rounded-3xl border border-white/10 bg-[#0a0c12]/95 shadow-2xl opacity-0 transition-all duration-200 group-hover/clock:opacity-100 z-20 pointer-events-none">
+                class="hidden absolute left-1/2 bottom-full mb-4 -translate-x-1/2 w-56 rounded-3xl border border-white/10 bg-[#0a0c12]/95 shadow-2xl opacity-0 transition-all duration-200 group-hover/clock:opacity-100 z-20 pointer-events-none">
                 <div id="clockHoverCardInner" class="pointer-events-auto cursor-pointer"
                     onclick="event.stopPropagation(); openClockHoverDetail()">
                     <div id="clockHoverPoster" class="h-28 rounded-3xl bg-cover bg-center mb-3"></div>
@@ -282,8 +282,7 @@
                         class="text-[11px] font-black uppercase text-white leading-tight line-clamp-2">No featured
                         release</div>
                     <div id="clockHoverLocation"
-                        class="text-[10px] uppercase tracking-[0.35em] text-gray-400 leading-tight mt-2">Open App Tools
-                        for watch sources</div>
+                        class="text-[10px] uppercase tracking-[0.35em] text-gray-400 leading-tight mt-2">Click here to watch</div>
                 </div>
             </div>
 
@@ -554,7 +553,7 @@
     </div>
 
     <header
-        class="fixed top-0 right-0 left-20 lg:peer-hover:left-64 z-[90] px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between gap-4 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)]">
+        class="fixed top-0 right-0 left-20 lg:peer-hover:left-64 z-[90] px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between gap-4 transition-all duration-300 ease-out">
 
         <div id="searchBar" class="relative flex-1 max-w-xl min-w-0">
             <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"></i>
@@ -591,7 +590,7 @@
     </header>
 
     <main id="mainContent"
-        class="pl-20 lg:peer-hover:pl-64 transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] transform origin-top opacity-100 relative">
+        class="pl-20 lg:peer-hover:pl-64 transition-all duration-300 ease-out transform origin-top opacity-100 relative">
         <div id="topScrollAnchor" class="absolute top-0 left-0 w-full h-px pointer-events-none"></div>
 
 

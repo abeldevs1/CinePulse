@@ -640,34 +640,33 @@ async function navigate(view, skipHistory = false) {
     const btn = Array.from(document.querySelectorAll('.nav-btn')).find(b => b.getAttribute('onclick').includes(`'${view}'`));
     if (btn) btn.classList.add('active');
 
-    // Run view specific logic
-    if (view === 'home') renderHome();
-    if (view === 'mylist') renderList();
-    if (view === 'upcoming') loadUpcomingPage();
-    if (view === 'rhythmlab') {
-        setupFilters();
-        runLab();
-    }
-    if (view === 'search') {
-        setupFilters();
-        loadCountries();
-        loadDiscoverContent();
-    }
-    if (view === 'sync') renderSync();
-    if (view === 'masterpieces') renderMasterpieces();
-    if (view === 'sagamatrix') renderSagaMatrix();
-
-
-    if (view === 'search') {
-        const input = document.getElementById('mainSearch');
-        const header = document.getElementById('searchHeader');
-        if (!input.value && !header.innerText.includes('• Works')) {
-            header.innerText = "Discover";
-            loadDiscoverContent();
+    // Run view specific logic inside setTimeout to ensure DOM is ready
+    setTimeout(() => {
+        if (view === 'home') renderHome();
+        if (view === 'mylist') renderList();
+        if (view === 'upcoming') loadUpcomingPage();
+        if (view === 'rhythmlab') {
+            setupFilters();
+            runLab();
         }
+        if (view === 'search') {
+            setupFilters();
+            loadCountries();
+            loadDiscoverContent();
+            
+            const input = document.getElementById('mainSearch');
+            const header = document.getElementById('searchHeader');
+            if (!input.value && !header.innerText.includes('• Works')) {
+                header.innerText = "Discover";
+                loadDiscoverContent();
+            }
+        }
+        if (view === 'sync') renderSync();
+        if (view === 'masterpieces') renderMasterpieces();
+        if (view === 'sagamatrix') renderSagaMatrix();
+        if (view === 'radar') renderRadar();
+    }, 50);
 
-    }
-    if (view === 'radar') renderRadar();
     if (view === 'neurallink') {
         // 1. Reset Host UI to default state
         const qrContainer = document.getElementById('qrContainer');
@@ -3958,13 +3957,6 @@ function getClockFeaturedItem(d) {
         return calendarTodayCandidates.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.popularity || 0) - (a.popularity || 0))[0];
     }
 
-    const anticipatedCandidates = (state.globalCalendarReleases || [])
-        .filter(item => hasPoster(item) && getCalendarItemDate(item) && getCalendarItemDate(item) >= todayStr);
-
-    if (anticipatedCandidates.length) {
-        return anticipatedCandidates.sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.popularity || 0) - (a.popularity || 0))[0];
-    }
-
     return null;
 }
 
@@ -3978,8 +3970,10 @@ function updateClockRadarState(d) {
     const hoverPoster = document.getElementById('clockHoverPoster');
     const hoverTitle = document.getElementById('clockHoverTitle');
     const hoverLocation = document.getElementById('clockHoverLocation');
+    const hoverCard = document.getElementById('clockHoverCard');
 
     if (featured && bg) {
+        if (hoverCard) hoverCard.classList.remove('hidden');
         const posterUrl = getItemPosterURL(featured);
         if (posterUrl) {
             bg.style.backgroundImage = `url(${posterUrl})`;
@@ -4009,9 +4003,7 @@ function updateClockRadarState(d) {
         label.style.textShadow = '0 0 10px rgba(255, 45, 85, 0.6)';
 
         const titleText = `${featured.title || featured.name || featured.original_title || featured.original_name || 'Featured release'}`;
-        const locationText = featured.type === 'tv'
-            ? 'Watch episode sources in App Tools'
-            : 'Watch movie sources in App Tools';
+        const locationText = 'Click here to watch';
 
         if (featureTitle) {
             featureTitle.innerText = titleText;
@@ -4025,6 +4017,7 @@ function updateClockRadarState(d) {
             hoverLocation.innerText = locationText;
         }
     } else if (bg) {
+        if (hoverCard) hoverCard.classList.add('hidden');
         bg.style.opacity = '0';
         bg.style.filter = '';
         dot.style.backgroundColor = '#22c55e';
@@ -4036,7 +4029,7 @@ function updateClockRadarState(d) {
         label.style.textShadow = '';
         if (featureTitle) featureTitle.innerText = '';
         if (hoverTitle) hoverTitle.innerText = 'No featured release';
-        if (hoverLocation) hoverLocation.innerText = 'Open App Tools for watch sources';
+        if (hoverLocation) hoverLocation.innerText = 'Click here to watch';
         if (hoverPoster) hoverPoster.style.backgroundImage = '';
     }
 }
