@@ -4048,11 +4048,11 @@ function updateClockRadarState(d) {
     const featureTitle = document.getElementById('clockFeatureTitle');
     const hoverPoster = document.getElementById('clockHoverPoster');
     const hoverTitle = document.getElementById('clockHoverTitle');
-    const hoverLocation = document.getElementById('clockHoverLocation');
-    const hoverCard = document.getElementById('clockHoverCard');
+
+    // Track whether there's something to show in the hover card
+    window._clockHasFeatured = !!featured;
 
     if (featured && bg) {
-        if (hoverCard) hoverCard.classList.remove('hidden');
         const posterUrl = getItemPosterURL(featured);
         if (posterUrl) {
             bg.style.backgroundImage = `url(${posterUrl})`;
@@ -4093,11 +4093,8 @@ function updateClockRadarState(d) {
             featureTitle.style.color = 'rgba(255,255,255,0.95)';
             featureTitle.style.textShadow = '0 0 12px rgba(0,0,0,0.5)';
         }
-        if (hoverTitle) {
-            hoverTitle.innerText = titleText;
-        }
+        if (hoverTitle) hoverTitle.innerText = titleText;
     } else if (bg) {
-        if (hoverCard) hoverCard.classList.add('hidden');
         bg.style.opacity = '0';
         bg.style.filter = '';
         dot.style.backgroundColor = '#22c55e';
@@ -4109,7 +4106,6 @@ function updateClockRadarState(d) {
         label.style.textShadow = '';
         if (featureTitle) featureTitle.innerText = '';
         if (hoverTitle) hoverTitle.innerText = 'No featured release';
-        if (hoverLocation) hoverLocation.innerText = 'Click here to watch';
         if (hoverPoster) hoverPoster.style.backgroundImage = '';
     }
 }
@@ -4122,12 +4118,41 @@ function openClockHoverDetail() {
 }
 
 function startClock() {
-    updateClockDisplay(); // Initialize immediately to prevent "00:00" flash
+    updateClockDisplay();
     setInterval(updateClockDisplay, 1000);
+
     // Silently pre-fetch calendar data so clock shows without needing calendar click
     if (!state.globalCalendarReleases || state.globalCalendarReleases.length === 0) {
         initCalendarData().then(() => updateClockRadarState(new Date()));
     }
+
+    // Portal hover card: show/hide on mouse enter/leave
+    const clockEl = document.getElementById('clockContainer');
+    const hoverCard = document.getElementById('clockHoverCard');
+    if (!clockEl || !hoverCard) return;
+
+    let hideTimeout;
+
+    const showCard = () => {
+        if (!window._clockHasFeatured) return;
+        clearTimeout(hideTimeout);
+        hoverCard.style.opacity = '1';
+        hoverCard.style.pointerEvents = 'auto';
+        hoverCard.style.transform = 'translateY(0)';
+    };
+    const hideCard = () => {
+        hideTimeout = setTimeout(() => {
+            hoverCard.style.opacity = '0';
+            hoverCard.style.pointerEvents = 'none';
+            hoverCard.style.transform = 'translateY(8px)';
+        }, 120);
+    };
+
+    clockEl.addEventListener('mouseenter', showCard);
+    clockEl.addEventListener('mouseleave', hideCard);
+    // Keep card open when hovering over the card itself
+    hoverCard.addEventListener('mouseenter', showCard);
+    hoverCard.addEventListener('mouseleave', hideCard);
 }
 function save(skipBroadcast = false) {
     localStorage.setItem('cp_elite_db_v3', JSON.stringify(state.db));

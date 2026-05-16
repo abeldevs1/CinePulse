@@ -272,23 +272,7 @@
                 class="absolute bottom-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-pulse to-transparent opacity-20 group-hover/clock:opacity-100 transition-opacity duration-500 z-10">
             </div>
 
-            <div id="clockHoverCard"
-                class="hidden absolute left-1/2 bottom-full mb-3 -translate-x-1/2 w-52 rounded-[28px] overflow-hidden shadow-2xl border border-white/10 opacity-0 transition-all duration-300 group-hover/clock:opacity-100 z-20 pointer-events-none">
-                <div id="clockHoverCardInner" class="pointer-events-auto cursor-pointer relative" onclick="event.stopPropagation(); openClockHoverDetail()">
-                    <!-- Full poster -->
-                    <div id="clockHoverPoster" class="w-full h-64 bg-cover bg-center bg-[#111] relative">
-                        <!-- Gradient overlay for text readability -->
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
-                        <!-- Content on top of poster -->
-                        <div class="absolute bottom-0 left-0 right-0 p-4">
-                            <div class="text-[7px] uppercase tracking-[0.3em] text-pulse font-black mb-1">Featured Release</div>
-                            <div id="clockHoverTitle" class="text-[11px] font-black uppercase text-white leading-tight line-clamp-2 mb-2">No featured release</div>
-                            <!-- Countdown: replaces the old text label -->
-                            <div id="clockCountdown" class="font-mono text-[10px] font-black text-[#22c55e] tracking-widest tabular-nums"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
 
             <div class="flex items-center justify-between mb-2 relative z-10">
                 <div class="flex flex-col gap-2">
@@ -319,6 +303,25 @@
             </div>
         </div>
     </aside>
+
+    <!-- Clock Hover Card Portal — fixed outside the sidebar so it doesn't get clipped -->
+    <div id="clockHoverCard"
+        class="fixed z-[150] w-52 rounded-[28px] overflow-hidden shadow-2xl border border-white/10 opacity-0 pointer-events-none transition-all duration-300"
+        style="bottom: 24px; left: 272px;">
+        <div id="clockHoverCardInner" class="pointer-events-auto cursor-pointer relative" onclick="openClockHoverDetail()">
+            <!-- Full poster -->
+            <div id="clockHoverPoster" class="w-full h-64 bg-cover bg-center bg-[#111] relative">
+                <!-- Gradient overlay -->
+                <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/40 to-transparent"></div>
+                <!-- Content on top of poster -->
+                <div class="absolute bottom-0 left-0 right-0 p-4">
+                    <div class="text-[7px] uppercase tracking-[0.3em] text-pulse font-black mb-1">Featured Release</div>
+                    <div id="clockHoverTitle" class="text-[11px] font-black uppercase text-white leading-tight line-clamp-2 mb-2">No featured release</div>
+                    <div id="clockCountdown" class="font-mono text-[10px] font-black text-[#22c55e] tracking-widest tabular-nums"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Page Info Overlay Modal -->
     <div id="pageInfoOverlay"
