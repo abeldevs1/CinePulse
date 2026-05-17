@@ -369,6 +369,213 @@ let state = {
 };
 
 
+// --- SETTINGS ENGINE ---
+const SettingsEngine = {
+    state: JSON.parse(localStorage.getItem('cp_elite_settings')) || {
+        language: 'en',
+        safeSearch: true,
+        dataSaver: false,
+        accentColor: '#ff2d55',
+        layoutMode: 'auto',
+        reducedMotion: false,
+        defaultServer: 'vidsrc.cc',
+        qualityPriority: 'auto',
+        autoPlay: true
+    },
+    
+    DICTIONARY: {
+        en: {
+            settings: "Settings", general: "General", appearance: "Appearance", playback: "Playback",
+            language: "Language", safe_search: "Safe Search", data_saver: "Data Saver",
+            accent_color: "Accent Color", layout_mode: "Force Layout Mode"
+        },
+        es: {
+            settings: "Ajustes", general: "General", appearance: "Apariencia", playback: "Reproducción",
+            language: "Idioma", safe_search: "Búsqueda Segura", data_saver: "Ahorro de Datos",
+            accent_color: "Color de Acento", layout_mode: "Modo de Diseño"
+        },
+        fr: {
+            settings: "Paramètres", general: "Général", appearance: "Apparence", playback: "Lecture",
+            language: "Langue", safe_search: "Recherche Sécurisée", data_saver: "Économie de Données",
+            accent_color: "Couleur", layout_mode: "Mode de Mise en Page"
+        },
+        ja: {
+            settings: "設定", general: "一般", appearance: "外観", playback: "再生",
+            language: "言語", safe_search: "セーフサーチ", data_saver: "データセーバー",
+            accent_color: "アクセントカラー", layout_mode: "レイアウトモード"
+        },
+        ko: {
+            settings: "설정", general: "일반", appearance: "외관", playback: "재생",
+            language: "언어", safe_search: "세이프 서치", data_saver: "데이터 절약",
+            accent_color: "강조 색상", layout_mode: "레이아웃 모드"
+        }
+    },
+
+    init() {
+        this.applyAll();
+        this.updateServerListFromPlayerLogic();
+        setTimeout(() => this.bindEvents(), 100);
+    },
+
+    save() {
+        localStorage.setItem('cp_elite_settings', JSON.stringify(this.state));
+        this.applyAll();
+    },
+
+    applyLanguage() {
+        const lang = this.state.language || 'en';
+        const dict = this.DICTIONARY[lang] || this.DICTIONARY['en'];
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (dict[key]) el.textContent = dict[key];
+        });
+    },
+
+    async updateServerListFromPlayerLogic() {
+        try {
+            const res = await fetch('src/js/player.js');
+            const text = await res.text();
+            const match = text.match(/const SERVERS = (\{[\s\S]*?\n\};)/);
+            if (match) {
+                const defaultBlockMatch = match[1].match(/default:\s*\[([\s\S]*?)\]\s*,/);
+                if (defaultBlockMatch) {
+                    const names = [...defaultBlockMatch[1].matchAll(/name:\s*'([^']+)'/g)].map(m => m[1]);
+                    const select = document.getElementById('setting-server');
+                    if (select && names.length > 0) {
+                        select.innerHTML = names.map(n => `<option value="${n.toLowerCase()}">${n}</option>`).join('');
+                        select.value = this.state.defaultServer || names[0].toLowerCase();
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Could not sync servers', e);
+        }
+    },
+
+    applyAll() {
+        // Apply Accent Color
+        document.documentElement.style.setProperty('--color-pulse', this.state.accentColor);
+        
+        const hex = this.state.accentColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        document.documentElement.style.setProperty('--color-pulse-rgb', `${r}, ${g}, ${b}`);
+
+        // Apply Layout Mode
+        document.body.classList.remove('force-mobile-layout', 'force-pc-layout', 'force-tv-layout');
+        if (this.state.layoutMode !== 'auto') {
+            document.body.classList.add(`force-${this.state.layoutMode}-layout`);
+        }
+
+        // Apply Reduced Motion
+        if (this.state.reducedMotion) {
+            document.body.classList.add('reduced-motion');
+        } else {
+            document.body.classList.remove('reduced-motion');
+        }
+        
+        // Sync SafeSearch to existing prefs
+        prefs.safeMode = this.state.safeSearch;
+        localStorage.setItem('cp_elite_prefs', JSON.stringify(prefs));
+        
+        // Apply Language
+        this.applyLanguage();
+    },
+
+    bindEvents() {
+        const bindInput = (id, stateKey, isCheckbox = false) => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (isCheckbox) {
+                    el.checked = this.state[stateKey];
+                    el.addEventListener('change', (e) => {
+                        this.state[stateKey] = e.target.checked;
+                        this.save();
+                    });
+                } else {
+                    el.value = this.state[stateKey];
+                    el.addEventListener('change', (e) => {
+                        this.state[stateKey] = e.target.value;
+                        this.save();
+                    });
+                }
+            }
+        };
+
+        bindInput('setting-language', 'language');
+        bindInput('setting-safesearch', 'safeSearch', true);
+        bindInput('setting-datasaver', 'dataSaver', true);
+        bindInput('setting-reducedmotion', 'reducedMotion', true);
+        bindInput('setting-server', 'defaultServer');
+        bindInput('setting-quality', 'qualityPriority');
+        bindInput('setting-autoplay', 'autoPlay', true);
+        
+        this.updateLayoutButtons();
+    },
+
+    updateLayoutButtons() {
+        document.querySelectorAll('.layout-btn').forEach(btn => {
+            btn.className = 'layout-btn py-3 px-4 rounded-xl border border-white/10 bg-white/5 text-gray-400 font-bold text-xs uppercase hover:text-white transition-all';
+        });
+        const activeBtn = document.getElementById(`layout-btn-${this.state.layoutMode}`);
+        if (activeBtn) {
+            activeBtn.className = 'layout-btn py-3 px-4 rounded-xl border border-pulse bg-pulse/10 text-white font-bold text-xs uppercase transition-all';
+        }
+    },
+
+    setAccentColor(color) {
+        this.state.accentColor = color;
+        this.save();
+    },
+
+    setLayoutMode(mode) {
+        this.state.layoutMode = mode;
+        this.updateLayoutButtons();
+        this.save();
+    },
+
+    openModal() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            this.bindEvents(); 
+        }
+    },
+
+    closeModal() {
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+    },
+
+    switchTab(tabId) {
+        document.querySelectorAll('.settings-tab-content').forEach(c => {
+            c.classList.remove('block');
+            c.classList.add('hidden');
+        });
+        document.querySelectorAll('.settings-tab-btn').forEach(b => {
+            b.classList.remove('active', 'text-white', 'bg-white/10');
+            b.classList.add('text-gray-500');
+        });
+
+        const targetContent = document.getElementById(`settings-${tabId}`);
+        const targetBtn = document.querySelector(`.settings-tab-btn[data-target="settings-${tabId}"]`);
+        
+        if (targetContent) {
+            targetContent.classList.remove('hidden');
+            targetContent.classList.add('block');
+        }
+        if (targetBtn) {
+            targetBtn.classList.remove('text-gray-500');
+            targetBtn.classList.add('active', 'text-white', 'bg-white/10');
+        }
+    }
+};
+
 // --- CLEANUP ENGINE (Runs on load) ---
 function cleanNotifications() {
     const now = Date.now();
@@ -383,6 +590,7 @@ function cleanNotifications() {
 cleanNotifications(); // Run immediately
 // Initialize App
 async function init() {
+    SettingsEngine.init();
     let customSagas = JSON.parse(localStorage.getItem('cp_elite_custom_sagas')) || [];
     try {
         // Clear preloader

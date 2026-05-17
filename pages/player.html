@@ -13,15 +13,28 @@
     <script>
         tailwind.config = {
             theme: {
-                extend: { fontFamily: { sans: ['Outfit', 'sans-serif'] }, colors: { pulse: '#ff2d55', dark: '#020408' } }
+                extend: { 
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] }, 
+                    colors: { pulse: 'var(--color-pulse)', dark: '#020408' } 
+                }
             }
         }
     </script>
     <style>
+        :root {
+            --color-pulse: #ff2d55;
+            --color-pulse-rgb: 255, 45, 85;
+        }
         body {
             background-color: #020408;
             color: #f3f4f6;
             overflow-x: hidden;
+        }
+        body.reduced-motion * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
         }
 
         .hide-scroll::-webkit-scrollbar {
@@ -40,8 +53,8 @@
         }
 
         .spinner {
-            border: 4px solid rgba(255, 45, 85, 0.2);
-            border-top-color: #ff2d55;
+            border: 4px solid rgba(var(--color-pulse-rgb), 0.2);
+            border-top-color: var(--color-pulse);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -77,6 +90,26 @@
 </head>
 
 <body class="antialiased selection:bg-pulse selection:text-white pb-20">
+
+    <script>
+        // Apply Settings Engine values synchronously to prevent UI flash
+        (function() {
+            const settings = JSON.parse(localStorage.getItem('cp_elite_settings'));
+            if (settings) {
+                if (settings.accentColor) {
+                    document.documentElement.style.setProperty('--color-pulse', settings.accentColor);
+                    const hex = settings.accentColor.replace('#', '');
+                    const r = parseInt(hex.substring(0, 2), 16);
+                    const g = parseInt(hex.substring(2, 4), 16);
+                    const b = parseInt(hex.substring(4, 6), 16);
+                    document.documentElement.style.setProperty('--color-pulse-rgb', `${r}, ${g}, ${b}`);
+                }
+                if (settings.reducedMotion) {
+                    document.body.classList.add('reduced-motion');
+                }
+            }
+        })();
+    </script>
 
     <div id="preloader" class="fixed inset-0 z-[9999] bg-[#020408] flex flex-col items-center justify-center">
         <div class="spinner mb-4"></div>

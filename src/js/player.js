@@ -340,6 +340,17 @@ async function initPlayer() {
             state.episode = 1;
         }
         buildUI(details, credits.cast || [], recs.results || []);
+        
+        // Apply default server from settings
+        const settings = JSON.parse(localStorage.getItem('cp_elite_settings'));
+        if (settings && settings.defaultServer) {
+            const serverList = SERVERS[state.category] || SERVERS['default'];
+            const idx = serverList.findIndex(s => s.name.toLowerCase() === settings.defaultServer.toLowerCase());
+            if (idx !== -1) {
+                state.serverIdx = idx;
+            }
+        }
+        
         buildServers();
         if (state.type === 'tv' && details.seasons) {
             buildSeasons();
