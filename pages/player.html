@@ -87,16 +87,21 @@
         class="fixed top-0 w-full z-[100] glass-nav px-4 md:px-8 py-4 flex items-center justify-between gap-4 shadow-xl">
         <div class="flex items-center gap-3 md:gap-6">
             <button onclick="goBackToModal()"
-                class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10"
+                class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10 shrink-0"
                 title="Close Player & Return">
                 <i class="fas fa-times"></i>
             </button>
+            <button onclick="goToDetails()"
+                class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10 shrink-0"
+                title="View Details">
+                <i class="fas fa-info"></i>
+            </button>
             <button onclick="window.location.href='../index.html'"
-                class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10 hidden sm:flex"
+                class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center text-gray-400 hover:text-white hover:bg-pulse transition-all border border-white/10 shrink-0"
                 title="Go Home">
                 <i class="fas fa-home"></i>
             </button>
-            <div class="font-black italic text-xl hidden md:block">CINE<span class="text-pulse">PULSE</span></div>
+            <div class="font-black italic text-xl hidden md:block ml-2">CINE<span class="text-pulse">PULSE</span></div>
         </div>
 
         <div class="relative flex-1 max-w-md z-[101]">
@@ -129,46 +134,50 @@
                 </button>
             </div>
 
-            <div id="iframeContainer"
-                class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
-                <div class="iframe-loader spinner"></div>
-                <!-- No sandbox: embeds need full browser capability to function.
-                     User is still protected by the browser's Same-Origin Policy. -->
-                <iframe id="neuralIframe"
-                    class="w-full h-full border-none absolute inset-0"
-                    allowfullscreen="true"
-                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
-                    referrerpolicy="no-referrer-when-downgrade">
-                </iframe>
+            <div class="relative w-full group" id="playerWrapper">
+                <div id="iframeContainer"
+                    class="relative w-full aspect-video rounded-2xl md:rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
+                    <div class="iframe-loader spinner"></div>
+                    <!-- No sandbox: embeds need full browser capability to function.
+                         User is still protected by the browser's Same-Origin Policy. -->
+                    <iframe id="neuralIframe"
+                        class="w-full h-full border-none absolute inset-0"
+                        allowfullscreen
+                        webkitallowfullscreen
+                        mozallowfullscreen
+                        allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
 
-                <!-- Click-to-Play overlay: lifts browser muted-autoplay restriction via user gesture -->
-                <div id="playUnmuteOverlay"
-                    class="absolute inset-0 z-30 flex flex-col items-center justify-center cursor-pointer select-none"
-                    style="background: rgba(2,4,8,0.72); backdrop-filter: blur(4px); display:none;"
-                    onclick="dismissPlayOverlay()">
-                    <div class="flex flex-col items-center gap-4">
-                        <div class="relative w-20 h-20 rounded-full bg-pulse/20 border-2 border-pulse flex items-center justify-center">
-                            <i class="fas fa-volume-up text-3xl text-pulse"></i>
-                            <div class="absolute inset-0 rounded-full border-2 border-pulse animate-ping opacity-30"></div>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-white text-sm font-black uppercase tracking-widest">Click to Play with Sound</p>
-                            <p class="text-gray-400 text-[10px] font-bold tracking-wider mt-1">Browser requires a tap to enable audio</p>
+                    <!-- Click-to-Play overlay: lifts browser muted-autoplay restriction via user gesture -->
+                    <div id="playUnmuteOverlay"
+                        class="absolute inset-0 z-30 flex flex-col items-center justify-center cursor-pointer select-none"
+                        style="background: rgba(2,4,8,0.72); backdrop-filter: blur(4px); display:none;"
+                        onclick="dismissPlayOverlay()">
+                        <div class="flex flex-col items-center gap-4">
+                            <div class="relative w-20 h-20 rounded-full bg-pulse/20 border-2 border-pulse flex items-center justify-center">
+                                <i class="fas fa-volume-up text-3xl text-pulse"></i>
+                                <div class="absolute inset-0 rounded-full border-2 border-pulse animate-ping opacity-30"></div>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-white text-sm font-black uppercase tracking-widest">Click to Play with Sound</p>
+                                <p class="text-gray-400 text-[10px] font-bold tracking-wider mt-1">Browser requires a tap to enable audio</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="playerOverlayControls"
-                    class="absolute bottom-20 right-6 md:bottom-24 md:right-8 z-50 flex gap-3 opacity-0 pointer-events-none transform translate-y-4 transition-all duration-500">
+                    class="flex justify-end mt-4 md:mt-0 md:absolute md:bottom-8 md:right-8 z-50 gap-3 opacity-100 md:opacity-0 pointer-events-auto md:pointer-events-none transform translate-y-0 md:translate-y-4 transition-all duration-500">
 
                     <button onclick="toggleNeuralFullscreen()"
-                        class="bg-black/60 backdrop-blur-xl border border-white/20 text-white w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center hover:bg-[#3b82f6] hover:border-[#3b82f6] transition-all shadow-[0_10px_30px_rgba(0,0,0,0.8)]"
+                        class="bg-white/5 md:bg-black/60 backdrop-blur-xl border border-white/10 md:border-white/20 text-white w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center hover:bg-[#3b82f6] hover:border-[#3b82f6] transition-all shadow-lg md:shadow-[0_10px_30px_rgba(0,0,0,0.8)]"
                         title="Fullscreen Player">
                         <i class="fas fa-expand text-xs md:text-sm"></i>
                     </button>
 
                     <button id="smartNextBtn" onclick="triggerNextEpisode()"
-                        class="hidden bg-black/60 backdrop-blur-xl border border-white/20 text-white px-5 py-2 md:py-3 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-widest items-center gap-3 hover:bg-pulse hover:border-pulse transition-all shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                        class="hidden bg-white/5 md:bg-black/60 backdrop-blur-xl border border-white/10 md:border-white/20 text-white px-5 py-2 md:py-3 rounded-xl font-black uppercase text-[10px] md:text-xs tracking-widest items-center gap-3 hover:bg-pulse hover:border-pulse transition-all shadow-lg md:shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                         <span>Next Ep</span> <i class="fas fa-step-forward"></i>
                     </button>
                 </div>

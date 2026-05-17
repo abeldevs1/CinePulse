@@ -772,8 +772,14 @@ window.goBackToModal = function () {
         window.history.back();
     } else {
         // Fallback routing if opened in a new tab directly
-        window.location.href = `../index.html?open=${state.id}&type=${state.type}`;
+        window.location.href = `../index.html`;
     }
+};
+
+window.goToDetails = function () {
+    const iframe = document.getElementById('neuralIframe');
+    if (iframe) iframe.src = "";
+    window.location.href = `../index.html?open=${state.id}&type=${state.type}`;
 };
 // toggleIframeSandbox is kept as a no-op stub since sandbox is fully removed.
 // The button in HTML is hidden. This prevents any reference errors.
@@ -993,7 +999,7 @@ let playerIdleTimeout;
 function initSmartNextButton() {
     const btn = document.getElementById('playerOverlayControls');
     const nextBtn = document.getElementById('smartNextBtn');
-    const container = document.getElementById('iframeContainer');
+    const container = document.getElementById('playerWrapper') || document.getElementById('iframeContainer');
     if (!btn || !container) return;
     if (state.type !== 'tv') {
         if (nextBtn) nextBtn.style.display = 'none';
@@ -1010,14 +1016,14 @@ function initSmartNextButton() {
         }
     }
     const showButton = () => {
-        btn.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
-        btn.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        btn.classList.remove('md:opacity-0', 'md:translate-y-4', 'md:pointer-events-none');
+        btn.classList.add('md:opacity-100', 'md:translate-y-0', 'md:pointer-events-auto');
         clearTimeout(playerIdleTimeout);
         playerIdleTimeout = setTimeout(() => {
             // REFINEMENT: Don't hide the controls if the user is actively hovering over them
             if (!btn.matches(':hover')) {
-                btn.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-                btn.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                btn.classList.add('md:opacity-0', 'md:translate-y-4', 'md:pointer-events-none');
+                btn.classList.remove('md:opacity-100', 'md:translate-y-0', 'md:pointer-events-auto');
             }
         }, 3500); // Increased timeout to 3.5s for better usability
     };
@@ -1025,8 +1031,8 @@ function initSmartNextButton() {
     container.addEventListener('touchstart', showButton, { passive: true });
     container.addEventListener('mouseleave', () => {
         clearTimeout(playerIdleTimeout);
-        btn.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
-        btn.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+        btn.classList.add('md:opacity-0', 'md:translate-y-4', 'md:pointer-events-none');
+        btn.classList.remove('md:opacity-100', 'md:translate-y-0', 'md:pointer-events-auto');
     });
 }
 window.triggerNextEpisode = function () {

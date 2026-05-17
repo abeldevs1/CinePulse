@@ -618,7 +618,7 @@ function setupConnection(conn) {
             sendPayload(conn);
         }
         else if (data.type === 'SYNC_PROPOSAL') {
-            processIncomingData(data.payload, data.sender, conn);
+            processIncomingData(data.payload, data.sender, conn, data.sources, data.history);
         }
         else if (data.type === 'SYNC_ACKNOWLEDGED') {
             showNotification(`Remote Node (${data.sender}) committed changes.`);
@@ -785,13 +785,17 @@ function sendPayload(conn) {
             const filters = Array.from(filterCheckboxes).map(cb => cb.value);
             if (filters.length < 6) payload = state.db.filter(i => filters.includes(i.type));
         }
-        conn.send({ type: 'SYNC_PROPOSAL', sender: NeuralSync.deviceId, payload: payload });
+        const sources = JSON.parse(localStorage.getItem('cp_elite_sources') || '[]');
+        const history = JSON.parse(localStorage.getItem('sumi_history') || '[]');
+        conn.send({ type: 'SYNC_PROPOSAL', sender: NeuralSync.deviceId, payload: payload, sources: sources, history: history });
     }
 }
 
-function processIncomingData(remoteDb, senderId, conn) {
+function processIncomingData(remoteDb, senderId, conn, remoteSources, remoteHistory) {
     const localDb = state.db;
     NeuralSync.pendingDiffs = [];
+    NeuralSync.pendingSources = remoteSources || null;
+    NeuralSync.pendingHistory = remoteHistory || null;
     const localMap = new Map(localDb.map(item => [item.id, item]));
 
     remoteDb.forEach(remoteItem => {
@@ -818,8 +822,14 @@ function processIncomingData(remoteDb, senderId, conn) {
         showNotification("Delta differences detected. Awaiting manual resolution.");
         openDiffOverlay(senderId, conn);
     } else {
-        if (conn && conn.open) conn.send({ type: 'SYNC_ACKNOWLEDGED', sender: NeuralSync.deviceId });
-        showNotification("Timelines perfectly synchronized. No updates needed.");
+        // If there are no diffs but we have sources or history, apply them automatically
+        if ((NeuralSync.pendingSources && NeuralSync.pendingSources.length > 0) || 
+            (NeuralSync.pendingHistory && NeuralSync.pendingHistory.length > 0)) {
+            applyMerges([]);
+        } else {
+            if (conn && conn.open) conn.send({ type: 'SYNC_ACKNOWLEDGED', sender: NeuralSync.deviceId });
+            showNotification("Timelines perfectly synchronized. No updates needed.");
+        }
     }
 }
 
@@ -1008,6 +1018,26 @@ function applyMerges(indices) {
             }
         }
     });
+
+    if (NeuralSync.pendingSources && NeuralSync.pendingSources.length > 0) {
+        localStorage.setItem('cp_elite_sources', JSON.stringify(NeuralSync.pendingSources));
+        updatesApplied++;
+    }
+
+    if (NeuralSync.pendingHistory && NeuralSync.pendingHistory.length > 0) {
+        let localHist = JSON.parse(localStorage.getItem('sumi_history') || '[]');
+        let histMap = new Map();
+        localHist.forEach(h => histMap.set(h.id, h));
+        NeuralSync.pendingHistory.forEach(h => {
+            let existing = histMap.get(h.id);
+            if (!existing || (h.watched_at || 0) > (existing.watched_at || 0)) {
+                histMap.set(h.id, h);
+            }
+        });
+        localStorage.setItem('sumi_history', JSON.stringify(Array.from(histMap.values())));
+        if (typeof renderContinueWatching === 'function') renderContinueWatching();
+        updatesApplied++;
+    }
 
     save(true); // Pass true to avoid micro-syncing these back immediately
 
